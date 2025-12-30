@@ -1,0 +1,37 @@
+{
+    "app": {
+        "name": "PureScan",
+        "tagline": "Foods"
+    },
+    "home": {
+        "headline": "What's In Your Food?",
+        "subheadline": "AI-powered analysis in seconds",
+        "tabs": {
+            "camera": "Camera",
+            "barcode": "Barcode",
+            "text": "Text"
+        },
+        "actions": {
+            "scanIngredients": "Scan Ingredients",
+            "scanBarcode": "Scan Barcode",
+            "analyzeText": "Analyze Text",
+            "fromGallery": "Choose from Gallery",
+            "or": "OR"
+        }
+    },
+    "tabs": {
+        "scan": "Scan",
+        "lists": "Lists",
+        "settings": "Settings"
+    },
+    "screens": {
+        "lists": {
+            "title": "My Lists",
+            "empty": "No lists created yet"
+        },
+        "settings": {
+            "title": "Settings",
+            "subtitle": "Profiles, language & theme"
+        }
+    }
+}

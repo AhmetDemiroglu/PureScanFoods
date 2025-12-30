@@ -1,0 +1,37 @@
+{
+    "app": {
+        "name": "PureScan",
+        "tagline": "Foods"
+    },
+    "home": {
+        "headline": "Gıdalarınızda Neler Var?",
+        "subheadline": "AI destekli analiz ile anında öğren",
+        "tabs": {
+            "camera": "Kamera",
+            "barcode": "Barkod",
+            "text": "Metin"
+        },
+        "actions": {
+            "scanIngredients": "İçeriği Tara",
+            "scanBarcode": "Barkodu Oku",
+            "analyzeText": "Metni Analiz Et",
+            "fromGallery": "Galeriden Seç",
+            "or": "VEYA"
+        }
+    },
+    "tabs": {
+        "scan": "Tara",
+        "lists": "Listeler",
+        "settings": "Ayarlar"
+    },
+    "screens": {
+        "lists": {
+            "title": "Listelerim",
+            "empty": "Henüz liste oluşturmadınız"
+        },
+        "settings": {
+            "title": "Ayarlar",
+            "subtitle": "Profiller, dil ve tema"
+        }
+    }
+}
