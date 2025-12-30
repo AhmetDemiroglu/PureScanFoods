@@ -13,10 +13,16 @@
         },
         "actions": {
             "scanIngredients": "İçeriği Tara",
-            "scanBarcode": "Barkodu Oku",
-            "analyzeText": "Metni Analiz Et",
+            "scanBarcode": "Barkodu Tara",
+            "analyzeText": "Analiz Et",
             "fromGallery": "Galeriden Seç",
-            "or": "VEYA"
+            "or": "VEYA",
+            "enterBarcode": "Barkod No Girin",
+            "enterText": "İçerik listesini buraya yapıştırın...",
+            "search": "Ara"
+        },
+        "disclaimer": {
+            "off": "Veriler OpenFoodFacts tarafından sağlanmaktadır."
         }
     },
     "tabs": {

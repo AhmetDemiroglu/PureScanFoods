@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, Pressable, StyleSheet, Dimensions } from "react-native";
+import { View, Text, Pressable, StyleSheet, Dimensions, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,6 +16,8 @@ const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 export default function ScanScreen() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<ScanTab>("camera");
+  const [barcodeInput, setBarcodeInput] = useState("");
+  const [textInput, setTextInput] = useState("");
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -62,37 +64,100 @@ export default function ScanScreen() {
               </Pressable>
             </View>
 
-            {/* Main Button Wrapper */}
-            <Pressable style={styles.mainButtonWrapper}>
-              <LinearGradient
-                colors={[Colors.primary, "#E65100"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.mainButton}
-              >
-                <Ionicons name="scan" size={32} color={Colors.white} />
-                <Text style={styles.mainButtonText}>
-                  {activeTab === "camera" && t("home.actions.scanIngredients")}
-                  {activeTab === "barcode" && t("home.actions.scanBarcode")}
-                  {activeTab === "text" && t("home.actions.analyzeText")}
-                </Text>
-              </LinearGradient>
-            </Pressable>
+            {/* DİNAMİK İÇERİK ALANI */}
+            <View style={styles.dynamicContent}>
 
-            {/* Secondary Button */}
-            {activeTab !== "text" && (
-              <>
-                <View style={styles.divider}>
-                  <View style={styles.dividerLine} />
-                  <Text style={styles.dividerText}>{t("home.actions.or")}</Text>
-                  <View style={styles.dividerLine} />
+              {/* DURUM 1: KAMERA MODU */}
+              {activeTab === "camera" && (
+                <>
+                  <Pressable style={styles.mainButtonWrapper}>
+                    <LinearGradient
+                      colors={[Colors.primary, "#E65100"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.mainButton}
+                    >
+                      <Ionicons name="scan" size={32} color={Colors.white} />
+                      <Text style={styles.mainButtonText}>{t("home.actions.scanIngredients")}</Text>
+                    </LinearGradient>
+                  </Pressable>
+
+                  <View style={styles.divider}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerText}>{t("home.actions.or")}</Text>
+                    <View style={styles.dividerLine} />
+                  </View>
+
+                  <Pressable style={styles.secondaryButton}>
+                    <Ionicons name="images-outline" size={20} color={Colors.gray[500]} />
+                    <Text style={styles.secondaryButtonText}>{t("home.actions.fromGallery")}</Text>
+                  </Pressable>
+                </>
+              )}
+
+              {/* DURUM 2: BARKOD MODU (Revize) */}
+              {activeTab === "barcode" && (
+                <>
+                  {/* 1. Büyük Tarama Butonu (Kamera ile aynı stilde) */}
+                  <Pressable style={styles.mainButtonWrapper}>
+                    <LinearGradient
+                      colors={[Colors.secondary, "#0F172A"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.mainButton}
+                    >
+                      <Ionicons name="barcode-outline" size={32} color={Colors.white} />
+                      <Text style={styles.mainButtonText}>{t("home.actions.scanBarcode")}</Text>
+                    </LinearGradient>
+                  </Pressable>
+
+                  {/* 2. VEYA Ayracı */}
+                  <View style={styles.divider}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerText}>{t("home.actions.or")}</Text>
+                    <View style={styles.dividerLine} />
+                  </View>
+
+                  {/* 3. Manuel Giriş Satırı (Tek satır: Input + Search Butonu) */}
+                  <View style={styles.inputRow}>
+                    <TextInput
+                      style={styles.smallInput}
+                      placeholder="Örn: 869052..."
+                      placeholderTextColor={Colors.gray[400]}
+                      keyboardType="numeric"
+                      value={barcodeInput}
+                      onChangeText={setBarcodeInput}
+                    />
+                    <Pressable style={styles.smallSearchButton}>
+                      <Ionicons name="search" size={20} color={Colors.white} />
+                    </Pressable>
+                  </View>
+
+                  <Text style={styles.disclaimerText}>{t("home.disclaimer.off")}</Text>
+                </>
+              )}
+
+              {/* DURUM 3: METİN MODU (Revize - Kompakt) */}
+              {activeTab === "text" && (
+                <View style={{ gap: 12 }}>
+                  <TextInput
+                    style={[styles.inputField, styles.textArea]}
+                    placeholder={t("home.actions.enterText")}
+                    placeholderTextColor={Colors.gray[400]}
+                    multiline
+                    textAlignVertical="top"
+                    value={textInput}
+                    onChangeText={setTextInput}
+                  />
+
+                  {/* Daha ince, tek satır buton */}
+                  <Pressable style={styles.slimButton}>
+                    <Text style={styles.slimButtonText}>{t("home.actions.analyzeText")}</Text>
+                    <Ionicons name="arrow-forward" size={18} color={Colors.white} />
+                  </Pressable>
                 </View>
-                <Pressable style={styles.secondaryButton}>
-                  <Ionicons name="images-outline" size={20} color={Colors.gray[500]} />
-                  <Text style={styles.secondaryButtonText}>{t("home.actions.fromGallery")}</Text>
-                </Pressable>
-              </>
-            )}
+              )}
+            </View>
           </View>
         </View>
 
@@ -203,5 +268,63 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: Colors.gray[600],
+  },
+  dynamicContent: {
+    marginTop: 16,
+  },
+  inputField: {
+    backgroundColor: Colors.gray[100],
+    borderRadius: 16,
+    padding: 16,
+    fontSize: 16,
+    color: Colors.secondary,
+    borderWidth: 1,
+    borderColor: Colors.gray[200],
+  },
+  textArea: {
+    height: 120,
+  },
+  disclaimerText: {
+    fontSize: 11,
+    color: Colors.gray[400],
+    textAlign: "center",
+    marginTop: 8,
+  },
+  inputRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  smallInput: {
+    flex: 1,
+    backgroundColor: Colors.gray[100],
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    height: 50,
+    fontSize: 15,
+    borderWidth: 1,
+    borderColor: Colors.gray[200],
+    color: Colors.secondary,
+  },
+  smallSearchButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 12,
+    backgroundColor: Colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  slimButton: {
+    backgroundColor: Colors.secondary,
+    borderRadius: 12,
+    height: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  slimButtonText: {
+    color: Colors.white,
+    fontWeight: "600",
+    fontSize: 15,
   },
 });

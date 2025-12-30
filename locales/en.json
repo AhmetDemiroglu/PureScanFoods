@@ -14,9 +14,15 @@
         "actions": {
             "scanIngredients": "Scan Ingredients",
             "scanBarcode": "Scan Barcode",
-            "analyzeText": "Analyze Text",
+            "analyzeText": "Analyze",
             "fromGallery": "Choose from Gallery",
-            "or": "OR"
+            "or": "OR",
+            "enterBarcode": "Enter Barcode No",
+            "enterText": "Paste ingredient list here...",
+            "search": "Search"
+        },
+        "disclaimer": {
+            "off": "Data provided by OpenFoodFacts."
         }
     },
     "tabs": {
