@@ -12,7 +12,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" />
         </Stack>
         <StatusBar style="dark" />
-      </AuthProvider>r
+      </AuthProvider>
     </I18nextProvider>
   );
 }
