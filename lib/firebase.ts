@@ -22,4 +22,4 @@ export const auth = initializeAuth(app, {
 });
 
 export const db = getFirestore(app);
-export const functions = getFunctions(app, "eur3");
+export const functions = getFunctions(app, "europe-west1");

@@ -21,6 +21,9 @@
             "enterText": "Paste ingredient list here...",
             "search": "Search"
         },
+        "permissions": {
+            "request": "Camera Permission"
+        },
         "disclaimer": {
             "off": "Data provided by OpenFoodFacts."
         }
@@ -39,5 +42,23 @@
             "title": "Settings",
             "subtitle": "Profiles, language & theme"
         }
+    },
+    "processing": {
+        "steps": {
+            "1": "Processing Image...",
+            "2": "Extracting Text...",
+            "3": "Analyzing Nutrition...",
+            "4": "Preparing Results..."
+        },
+        "facts": [
+            "An apple can help you wake up better than coffee.",
+            "Honey is the only food that never spoils.",
+            "Strawberries are not berries, they are roses.",
+            "Potatoes can absorb and reflect WiFi signals.",
+            "Chocolate was used as currency in ancient times.",
+            "Tomatoes are fruits, not vegetables.",
+            "Bananas are slightly radioactive due to potassium."
+        ],
+        "waitMessages": ["Digging into details...", "AI is comparing data...", "Almost there, thanks for your patience...", "Final touches..."]
     }
 }

@@ -21,6 +21,9 @@
             "enterText": "İçerik listesini buraya yapıştırın...",
             "search": "Ara"
         },
+        "permissions": {
+            "request": "Kamera İzni Ver"
+        },
         "disclaimer": {
             "off": "Veriler OpenFoodFacts tarafından sağlanmaktadır."
         }
@@ -39,5 +42,23 @@
             "title": "Ayarlar",
             "subtitle": "Profiller, dil ve tema"
         }
+    },
+    "processing": {
+        "steps": {
+            "1": "Görüntü İşleniyor...",
+            "2": "Metin Ayrıştırılıyor...",
+            "3": "Besin Değerleri Taranıyor...",
+            "4": "Sonuçlar Hazırlanıyor..."
+        },
+        "facts": [
+            "Bir elma, sabahları uyanmanıza kahveden daha fazla yardımcı olabilir.",
+            "Bal, bozulmayan tek gıdadır.",
+            "Çilek aslında bir meyve değil, gül ailesindendir.",
+            "Patatesler WiFi sinyallerini emebilir.",
+            "Çikolata, antik zamanlarda para birimi olarak kullanılmıştır.",
+            "Domates aslında bir meyvedir, sebze değil.",
+            "Muzlar, potasyum nedeniyle çok az miktarda radyoaktiftir."
+        ],
+        "waitMessages": ["Detaylara iniyoruz...", "Yapay zeka verileri karşılaştırıyor...", "Az kaldı, sabrınız için teşekkürler...", "Son rötuşlar yapılıyor..."]
     }
 }

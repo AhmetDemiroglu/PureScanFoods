@@ -1,17 +1,19 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
-import fetch from "node-fetch";
-
-const GEMINI_MODEL = "gemini-2.5-flash";
+// import fetch from "node-fetch"; <-- SİLİNDİ (Node 24 native fetch kullanır)
 
 interface GeminiRequest {
-    endpoint: string;
+    endpoint: string; // Örn: "gemini-2.5-flash-preview-09-2025:generateContent"
     body: any;
 }
 
-export const geminiProxy = onCall({ cors: true, secrets: ["GEMINI_API_KEY"] }, async (request) => {
+export const geminiProxy = onCall({ region: "europe-west1", cors: true, secrets: ["GEMINI_API_KEY"] }, async (request) => {
     try {
+        // Cosmetics mantığı: endpoint ve body istemciden gelir
         const { endpoint, body } = request.data as GeminiRequest;
+
+        // 1. Loglama (Cosmetics style)
+        logger.info("Received endpoint:", endpoint);
 
         if (!process.env.GEMINI_API_KEY) {
             throw new HttpsError("failed-precondition", "API Key not configured.");
@@ -21,10 +23,12 @@ export const geminiProxy = onCall({ cors: true, secrets: ["GEMINI_API_KEY"] }, a
             throw new HttpsError("invalid-argument", "Endpoint parameter is missing");
         }
 
-        logger.info(`🚀 Calling Gemini Model: ${GEMINI_MODEL}, Endpoint: ${endpoint}`);
+        logger.info(`🚀 Calling Gemini: ${endpoint}`);
 
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:${endpoint}?key=${process.env.GEMINI_API_KEY}`;
+        // 2. URL Oluşturma (Dinamik)
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${endpoint}?key=${process.env.GEMINI_API_KEY}`;
 
+        // 3. Native Fetch (Cosmetics yapısı)
         const response = await fetch(apiUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -34,7 +38,8 @@ export const geminiProxy = onCall({ cors: true, secrets: ["GEMINI_API_KEY"] }, a
         if (!response.ok) {
             const errorText = await response.text();
             logger.error(`❌ Gemini API Error: ${response.status} - ${errorText}`);
-            throw new HttpsError("internal", `Gemini API error: ${response.status}`, { details: errorText });
+            // Hatayı net görmek için:
+            throw new HttpsError("invalid-argument", `Gemini API Error (${response.status}): ${errorText}`);
         }
 
         const result = await response.json();

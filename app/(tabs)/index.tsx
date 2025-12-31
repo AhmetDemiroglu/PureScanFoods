@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { View, Text, Pressable, StyleSheet, Dimensions, TextInput } from "react-native";
+import { useState, useRef } from "react";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import { View, Text, Pressable, StyleSheet, Dimensions, TextInput, ActivityIndicator, Modal, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -7,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { Colors } from "../../constants/colors";
 import Header from "../../components/ui/Header";
 import Hero from "../../components/ui/Hero";
+import { callGemini } from "../../lib/api";
 
 type ScanTab = "camera" | "barcode" | "text";
 
@@ -15,6 +17,13 @@ const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 export default function ScanScreen() {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<ScanTab>("camera");
+
+  const [permission, requestPermission] = useCameraPermissions();
+  const cameraRef = useRef<CameraView>(null);
+  const [isScanning, setIsScanning] = useState(false);
+
+  const [showCamera, setShowCamera] = useState(false);
+
   const [barcodeInput, setBarcodeInput] = useState("");
   const [textInput, setTextInput] = useState("");
 
@@ -69,7 +78,17 @@ export default function ScanScreen() {
               {/* DURUM 1: KAMERA MODU */}
               {activeTab === "camera" && (
                 <>
-                  <Pressable style={styles.mainButtonWrapper}>
+                  {/* 1. Ana Sayfa Butonu (Eski Tasarım Geri Geldi) */}
+                  <Pressable
+                    style={styles.mainButtonWrapper}
+                    onPress={() => {
+                      if (!permission?.granted) {
+                        requestPermission();
+                      } else {
+                        setShowCamera(true);
+                      }
+                    }}
+                  >
                     <LinearGradient
                       colors={[Colors.primary, "#E65100"]}
                       start={{ x: 0, y: 0 }}
@@ -77,10 +96,93 @@ export default function ScanScreen() {
                       style={styles.mainButton}
                     >
                       <Ionicons name="scan" size={32} color={Colors.white} />
-                      <Text style={styles.mainButtonText}>{t("home.actions.scanIngredients")}</Text>
+                      <Text style={styles.mainButtonText}>
+                        {permission?.granted ? t("home.actions.scanIngredients") : t("permissions.request", { defaultValue: "Kamera İzni Ver" })}                      </Text>
                     </LinearGradient>
                   </Pressable>
 
+                  {/* 2. Kamera Modalı (Tam Ekran Açılır) */}
+                  <Modal
+                    visible={showCamera}
+                    animationType="slide"
+                    onRequestClose={() => setShowCamera(false)}
+                  >
+                    <View style={{ flex: 1, backgroundColor: "black" }}>
+                      {/* 1. Kamera Katmanı (En altta) */}
+                      <CameraView
+                        style={StyleSheet.absoluteFill}
+                        facing="back"
+                        ref={cameraRef}
+                      />
+
+                      {/* 2. Üst Bar: Kapatma Butonu (Kamera'nın kardeşi, üstünde) */}
+                      <View style={styles.cameraHeader}>
+                        <TouchableOpacity style={styles.closeButton} onPress={() => setShowCamera(false)}>
+                          <Ionicons name="close" size={28} color={Colors.white} />
+                        </TouchableOpacity>
+                      </View>
+
+                      {/* 3. Alt Bar: Çekim Butonu (Kamera'nın kardeşi, üstünde) */}
+                      <View style={styles.cameraFooter}>
+                        <Pressable
+                          style={styles.captureButton}
+                          onPress={async () => {
+                            if (cameraRef.current && !isScanning) {
+                              try {
+                                setIsScanning(true);
+
+                                // 1. Fotoğrafı Çek (Base64 ile)
+                                const photo = await cameraRef.current.takePictureAsync({
+                                  base64: true,
+                                  quality: 0.7,
+                                  skipProcessing: true,
+                                  shutterSound: false
+                                });
+
+                                console.log("📸 Fotoğraf çekildi, analize gönderiliyor...");
+
+                                // 2. Gemini Payload Hazırla
+                                const body = {
+                                  contents: [{
+                                    parts: [
+                                      { text: "Analyze this product image. Identify the product name, brand, and extract the full ingredients list. Return ONLY a valid JSON object with keys: productName, brand, ingredients (array of strings), isFood (boolean)." },
+                                      {
+                                        inlineData: {
+                                          mimeType: "image/jpeg",
+                                          data: photo?.base64
+                                        }
+                                      }
+                                    ]
+                                  }]
+                                };
+
+                                // 3. AI Servisini Çağır
+                                const result = await callGemini("gemini-2.5-flash-preview-09-2025:generateContent", body);
+
+                                // 4. Sonucu Konsola Bas (Test İçin)
+                                console.log("🧠 Gemini Yanıtı:", JSON.stringify(result, null, 2));
+
+                                setShowCamera(false);
+                              } catch (e) {
+                                console.error("Analiz Hatası:", e);
+                                alert("Analiz sırasında bir hata oluştu.");
+                              } finally {
+                                setIsScanning(false);
+                              }
+                            }
+                          }}
+                        >
+                          {isScanning ? (
+                            <ActivityIndicator size="large" color={Colors.primary} />
+                          ) : (
+                            <View style={styles.captureInner} />
+                          )}
+                        </Pressable>
+                      </View>
+                    </View>
+                  </Modal>
+
+                  {/* Galeri Seçeneği (Aynen Kalıyor) */}
                   <View style={styles.divider}>
                     <View style={styles.dividerLine} />
                     <Text style={styles.dividerText}>{t("home.actions.or")}</Text>
@@ -237,6 +339,8 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "700",
     color: Colors.white,
+    textAlign: "center",
+    width: "100%",
   },
   divider: {
     flexDirection: "row",
@@ -325,5 +429,46 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontWeight: "600",
     fontSize: 15,
+  },
+
+  captureButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "rgba(255,255,255,0.3)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  fullScreenCamera: {
+    flex: 1,
+    backgroundColor: "black",
+  },
+  cameraHeader: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    zIndex: 10,
+  },
+  closeButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cameraFooter: {
+    position: "absolute",
+    bottom: 50,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+  },
+  captureInner: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: Colors.white,
   },
 });
