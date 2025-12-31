@@ -1,4 +1,6 @@
 import { useState, useRef } from "react";
+import { useRouter } from "expo-router";
+import { useAuth } from "../../context/AuthContext";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { View, Text, Pressable, StyleSheet, Dimensions, TextInput, ActivityIndicator, Modal, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -9,23 +11,101 @@ import { Colors } from "../../constants/colors";
 import Header from "../../components/ui/Header";
 import Hero from "../../components/ui/Hero";
 import { callGemini } from "../../lib/api";
+import ProcessingView from "../../components/ui/ProcessingView";
+import { TempStore } from "../../lib/tempStore";
 
 type ScanTab = "camera" | "barcode" | "text";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
+const generateAnalysisPrompt = (lang: string, userProfile: any) => {
+  const targetLang = lang === "tr" ? "TURKISH" : "ENGLISH";
+
+  const diet = userProfile?.dietaryPreferences?.join(", ") || "None";
+  const allergens = userProfile?.allergens?.join(", ") || "None";
+
+  return `
+    ROLE: Senior Food Scientist & Clinical Nutritionist.
+    TARGET LANGUAGE: ${targetLang} (Translate ALL output values to this language).
+    
+    USER PROFILE:
+    - Diet: ${diet}
+    - Allergens: ${allergens}
+
+    TASK:
+    Analyze the product image/text provided. You must generate two distinct scores and a detailed breakdown.
+
+    SCORING LOGIC:
+    1. SAFETY SCORE (0-100): Based on general health. 
+       - Deduct for: Hazardous additives (E-numbers), High Sugar, High Saturated Fat, Ultra-processed ingredients (NOVA 4).
+       - Bonus for: Organic, Whole grain, High Fiber, Protein.
+       - Independent of user profile.
+    
+    2. COMPATIBILITY SCORE (0-100): Based on the User Profile.
+       - Start with the Safety Score.
+       - IF product contains user's ALLERGEN: Score becomes 0 immediately.
+       - IF product violates user's DIET (e.g. Pork for Vegan): Score becomes 0.
+       - Explain the reason clearly.
+
+    OUTPUT FORMAT (Raw JSON only, no markdown):
+    {
+      "product": {
+        "name": "string",
+        "brand": "string",
+        "category": "string",
+        "isFood": boolean
+      },
+      "scores": {
+        "safety": {
+          "value": number (0-100),
+          "level": "string (Hazardous/Poor/Average/Good/Excellent)",
+          "color": "string (red/orange/yellow/lightgreen/green)"
+        },
+        "compatibility": {
+          "value": number (0-100),
+          "level": "string (Bad Match/Risky/Neutral/Good Match/Perfect)",
+          "color": "string (red/orange/yellow/lightgreen/green)",
+          "verdict": "string (Short sentence explaining why it fits or fails the user profile)"
+        }
+      },
+      "details": {
+        "ingredients": [
+           { "name": "string", "isAllergen": boolean, "riskLevel": "string (High/Medium/Low/Safe)" }
+        ],
+        "additives": [
+           { "code": "string (e.g. E330)", "name": "string", "risk": "string (Hazardous/Caution/Safe)", "description": "Short explanation" }
+        ],
+        "nutritional_highlights": {
+           "pros": ["string"],
+           "cons": ["string"]
+        },
+        "processing": {
+           "classification": "string (e.g. Ultra Processed)",
+           "description": "string"
+        }
+      }
+    }
+  `;
+};
+
 export default function ScanScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<ScanTab>("camera");
+  const { userProfile } = useAuth();
 
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const router = useRouter();
 
   const [showCamera, setShowCamera] = useState(false);
 
   const [barcodeInput, setBarcodeInput] = useState("");
   const [textInput, setTextInput] = useState("");
+
+  if (isScanning) {
+    return <ProcessingView />;
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -97,76 +177,97 @@ export default function ScanScreen() {
                     >
                       <Ionicons name="scan" size={32} color={Colors.white} />
                       <Text style={styles.mainButtonText}>
-                        {permission?.granted ? t("home.actions.scanIngredients") : t("permissions.request", { defaultValue: "Kamera İzni Ver" })}                      </Text>
+                        {permission?.granted ? t("home.actions.scanIngredients") : t("permissions.request", { defaultValue: "Kamera İzni Ver" })}</Text>
                     </LinearGradient>
                   </Pressable>
 
-                  {/* 2. Kamera Modalı (Tam Ekran Açılır) */}
+                  {/* 2. Kamera Modalı */}
                   <Modal
                     visible={showCamera}
                     animationType="slide"
                     onRequestClose={() => setShowCamera(false)}
                   >
                     <View style={{ flex: 1, backgroundColor: "black" }}>
-                      {/* 1. Kamera Katmanı (En altta) */}
+                      {/* 1. Kamera Katmanı */}
                       <CameraView
                         style={StyleSheet.absoluteFill}
                         facing="back"
                         ref={cameraRef}
                       />
 
-                      {/* 2. Üst Bar: Kapatma Butonu (Kamera'nın kardeşi, üstünde) */}
+                      {/* 2. Üst Bar: Kapatma Butonu  */}
                       <View style={styles.cameraHeader}>
                         <TouchableOpacity style={styles.closeButton} onPress={() => setShowCamera(false)}>
                           <Ionicons name="close" size={28} color={Colors.white} />
                         </TouchableOpacity>
                       </View>
 
-                      {/* 3. Alt Bar: Çekim Butonu (Kamera'nın kardeşi, üstünde) */}
+                      {/* 3. Alt Bar: Çekim Butonu  */}
                       <View style={styles.cameraFooter}>
                         <Pressable
                           style={styles.captureButton}
                           onPress={async () => {
-                            if (cameraRef.current && !isScanning) {
+                            if (cameraRef.current) {
                               try {
-                                setIsScanning(true);
+                                console.log("📸 Çekim komutu gönderildi...");
 
-                                // 1. Fotoğrafı Çek (Base64 ile)
                                 const photo = await cameraRef.current.takePictureAsync({
                                   base64: true,
-                                  quality: 0.7,
+                                  quality: 0.3,
                                   skipProcessing: true,
                                   shutterSound: false
                                 });
 
-                                console.log("📸 Fotoğraf çekildi, analize gönderiliyor...");
+                                console.log("✅ Fotoğraf başarıyla hafızada.");
 
-                                // 2. Gemini Payload Hazırla
-                                const body = {
-                                  contents: [{
-                                    parts: [
-                                      { text: "Analyze this product image. Identify the product name, brand, and extract the full ingredients list. Return ONLY a valid JSON object with keys: productName, brand, ingredients (array of strings), isFood (boolean)." },
-                                      {
-                                        inlineData: {
-                                          mimeType: "image/jpeg",
-                                          data: photo?.base64
-                                        }
-                                      }
-                                    ]
-                                  }]
-                                };
-
-                                // 3. AI Servisini Çağır
-                                const result = await callGemini("gemini-2.5-flash-preview-09-2025:generateContent", body);
-
-                                // 4. Sonucu Konsola Bas (Test İçin)
-                                console.log("🧠 Gemini Yanıtı:", JSON.stringify(result, null, 2));
-
+                                setIsScanning(true);
                                 setShowCamera(false);
+
+                                if (photo.base64) {
+                                  const currentLang = i18n.language;
+                                  const systemPrompt = generateAnalysisPrompt(currentLang, userProfile);
+
+                                  const result = await callGemini("gemini-2.5-flash-preview-09-2025:generateContent", {
+                                    contents: [{
+                                      parts: [
+                                        { text: systemPrompt },
+                                        { inlineData: { mimeType: "image/jpeg", data: photo.base64 } }
+                                      ]
+                                    }]
+                                  });
+
+                                  try {
+                                    // 1. Ham metni çıkar
+                                    const rawText = (result as any).candidates[0].content.parts[0].text;
+
+                                    // 2. Markdown temizliği  
+                                    const cleanJson = rawText.replace(/```json|```/g, "").trim();
+
+                                    // 3. JSON objesine çevir
+                                    const parsedData = JSON.parse(cleanJson);
+
+                                    console.log("✅ Ayrıştırılmış Veri:", parsedData);
+
+                                    // 4. Temiz veriyi depoya at
+                                    TempStore.setResult(parsedData, photo.uri);
+
+                                    // 5. Yönlendir
+                                    router.push("/product-result");
+
+                                    setTimeout(() => {
+                                      setIsScanning(false);
+                                    }, 500);
+
+                                  } catch (parseError) {
+                                    console.error("JSON Parse Hatası:", parseError);
+                                    alert("Analiz verisi okunamadı. Lütfen tekrar deneyin.");
+                                    setIsScanning(false);
+                                  }
+                                }
+
                               } catch (e) {
-                                console.error("Analiz Hatası:", e);
-                                alert("Analiz sırasında bir hata oluştu.");
-                              } finally {
+                                console.error("❌ Hata:", e);
+                                alert("Hata oluştu, tekrar deneyin.");
                                 setIsScanning(false);
                               }
                             }

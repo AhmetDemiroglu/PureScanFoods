@@ -3,6 +3,9 @@ export const Colors = {
     secondary: "#1E293B",
     surface: "#F8FAFC",
     white: "#FFFFFF",
+    success: "#10B981",
+    error: "#EF4444",
+    warning: "#F59E0B",
     gray: {
         100: "#F1F5F9",
         200: "#E2E8F0",

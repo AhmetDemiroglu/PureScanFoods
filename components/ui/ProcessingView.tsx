@@ -1,156 +1,250 @@
-import React, { useEffect, useState, useRef } from "react";
-import { View, Text, StyleSheet, Dimensions, Animated, Easing } from "react-native";
+import React, { useEffect, useState, useRef, useMemo } from "react";
+import { View, Text, StyleSheet, Dimensions, Animated, Easing, ActivityIndicator } from "react-native";
 import LottieView from "lottie-react-native";
 import { Colors } from "../../constants/colors";
 import { Ionicons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
+import { LinearGradient } from 'expo-linear-gradient';
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
-// --- SABİT VERİLER ---
-const STEPS = [
-    { id: 1, label: "Görüntü İşleniyor...", icon: "image-outline" },
-    { id: 2, label: "Metin Ayrıştırılıyor...", icon: "text-outline" },
-    { id: 3, label: "Besin Değerleri Analiz Ediliyor...", icon: "nutrition-outline" },
-    { id: 4, label: "Sonuçlar Hazırlanıyor...", icon: "checkmark-circle-outline" },
-];
+// --- LOGOLU SPINNER ---
+const LogoSpinner = () => {
+    const spinValue = useRef(new Animated.Value(0)).current;
 
-const FACTS = [
-    "Bir elma, sabahları uyanmanıza kahveden daha fazla yardımcı olabilir.",
-    "Bal, bozulmayan tek gıdadır.",
-    "Çilek aslında bir meyve değil, gül ailesindendir.",
-    "Patatesler WiFi sinyallerini emebilir ve yansıtabilir.",
-    "Çikolata, antik zamanlarda para birimi olarak kullanılmıştır.",
-    "Domates aslında bir meyvedir, sebze değil.",
-    "Muzlar radyoaktiftir (çok az miktarda potasyum nedeniyle).",
-];
+    useEffect(() => {
+        Animated.loop(
+            Animated.timing(spinValue, {
+                toValue: 1,
+                duration: 2000,
+                easing: Easing.linear,
+                useNativeDriver: true,
+            })
+        ).start();
+    }, []);
 
-const LONG_WAIT_MESSAGES = [
-    "Detaylara iniyoruz...",
-    "Yapay zeka verileri karşılaştırıyor...",
-    "Neredeyse bitti, sabrınız için teşekkürler...",
-    "Son rötuşlar yapılıyor...",
-];
+    const spin = spinValue.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '360deg']
+    });
+
+    return (
+        <View style={styles.spinnerContainer}>
+            <Animated.View style={[styles.spinningRingContainer, { transform: [{ rotate: spin }] }]}>
+                <LinearGradient
+                    colors={[Colors.primary, Colors.secondary, Colors.primary]}
+                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                    style={styles.spinningRingGradient}
+                />
+            </Animated.View>
+
+            <View style={styles.logoContainer}>
+                <LinearGradient
+                    colors={[Colors.primary, "#E65100"]}
+                    style={styles.logoGradient}
+                >
+                    <Ionicons name="scan" size={24} color={Colors.white} />
+                </LinearGradient>
+            </View>
+        </View>
+    );
+};
 
 export default function ProcessingView() {
+    const { t } = useTranslation();
+
+    const STEPS = useMemo(() => [
+        { id: 1, label: t("processing.steps.1", { defaultValue: "Görüntü Taranıyor..." }), icon: "scan-outline" },
+        { id: 2, label: t("processing.steps.2", { defaultValue: "Yapay Zeka Analizi..." }), icon: "hardware-chip-outline" },
+        { id: 3, label: t("processing.steps.3", { defaultValue: "Veriler İşleniyor..." }), icon: "server-outline" },
+        { id: 4, label: t("processing.steps.4", { defaultValue: "Sonuçlar Hazırlanıyor..." }), icon: "document-text-outline" },
+    ], [t]);
+
+    const FACTS = (t("processing.facts", { returnObjects: true }) as string[]) || ["İlginç bilgi yükleniyor..."];
+    const LONG_WAIT_MESSAGES = (t("processing.waitMessages", { returnObjects: true }) as string[]) || ["Lütfen bekleyin..."];
+
     const [currentStep, setCurrentStep] = useState(0);
     const [factIndex, setFactIndex] = useState(0);
     const [showLongWait, setShowLongWait] = useState(false);
     const [longWaitIndex, setLongWaitIndex] = useState(0);
 
-    // Animasyon Değerleri
-    const fadeAnim = useRef(new Animated.Value(0)).current;
-    const slideAnim = useRef(new Animated.Value(20)).current;
+    // --- ANİMASYON DEĞERLERİ (BAĞIMSIZ) ---
+    const stepProgressAnim = useRef(new Animated.Value(0)).current;
+    const factFadeAnim = useRef(new Animated.Value(1)).current;
+    const waitFadeAnim = useRef(new Animated.Value(0)).current;
 
-    // 1. Adım İlerlemesi (Simülasyon)
+    // 1. Adım İlerlemesi
     useEffect(() => {
         const interval = setInterval(() => {
-            setCurrentStep((prev) => (prev < STEPS.length - 1 ? prev + 1 : prev));
-        }, 2500); // Her 2.5 saniyede bir adım atla
-
-        return () => clearInterval(interval);
-    }, []);
-
-    // 2. Bilgi Kartı Döngüsü (Random)
-    useEffect(() => {
-        setFactIndex(Math.floor(Math.random() * FACTS.length)); // İlk açılışta rastgele
-        const interval = setInterval(() => {
-            // Fade Out
-            Animated.parallel([
-                Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
-                Animated.timing(slideAnim, { toValue: 20, duration: 300, useNativeDriver: true }),
-            ]).start(() => {
-                // Değiştir
-                setFactIndex((prev) => (prev + 1) % FACTS.length);
-                // Fade In
-                Animated.parallel([
-                    Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
-                    Animated.timing(slideAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
-                ]).start();
+            setCurrentStep((prev) => {
+                const next = prev < STEPS.length - 1 ? prev + 1 : prev;
+                Animated.timing(stepProgressAnim, {
+                    toValue: (next / (STEPS.length - 1)),
+                    duration: 500,
+                    useNativeDriver: false,
+                }).start();
+                return next;
             });
-        }, 4000); // 4 saniyede bir bilgi değişsin
-
+        }, 2500);
         return () => clearInterval(interval);
-    }, []);
+    }, [STEPS.length]);
 
-    // 3. Uzun Bekleme Kontrolü
+    // 2. BİLGİ KARTI DÖNGÜSÜ (Random + Akıllı Süre)
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setShowLongWait(true);
-        }, 8000); // 8 saniye sonra uzun bekleme mesajları başlasın
+        setFactIndex(Math.floor(Math.random() * FACTS.length));
 
+        let timer: NodeJS.Timeout;
+
+        const cycleFact = () => {
+            const currentText = FACTS[factIndex] || "";
+            const wordCount = currentText.split(" ").length;
+
+            // Senin istediğin formül:
+            const readingTime = Math.max(2500, wordCount * 100 + 1000);
+
+            timer = setTimeout(() => {
+                Animated.timing(factFadeAnim, {
+                    toValue: 0,
+                    duration: 300,
+                    useNativeDriver: true,
+                }).start(() => {
+                    setFactIndex(Math.floor(Math.random() * FACTS.length));
+
+                    Animated.timing(factFadeAnim, {
+                        toValue: 1,
+                        duration: 400,
+                        useNativeDriver: true,
+                    }).start(() => {
+                        cycleFact();
+                    });
+                });
+            }, readingTime);
+        };
+
+        cycleFact();
         return () => clearTimeout(timer);
     }, []);
 
-    // 4. Uzun Bekleme Mesaj Döngüsü
+    // 3. UZUN BEKLEME TETİKLEYİCİSİ (10 Saniye Sonra)
     useEffect(() => {
-        if (showLongWait) {
-            const interval = setInterval(() => {
-                setLongWaitIndex((prev) => (prev + 1) % LONG_WAIT_MESSAGES.length);
-            }, 3000);
-            return () => clearInterval(interval);
-        }
+        const timer = setTimeout(() => {
+            setShowLongWait(true);
+            Animated.timing(waitFadeAnim, {
+                toValue: 1,
+                duration: 500,
+                useNativeDriver: true,
+            }).start();
+        }, 10000);
+        return () => clearTimeout(timer);
+    }, []);
+
+    // 4. UZUN BEKLEME MESAJ DÖNGÜSÜ (Sıralı)
+    useEffect(() => {
+        if (!showLongWait) return;
+
+        let waitTimer: NodeJS.Timeout;
+
+        const cycleWaitMessage = () => {
+            waitTimer = setTimeout(() => {
+                // Fade Out
+                Animated.timing(waitFadeAnim, {
+                    toValue: 0,
+                    duration: 300,
+                    useNativeDriver: true,
+                }).start(() => {
+                    // Change Text (Sıralı)
+                    setLongWaitIndex((prev) => (prev + 1) % LONG_WAIT_MESSAGES.length);
+
+                    // Fade In
+                    Animated.timing(waitFadeAnim, {
+                        toValue: 1,
+                        duration: 400,
+                        useNativeDriver: true,
+                    }).start(() => {
+                        cycleWaitMessage(); // Loop
+                    });
+                });
+            }, 3000); // 3 saniyede bir değişsin
+        };
+
+        cycleWaitMessage();
+        return () => clearTimeout(waitTimer);
     }, [showLongWait]);
+
+    const progressWidth = stepProgressAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0%', '100%']
+    });
 
     return (
         <View style={styles.container}>
-            {/* ÜST KISIM: Animasyon */}
-            <View style={styles.animationContainer}>
-                {/* Placeholder Lottie - Kendi json dosyanı assets'e koyup require ile alabilirsin */}
+            <LinearGradient
+                colors={[Colors.surface, '#FFF8E1']}
+                style={StyleSheet.absoluteFill}
+            />
+
+            {/* ÜST KISIM */}
+            <View style={styles.topSection}>
                 <LottieView
-                    source={{ uri: "https://lottie.host/56799056-7889-49fa-9481-987779f64949/lJ3g8J2XoP.json" }} // Örnek: Yürüyen yiyecekler / tarama
+                    source={require('../../assets/scanning-character.json')}
                     autoPlay
                     loop
-                    style={{ width: 250, height: 250 }}
+                    style={styles.mainAnimation}
                 />
+                <Text style={styles.title}>Analiz Ediliyor...</Text>
             </View>
 
-            {/* ORTA KISIM: Adımlar (Stepper) */}
-            <View style={styles.stepsContainer}>
-                {STEPS.map((step, index) => {
-                    const isActive = index === currentStep;
-                    const isCompleted = index < currentStep;
+            {/* ORTA KISIM */}
+            <View style={styles.middleSection}>
+                <View style={styles.progressBarBg}>
+                    <Animated.View style={[styles.progressBarFill, { width: progressWidth }]} />
+                </View>
 
-                    return (
-                        <View key={step.id} style={styles.stepRow}>
-                            <View style={[styles.iconBox, (isActive || isCompleted) && styles.activeIconBox]}>
-                                {isCompleted ? (
-                                    <Ionicons name="checkmark" size={16} color={Colors.white} />
-                                ) : (
-                                    <Ionicons name={step.icon as any} size={16} color={isActive ? Colors.white : Colors.gray[400]} />
-                                )}
+                <View style={styles.stepsContainer}>
+                    {STEPS.map((step, index) => {
+                        const isActive = index === currentStep;
+                        const isCompleted = index < currentStep;
+
+                        return (
+                            <View key={step.id} style={styles.stepItem}>
+                                <View style={[styles.iconBox, (isActive || isCompleted) && styles.activeIconBox]}>
+                                    <Ionicons
+                                        name={isCompleted ? "checkmark" : step.icon as any}
+                                        size={18}
+                                        color={(isActive || isCompleted) ? Colors.white : Colors.gray[400]}
+                                    />
+                                </View>
+                                <Text style={[styles.stepText, isActive ? styles.activeStepText : styles.hiddenStepText]}>
+                                    {step.label}
+                                </Text>
                             </View>
-                            <Text style={[styles.stepText, isActive && styles.activeStepText, isCompleted && styles.completedStepText]}>
-                                {step.label}
-                            </Text>
-                            {isActive && <LottieView source={require('../assets/loading-dots.json')} autoPlay loop style={{ width: 40, height: 20 }} />}
-                            {/* Not: loading-dots.json yoksa activity indicator koyabiliriz */}
-                        </View>
-                    );
-                })}
+                        );
+                    })}
+                </View>
             </View>
 
-            {/* ALT KISIM: Bilgi Kartı & Uzun Bekleme */}
-            <View style={styles.bottomContainer}>
-                {/* Bunları Biliyor Muydunuz? */}
-                <View style={styles.factCard}>
-                    <View style={styles.factHeader}>
-                        <Ionicons name="bulb" size={18} color="#F59E0B" />
-                        <Text style={styles.factTitle}>Bunları Biliyor Muydunuz?</Text>
-                    </View>
-                    <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-                        <Text style={styles.factText}>{FACTS[factIndex]}</Text>
+            {/* ALT KISIM: Spinner ve Bilgiler */}
+            <View style={styles.bottomSection}>
+                <LogoSpinner />
+
+                {/* 1. KUTU: SABİT BİLGİ KARTI (Daha kompakt) */}
+                <View style={styles.factContainer}>
+                    <Text style={styles.factTitle}>{t("processing.didYouKnow", { defaultValue: "BUNLARI BİLİYOR MUYDUNUZ?" })}</Text>
+                    <Animated.View style={{ opacity: factFadeAnim }}>
+                        <Text style={styles.factText}>
+                            {FACTS[factIndex]}
+                        </Text>
                     </Animated.View>
                 </View>
 
-                {/* Uzun Süren İşlem  */}
+                {/* 2. KUTU: UZUN BEKLEME BİLDİRİMİ (Sonradan açılır) */}
                 {showLongWait && (
-                    <View style={styles.longWaitContainer}>
-                        <LottieView
-                            source={{ uri: "https://lottie.host/02030095-23c2-4099-9061-687836376594/8w5g7g3J3f.json" }} // Kum saati vb.
-                            autoPlay loop style={{ width: 30, height: 30 }}
-                        />
-                        <Text style={styles.longWaitText}>{LONG_WAIT_MESSAGES[longWaitIndex]}</Text>
-                    </View>
+                    <Animated.View style={[styles.waitMessageContainer, { opacity: waitFadeAnim }]}>
+                        <ActivityIndicator size="small" color="#E65100" style={{ marginRight: 8 }} />
+                        <Text style={styles.waitMessageText}>
+                            {LONG_WAIT_MESSAGES[longWaitIndex]}
+                        </Text>
+                    </Animated.View>
                 )}
             </View>
         </View>
@@ -161,96 +255,177 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: Colors.surface,
-        paddingTop: 60,
+        paddingTop: height * 0.06,
         paddingHorizontal: 24,
-        alignItems: "center",
+        justifyContent: 'space-between',
+        paddingBottom: height * 0.04,
     },
-    animationContainer: {
-        marginBottom: 40,
+    topSection: {
         alignItems: 'center',
-        justifyContent: 'center',
+        flex: 2,
+        justifyContent: 'flex-end',
+        marginBottom: 10,
+    },
+    mainAnimation: {
+        width: width * 0.7,
+        height: width * 0.7,
+    },
+    title: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: Colors.secondary,
+        marginTop: 10,
+        letterSpacing: 0.5,
+        textAlign: 'center',
+    },
+    middleSection: {
+        flex: 1,
+        width: '100%',
+        justifyContent: 'flex-start',
+        marginTop: 10,
+    },
+    progressBarBg: {
+        height: 4,
+        backgroundColor: Colors.gray[200],
+        borderRadius: 2,
+        marginBottom: 20,
+        overflow: 'hidden',
+    },
+    progressBarFill: {
+        height: '100%',
+        backgroundColor: Colors.primary,
+        borderRadius: 2,
     },
     stepsContainer: {
-        width: "100%",
-        gap: 20,
-        marginBottom: 40,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
     },
-    stepRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 12,
+    stepItem: {
+        alignItems: 'center',
+        width: width / 4.5,
     },
     iconBox: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
         backgroundColor: Colors.gray[100],
         alignItems: "center",
         justifyContent: "center",
-        borderWidth: 1,
+        marginBottom: 8,
+        borderWidth: 1.5,
         borderColor: Colors.gray[200],
+        elevation: 1,
     },
     activeIconBox: {
         backgroundColor: Colors.primary,
         borderColor: Colors.primary,
+        elevation: 4,
+        shadowColor: Colors.primary, shadowOpacity: 0.3, shadowRadius: 4,
     },
     stepText: {
-        fontSize: 15,
-        color: Colors.gray[400],
-        fontWeight: "500",
-        flex: 1,
+        fontSize: 10,
+        color: Colors.gray[500],
+        fontWeight: "600",
+        textAlign: 'center',
+        position: 'absolute',
+        top: 45,
+        width: 100,
     },
     activeStepText: {
         color: Colors.secondary,
         fontWeight: "700",
+        opacity: 1,
     },
-    completedStepText: {
-        color: Colors.gray[600],
-        textDecorationLine: "line-through",
+    hiddenStepText: {
+        opacity: 0,
     },
-    bottomContainer: {
-        width: "100%",
+    bottomSection: {
+        flex: 1.8,
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        gap: 12,
+    },
+    spinnerContainer: {
+        width: 60,
+        height: 60,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 4,
+    },
+    spinningRingContainer: {
         position: 'absolute',
-        bottom: 40,
-        gap: 16,
+        width: '100%',
+        height: '100%',
+        borderRadius: 30,
+        overflow: 'hidden',
+        padding: 3,
     },
-    factCard: {
-        backgroundColor: "rgba(255,255,255,0.8)",
-        padding: 16,
+    spinningRingGradient: {
+        flex: 1,
+        borderRadius: 30,
+    },
+    logoContainer: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        backgroundColor: Colors.surface,
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 2,
+        elevation: 3,
+    },
+    logoGradient: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    factContainer: {
+        backgroundColor: 'rgba(255,255,255,0.95)',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
         borderRadius: 16,
+        alignItems: 'center',
+        width: '100%',
         borderWidth: 1,
         borderColor: Colors.gray[200],
-    },
-    factHeader: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 8,
-        marginBottom: 8,
+        shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
+        minHeight: 80,
+        justifyContent: 'center',
     },
     factTitle: {
-        fontSize: 12,
-        fontWeight: "700",
-        color: "#F59E0B",
-        textTransform: "uppercase",
+        fontSize: 10,
+        fontWeight: "800",
+        color: Colors.primary,
+        marginBottom: 4,
+        letterSpacing: 1,
+        opacity: 0.8,
     },
     factText: {
-        fontSize: 14,
+        fontSize: 13,
         color: Colors.secondary,
-        lineHeight: 20,
-        fontWeight: "500",
+        fontWeight: "600",
+        textAlign: 'center',
+        lineHeight: 18,
     },
-    longWaitContainer: {
+    waitMessageContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#EFF6FF',
-        padding: 10,
-        borderRadius: 12,
-        gap: 10,
+        backgroundColor: '#FFF3E0',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#FFE0B2',
+        marginTop: 4,
+        width: '90%',
     },
-    longWaitText: {
-        fontSize: 12,
-        color: '#1E40AF',
-        fontWeight: '600',
+    waitMessageText: {
+        fontSize: 11,
+        color: '#E65100',
+        fontWeight: '700',
     }
 });
