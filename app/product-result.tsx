@@ -13,12 +13,25 @@ const { width } = Dimensions.get("window");
 const IMAGE_HEIGHT = 320;
 
 const BADGE_CONFIG: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string; bg: string; labelKey: string }> = {
-    EU_BANNED: { icon: "ban", color: "#DC2626", bg: "#FEF2F2", labelKey: "badges.eu_banned" },
-    FDA_WARN: { icon: "warning", color: "#D97706", bg: "#FFFBEB", labelKey: "badges.fda_warn" },
-    NO_ADDITIVES: { icon: "leaf", color: "#16A34A", bg: "#F0FDF4", labelKey: "badges.no_additives" },
-    HIGH_PROTEIN: { icon: "barbell", color: "#2563EB", bg: "#EFF6FF", labelKey: "badges.high_protein" },
-    SUGAR_FREE: { icon: "water", color: "#0891B2", bg: "#ECFEFF", labelKey: "badges.sugar_free" },
-    DEFAULT: { icon: "information-circle", color: Colors.gray[600], bg: Colors.gray[100], labelKey: "badges.general" }
+    EU_BANNED: { icon: "ban", color: "#DC2626", bg: "#FEF2F2", labelKey: "results.badges.eu_banned" },
+    FDA_WARN: { icon: "warning", color: "#D97706", bg: "#FFFBEB", labelKey: "results.badges.fda_warn" },
+    HIGH_SUGAR: { icon: "alert-circle", color: "#DC2626", bg: "#FEF2F2", labelKey: "results.badges.high_sugar" },
+    HIGH_SODIUM: { icon: "alert-circle", color: "#EA580C", bg: "#FFF7ED", labelKey: "results.badges.high_sodium" },
+    HIGH_FAT: { icon: "alert-circle", color: "#EA580C", bg: "#FFF7ED", labelKey: "results.badges.high_fat" },
+    CONTAINS_ALLERGENS: { icon: "warning", color: "#DC2626", bg: "#FEF2F2", labelKey: "results.badges.contains_allergens" },
+    NO_ADDITIVES: { icon: "leaf", color: "#16A34A", bg: "#F0FDF4", labelKey: "results.badges.no_additives" },
+    HIGH_PROTEIN: { icon: "barbell", color: "#2563EB", bg: "#EFF6FF", labelKey: "results.badges.high_protein" },
+    SUGAR_FREE: { icon: "water", color: "#0891B2", bg: "#ECFEFF", labelKey: "results.badges.sugar_free" },
+    WHOLE_GRAIN: { icon: "nutrition", color: "#16A34A", bg: "#F0FDF4", labelKey: "results.badges.whole_grain" },
+    HIGH_FIBER: { icon: "leaf", color: "#16A34A", bg: "#F0FDF4", labelKey: "results.badges.high_fiber" },
+    LOW_FAT: { icon: "heart", color: "#0891B2", bg: "#ECFEFF", labelKey: "results.badges.low_fat" },
+    LOW_SODIUM: { icon: "heart", color: "#0891B2", bg: "#ECFEFF", labelKey: "results.badges.low_sodium" },
+    ORGANIC: { icon: "leaf", color: "#16A34A", bg: "#F0FDF4", labelKey: "results.badges.organic" },
+    VEGAN: { icon: "leaf", color: "#16A34A", bg: "#F0FDF4", labelKey: "results.badges.vegan" },
+    VEGETARIAN: { icon: "leaf", color: "#22C55E", bg: "#F0FDF4", labelKey: "results.badges.vegetarian" },
+    GLUTEN_FREE: { icon: "checkmark-circle", color: "#0891B2", bg: "#ECFEFF", labelKey: "results.badges.gluten_free" },
+    LACTOSE_FREE: { icon: "checkmark-circle", color: "#0891B2", bg: "#ECFEFF", labelKey: "results.badges.lactose_free" },
+    DEFAULT: { icon: "information-circle", color: Colors.gray[600], bg: Colors.gray[100], labelKey: "results.badges.general" }
 };
 
 export default function ProductResultScreen() {
@@ -281,9 +294,11 @@ const styles = StyleSheet.create({
     },
     badgesRow: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
         justifyContent: 'center',
         gap: 8,
         marginTop: 12,
+        paddingHorizontal: 8,
     },
     badge: {
         flexDirection: 'row',

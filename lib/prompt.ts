@@ -57,8 +57,8 @@ OUTPUT FORMAT (Raw JSON only, no markdown):
     "category": "string (${targetLang})",
     "isFood": boolean
   },
-  "badges": ["EU_BANNED", "FDA_WARN", "NO_ADDITIVES", "HIGH_PROTEIN", "SUGAR_FREE"],
-  "scores": {
+"badges": ["ONLY use from this list - no other values allowed: EU_BANNED", "FDA_WARN", "NO_ADDITIVES", "HIGH_PROTEIN", "SUGAR_FREE", "WHOLE_GRAIN", "HIGH_FIBER", "LOW_FAT", "LOW_SODIUM", "ORGANIC", "HIGH_SUGAR", "HIGH_SODIUM", "HIGH_FAT", "CONTAINS_ALLERGENS", "VEGAN", "VEGETARIAN", "GLUTEN_FREE", "LACTOSE_FREE"],  
+"scores": {
     "safety": {
       "value": number (5-100),
       "level": "Hazardous|Poor|Average|Good|Excellent",
@@ -89,6 +89,12 @@ OUTPUT FORMAT (Raw JSON only, no markdown):
     }
   }
 }
+
+BADGE RULES (CRITICAL):
+- ONLY use badges from the allowed list above
+- DO NOT create custom badges like "WHOLE_GRAIN_BASE" or "HIGH_SUGAR_CONTENT"
+- Use exact values: "WHOLE_GRAIN" not "WHOLE_GRAIN_BASE", "HIGH_SUGAR" not "HIGH_SUGAR_CONTENT"
+- Maximum 4 badges per product
 
 LEVEL THRESHOLDS:
 - 0-20: Hazardous/Bad Match (red)
