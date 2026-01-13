@@ -237,21 +237,25 @@ export default function ScanScreen() {
                                   });
 
                                   try {
-                                    // 1. Ham metni çıkar
                                     const rawText = (result as any).candidates[0].content.parts[0].text;
+                                    console.log("🔍 Ham Gemini Yanıtı:", rawText); // Log'a bakalım ne gelmiş
 
-                                    // 2. Markdown temizliği  
-                                    const cleanJson = rawText.replace(/```json|```/g, "").trim();
+                                    // CIMBIZ YÖNTEMİ: İlk '{' ve son '}' arasını bul
+                                    const startIndex = rawText.indexOf('{');
+                                    const endIndex = rawText.lastIndexOf('}');
 
-                                    // 3. JSON objesine çevir
+                                    if (startIndex === -1 || endIndex === -1) {
+                                      throw new Error("Yanıtta JSON bulunamadı.");
+                                    }
+
+                                    // Sadece JSON kısmını kesip alıyoruz
+                                    const cleanJson = rawText.substring(startIndex, endIndex + 1);
+
                                     const parsedData = JSON.parse(cleanJson);
 
                                     console.log("✅ Ayrıştırılmış Veri:", parsedData);
 
-                                    // 4. Temiz veriyi depoya at
                                     TempStore.setResult(parsedData, photo.uri);
-
-                                    // 5. Yönlendir
                                     router.push("/product-result");
 
                                     setTimeout(() => {
@@ -260,7 +264,7 @@ export default function ScanScreen() {
 
                                   } catch (parseError) {
                                     console.error("JSON Parse Hatası:", parseError);
-                                    alert("Analiz verisi okunamadı. Lütfen tekrar deneyin.");
+                                    alert("Veri işlenemedi. Tekrar deneyin.");
                                     setIsScanning(false);
                                   }
                                 }

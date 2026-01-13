@@ -8,7 +8,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 const { width, height } = Dimensions.get("window");
 
-// --- LOGOLU SPINNER ---
 const LogoSpinner = () => {
     const spinValue = useRef(new Animated.Value(0)).current;
 
@@ -68,12 +67,10 @@ export default function ProcessingView() {
     const [showLongWait, setShowLongWait] = useState(false);
     const [longWaitIndex, setLongWaitIndex] = useState(0);
 
-    // --- ANİMASYON DEĞERLERİ (BAĞIMSIZ) ---
     const stepProgressAnim = useRef(new Animated.Value(0)).current;
     const factFadeAnim = useRef(new Animated.Value(1)).current;
     const waitFadeAnim = useRef(new Animated.Value(0)).current;
 
-    // 1. Adım İlerlemesi
     useEffect(() => {
         const interval = setInterval(() => {
             setCurrentStep((prev) => {
@@ -89,7 +86,6 @@ export default function ProcessingView() {
         return () => clearInterval(interval);
     }, [STEPS.length]);
 
-    // 2. BİLGİ KARTI DÖNGÜSÜ (Random + Akıllı Süre)
     useEffect(() => {
         setFactIndex(Math.floor(Math.random() * FACTS.length));
 
@@ -99,7 +95,6 @@ export default function ProcessingView() {
             const currentText = FACTS[factIndex] || "";
             const wordCount = currentText.split(" ").length;
 
-            // Senin istediğin formül:
             const readingTime = Math.max(2500, wordCount * 100 + 1000);
 
             timer = setTimeout(() => {
@@ -125,7 +120,6 @@ export default function ProcessingView() {
         return () => clearTimeout(timer);
     }, []);
 
-    // 3. UZUN BEKLEME TETİKLEYİCİSİ (10 Saniye Sonra)
     useEffect(() => {
         const timer = setTimeout(() => {
             setShowLongWait(true);
@@ -138,7 +132,6 @@ export default function ProcessingView() {
         return () => clearTimeout(timer);
     }, []);
 
-    // 4. UZUN BEKLEME MESAJ DÖNGÜSÜ (Sıralı)
     useEffect(() => {
         if (!showLongWait) return;
 
@@ -146,25 +139,22 @@ export default function ProcessingView() {
 
         const cycleWaitMessage = () => {
             waitTimer = setTimeout(() => {
-                // Fade Out
                 Animated.timing(waitFadeAnim, {
                     toValue: 0,
                     duration: 300,
                     useNativeDriver: true,
                 }).start(() => {
-                    // Change Text (Sıralı)
                     setLongWaitIndex((prev) => (prev + 1) % LONG_WAIT_MESSAGES.length);
 
-                    // Fade In
                     Animated.timing(waitFadeAnim, {
                         toValue: 1,
                         duration: 400,
                         useNativeDriver: true,
                     }).start(() => {
-                        cycleWaitMessage(); // Loop
+                        cycleWaitMessage();
                     });
                 });
-            }, 3000); // 3 saniyede bir değişsin
+            }, 3000);
         };
 
         cycleWaitMessage();
@@ -183,7 +173,6 @@ export default function ProcessingView() {
                 style={StyleSheet.absoluteFill}
             />
 
-            {/* ÜST KISIM */}
             <View style={styles.topSection}>
                 <LottieView
                     source={require('../../assets/scanning-character.json')}
@@ -194,7 +183,6 @@ export default function ProcessingView() {
                 <Text style={styles.title}>Analiz Ediliyor...</Text>
             </View>
 
-            {/* ORTA KISIM */}
             <View style={styles.middleSection}>
                 <View style={styles.progressBarBg}>
                     <Animated.View style={[styles.progressBarFill, { width: progressWidth }]} />
@@ -223,11 +211,9 @@ export default function ProcessingView() {
                 </View>
             </View>
 
-            {/* ALT KISIM: Spinner ve Bilgiler */}
             <View style={styles.bottomSection}>
                 <LogoSpinner />
 
-                {/* 1. KUTU: SABİT BİLGİ KARTI (Daha kompakt) */}
                 <View style={styles.factContainer}>
                     <Text style={styles.factTitle}>{t("processing.didYouKnow", { defaultValue: "BUNLARI BİLİYOR MUYDUNUZ?" })}</Text>
                     <Animated.View style={{ opacity: factFadeAnim }}>
@@ -237,7 +223,6 @@ export default function ProcessingView() {
                     </Animated.View>
                 </View>
 
-                {/* 2. KUTU: UZUN BEKLEME BİLDİRİMİ (Sonradan açılır) */}
                 {showLongWait && (
                     <Animated.View style={[styles.waitMessageContainer, { opacity: waitFadeAnim }]}>
                         <ActivityIndicator size="small" color="#E65100" style={{ marginRight: 8 }} />

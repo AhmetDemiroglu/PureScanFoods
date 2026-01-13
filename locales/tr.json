@@ -60,5 +60,30 @@
             "Muzlar, potasyum nedeniyle çok az miktarda radyoaktiftir."
         ],
         "waitMessages": ["Detaylara iniyoruz...", "Yapay zeka verileri karşılaştırıyor...", "Az kaldı, sabrınız için teşekkürler...", "Son rötuşlar yapılıyor..."]
+    },
+    "results": {
+        "ingredients": "İçindekiler",
+        "additives": "Katkı Maddeleri",
+        "details": "Analiz Detayları",
+        "processingLevel": "İşleme Seviyesi",
+        "pros": "Artılar",
+        "cons": "Eksiler",
+        "errorLoad": "Analiz verisi yüklenemedi.",
+        "unknownBrand": "Marka Bilinmiyor",
+        "unknownProduct": "Ürün Adı Yok",
+        "detailedAnalysis": "DETAYLI ANALİZ",
+        "badges": {
+            "food": "Gıda Ürünü",
+            "notFood": "Gıda Değil",
+            "general": "Genel"
+        },
+        "scores": {
+            "safety": "GÜVENLİK",
+            "compatibility": "UYUM"
+        }
+    },
+    "common": {
+        "unknown": "Bilinmiyor",
+        "back": "Geri Dön"
     }
 }

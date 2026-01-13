@@ -60,5 +60,30 @@
             "Bananas are slightly radioactive due to potassium."
         ],
         "waitMessages": ["Digging into details...", "AI is comparing data...", "Almost there, thanks for your patience...", "Final touches..."]
+    },
+    "results": {
+        "ingredients": "Ingredients",
+        "additives": "Additives",
+        "details": "Analysis Details",
+        "processingLevel": "Processing Level",
+        "pros": "Pros",
+        "cons": "Cons",
+        "errorLoad": "Could not load analysis data.",
+        "unknownBrand": "Unknown Brand",
+        "unknownProduct": "No Product Name",
+        "detailedAnalysis": "DETAILED ANALYSIS",
+        "badges": {
+            "food": "Food Product",
+            "notFood": "Not Food",
+            "general": "General"
+        },
+        "scores": {
+            "safety": "SAFETY",
+            "compatibility": "COMPATIBILITY"
+        }
+    },
+    "common": {
+        "unknown": "Unknown",
+        "back": "Go Back"
     }
 }
