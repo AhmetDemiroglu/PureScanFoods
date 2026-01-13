@@ -13,92 +13,13 @@ import Hero from "../../components/ui/Hero";
 import { callGemini } from "../../lib/api";
 import ProcessingView from "../../components/ui/ProcessingView";
 import { TempStore } from "../../lib/tempStore";
+import { generateAnalysisPrompt } from "../../lib/prompt";
 
 type ScanTab = "camera" | "barcode" | "text";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-const generateAnalysisPrompt = (lang: string, userProfile: any) => {
-  const targetLang = lang === "tr" ? "TURKISH" : "ENGLISH";
 
-  const diet = userProfile?.dietaryPreferences?.join(", ") || "None";
-  const allergens = userProfile?.allergens?.join(", ") || "None";
-
-  return `
-    ROLE: Senior Food Scientist & Clinical Nutritionist.
-    TARGET LANGUAGE: ${targetLang} (Translate ALL output values to this language).
-    
-    USER PROFILE:
-    - Diet: ${diet}
-    - Allergens: ${allergens}
-
-    TASK:
-    Analyze the product image/text provided. You must generate two distinct scores, a detailed breakdown, and regulatory badges.
-
-    SCORING LOGIC (STRICT MATHEMATICAL RULES):
-    1. SAFETY SCORE (Start at 100 points):
-       - If NOVA Group 4 (Ultra-processed): SUBTRACT 20.
-       - If High Sugar (>10g/100g): SUBTRACT 15.
-       - If High Saturated Fat (>5g/100g): SUBTRACT 10.
-       - For EACH 'Hazardous' additive: SUBTRACT 15.
-       - For EACH 'Risk' additive: SUBTRACT 5.
-       - If Organic: ADD 5 (Max 100).
-       - Minimum Score Floor: 0.
-    
-    2. COMPATIBILITY SCORE (Based on User Profile):
-       - Start with the calculated SAFETY SCORE.
-       - CRITICAL: If product contains ANY user allergen -> Force Score = 0.
-       - CRITICAL: If product violates user diet (e.g. Vegan but has milk) -> Force Score = 0.
-       - If no blocks, use the Safety Score as base and explain the match.
-
-    3. BADGE LOGIC (Detect regulatory status):
-       - "EU_BANNED": If contains additives banned in the EU (e.g., Titanium Dioxide E171, Potassium Bromate, BVO).
-       - "FDA_WARN": If contains additives with specific FDA warnings (e.g., Red 3).
-       - "NO_ADDITIVES": If the product has NO E-numbers/additives.
-       - "HIGH_PROTEIN": If protein > 20g/100g.
-       - "SUGAR_FREE": If sugar < 0.5g/100g.
-
-    OUTPUT FORMAT (Raw JSON only, no markdown):
-    {
-      "product": {
-        "name": "string",
-        "brand": "string",
-        "category": "string",
-        "isFood": boolean
-      },
-      "badges": ["string (Enum: EU_BANNED, FDA_WARN, NO_ADDITIVES, HIGH_PROTEIN, SUGAR_FREE)"],
-      "scores": {
-        "safety": {
-          "value": number (0-100),
-          "level": "string (Hazardous/Poor/Average/Good/Excellent)",
-          "color": "string (red/orange/yellow/lightgreen/green)"
-        },
-        "compatibility": {
-          "value": number (0-100),
-          "level": "string (Bad Match/Risky/Neutral/Good Match/Perfect)",
-          "color": "string (red/orange/yellow/lightgreen/green)",
-          "verdict": "string (Short sentence explaining why it fits or fails the user profile)"
-        }
-      },
-      "details": {
-        "ingredients": [
-           { "name": "string", "isAllergen": boolean, "riskLevel": "string (High/Medium/Low/Safe)" }
-        ],
-        "additives": [
-           { "code": "string (e.g. E330)", "name": "string", "risk": "string (Hazardous/Caution/Safe)", "description": "Short explanation" }
-        ],
-        "nutritional_highlights": {
-           "pros": ["string"],
-           "cons": ["string"]
-        },
-        "processing": {
-           "classification": "string (e.g. Ultra Processed)",
-           "description": "string"
-        }
-      }
-    }
-  `;
-};
 
 export default function ScanScreen() {
   const { t, i18n } = useTranslation();
@@ -250,9 +171,8 @@ export default function ScanScreen() {
 
                                   try {
                                     const rawText = (result as any).candidates[0].content.parts[0].text;
-                                    console.log("🔍 Ham Gemini Yanıtı:", rawText); // Log'a bakalım ne gelmiş
+                                    console.log("🔍 Ham Gemini Yanıtı:", rawText);
 
-                                    // CIMBIZ YÖNTEMİ: İlk '{' ve son '}' arasını bul
                                     const startIndex = rawText.indexOf('{');
                                     const endIndex = rawText.lastIndexOf('}');
 
@@ -260,12 +180,11 @@ export default function ScanScreen() {
                                       throw new Error("Yanıtta JSON bulunamadı.");
                                     }
 
-                                    // Sadece JSON kısmını kesip alıyoruz
                                     const cleanJson = rawText.substring(startIndex, endIndex + 1);
-
                                     const parsedData = JSON.parse(cleanJson);
 
-                                    console.log("✅ Ayrıştırılmış Veri:", parsedData);
+                                    console.log("✅ AI Response:", parsedData);
+                                    console.log("📊 Safety Breakdown:", parsedData.scores?.safety?.breakdown);
 
                                     TempStore.setResult(parsedData, photo.uri);
                                     router.push("/product-result");
