@@ -12,6 +12,15 @@ import DetailCards from "../components/product/DetailCards";
 const { width } = Dimensions.get("window");
 const IMAGE_HEIGHT = 320;
 
+const BADGE_CONFIG: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string; bg: string; labelKey: string }> = {
+    EU_BANNED: { icon: "ban", color: "#DC2626", bg: "#FEF2F2", labelKey: "badges.eu_banned" },
+    FDA_WARN: { icon: "warning", color: "#D97706", bg: "#FFFBEB", labelKey: "badges.fda_warn" },
+    NO_ADDITIVES: { icon: "leaf", color: "#16A34A", bg: "#F0FDF4", labelKey: "badges.no_additives" },
+    HIGH_PROTEIN: { icon: "barbell", color: "#2563EB", bg: "#EFF6FF", labelKey: "badges.high_protein" },
+    SUGAR_FREE: { icon: "water", color: "#0891B2", bg: "#ECFEFF", labelKey: "badges.sugar_free" },
+    DEFAULT: { icon: "information-circle", color: Colors.gray[600], bg: Colors.gray[100], labelKey: "badges.general" }
+};
+
 export default function ProductResultScreen() {
     const { t } = useTranslation();
     const router = useRouter();
@@ -76,9 +85,18 @@ export default function ProductResultScreen() {
                                 <Text style={[styles.badgeText, { color: Colors.error }]}>{t("results.badges.notFood")}</Text>
                             </View>
                         )}
-                        <View style={[styles.badge, styles.badgeNeutral]}>
-                            <Text style={styles.badgeTextNeutral}>{product.category || t("results.badges.general")}</Text>
-                        </View>
+
+                        {data.badges?.map((badgeCode: string, index: number) => {
+                            const config = BADGE_CONFIG[badgeCode] || BADGE_CONFIG.DEFAULT;
+                            return (
+                                <View key={index} style={[styles.badge, { backgroundColor: config.bg, borderColor: config.color + '40' }]}>
+                                    <Ionicons name={config.icon} size={12} color={config.color} style={{ marginRight: 4 }} />
+                                    <Text style={[styles.badgeText, { color: config.color }]}>
+                                        {t(config.labelKey, { defaultValue: badgeCode })}
+                                    </Text>
+                                </View>
+                            );
+                        })}
                     </View>
 
                     <View style={styles.divider} />
@@ -127,6 +145,14 @@ export default function ProductResultScreen() {
                     <DetailCards data={data} />
                 </View>
 
+                <View style={styles.disclaimerBox}>
+                    <Ionicons name="information-circle-outline" size={20} color={Colors.gray[400]} />
+                    <View style={{ flex: 1 }}>
+                        <Text style={styles.disclaimerTitle}>{t("common.disclaimer.title")}</Text>
+                        <Text style={styles.disclaimerText}>{t("common.disclaimer.text")}</Text>
+                    </View>
+                </View>
+
                 <View style={{ height: 40 }} />
             </ScrollView>
         </View>
@@ -162,6 +188,28 @@ const styles = StyleSheet.create({
 
     scrollContent: {
         paddingBottom: 40,
+    },
+    disclaimerBox: {
+        marginHorizontal: 20,
+        marginTop: 24,
+        padding: 16,
+        backgroundColor: Colors.gray[100],
+        borderRadius: 12,
+        flexDirection: "row",
+        gap: 12,
+        borderWidth: 1,
+        borderColor: Colors.gray[200],
+    },
+    disclaimerTitle: {
+        fontSize: 10,
+        fontWeight: "700",
+        color: Colors.gray[500],
+        marginBottom: 4,
+    },
+    disclaimerText: {
+        fontSize: 11,
+        color: Colors.gray[500],
+        lineHeight: 16,
     },
     imageContainer: {
         height: IMAGE_HEIGHT,

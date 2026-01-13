@@ -8,7 +8,6 @@ import { Colors } from "../../constants/colors";
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
-
   const bottomPadding = Math.max(insets.bottom, 10);
 
   return (
@@ -33,14 +32,15 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
-        name="lists"
+        name="nutrition"
         options={{
-          title: t("tabs.lists"),
+          title: t("navigation.nutrition"),
           tabBarIcon: ({ color }) => (
-            <Ionicons name="list-outline" size={24} color={color} />
+            <Ionicons name="nutrition-outline" size={24} color={color} />
           ),
         }}
       />
+
       <Tabs.Screen
         name="index"
         options={{
@@ -57,10 +57,11 @@ export default function TabsLayout() {
           },
         }}
       />
+
       <Tabs.Screen
         name="settings"
         options={{
-          title: t("tabs.settings"),
+          title: t("navigation.settings"),
           tabBarIcon: ({ color }) => (
             <Ionicons name="settings-outline" size={24} color={color} />
           ),

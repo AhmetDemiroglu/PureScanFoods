@@ -3,6 +3,10 @@
         "name": "PureScan",
         "tagline": "Foods"
     },
+    "navigation": {
+        "nutrition": "Beslenme Profili",
+        "settings": "Ayarlar"
+    },
     "home": {
         "headline": "Gıdalarınızda Neler Var?",
         "subheadline": "AI destekli analiz ile anında öğren",
@@ -75,7 +79,12 @@
         "badges": {
             "food": "Gıda Ürünü",
             "notFood": "Gıda Değil",
-            "general": "Genel"
+            "general": "Genel",
+            "eu_banned": "AB Yasaklı",
+            "fda_warn": "FDA Uyarılı",
+            "no_additives": "Katkısız",
+            "high_protein": "Yüksek Protein",
+            "sugar_free": "Şekersiz"
         },
         "scores": {
             "safety": "GÜVENLİK",
@@ -84,6 +93,10 @@
     },
     "common": {
         "unknown": "Bilinmiyor",
-        "back": "Geri Dön"
+        "back": "Geri Dön",
+        "disclaimer": {
+            "title": "YASAL UYARI",
+            "text": "Bu analiz yapay zeka tarafından oluşturulmuştur ve tıbbi tavsiye niteliği taşımaz. Sonuçlar, genel veritabanı eşleşmelerine dayanır ve kesinlik garantisi vermez. Alerjen riskiniz varsa lütfen ürün üzerindeki etiketi kontrol ediniz ve doktorunuza danışınız."
+        }
     }
 }

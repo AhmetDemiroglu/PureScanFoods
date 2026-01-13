@@ -1,35 +1,18 @@
+// app/(tabs)/settings.tsx
 import { View, Text, StyleSheet } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Colors } from "../../constants/colors";
 
 export default function SettingsScreen() {
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.title}>Ayarlar</Text>
-        <Text style={styles.subtitle}>Profiller, dil, tema</Text>
-      </View>
-    </SafeAreaView>
+    <View style={styles.container}>
+      <Text style={styles.title}>Ayarlar</Text>
+      <Text style={styles.subtitle}>Premium, Gizlilik ve Hesap İşlemleri</Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  content: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#1E293B",
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#64748B",
-    marginTop: 8,
-  },
+  container: { flex: 1, backgroundColor: Colors.surface, justifyContent: 'center', alignItems: 'center' },
+  title: { fontSize: 24, fontWeight: '700', color: Colors.secondary },
+  subtitle: { fontSize: 14, color: Colors.gray[500], marginTop: 8 }
 });

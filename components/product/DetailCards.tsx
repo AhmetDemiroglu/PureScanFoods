@@ -18,6 +18,12 @@ export default function DetailCards({ data }: DetailCardsProps) {
     const { t } = useTranslation();
     const [expandedSection, setExpandedSection] = useState<string | null>("ingredients");
 
+    const rawAdditives = data.details.additives || [];
+    const validAdditives = rawAdditives.filter((item: any) => {
+        const name = item.name ? item.name.toLowerCase() : "";
+        return name !== "yok" && name !== "none" && name !== "n/a" && name !== "";
+    });
+
     const toggleSection = (section: string) => {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setExpandedSection(expandedSection === section ? null : section);
@@ -76,12 +82,12 @@ export default function DetailCards({ data }: DetailCardsProps) {
                 )}
             </View>
 
-            {data.details.additives?.length > 0 && (
+            {validAdditives.length > 0 && (
                 <View style={styles.card}>
-                    {renderHeader(t("results.additives"), "flask", "additives", data.details.additives.length)}
+                    {renderHeader(t("results.additives"), "flask", "additives", validAdditives.length)}
                     {expandedSection === "additives" && (
                         <View style={styles.cardBody}>
-                            {data.details.additives.map((add: any, i: number) => (
+                            {validAdditives.map((add: any, i: number) => (
                                 <View key={i} style={styles.additiveRow}>
                                     <View style={[styles.additiveCode, add.risk === 'Hazardous' ? { backgroundColor: '#FEF2F2' } : { backgroundColor: '#FFFBEB' }]}>
                                         <Text style={[styles.additiveCodeText, add.risk === 'Hazardous' ? { color: Colors.error } : { color: Colors.warning }]}>{add.code}</Text>

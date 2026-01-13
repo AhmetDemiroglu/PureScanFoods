@@ -33,19 +33,30 @@ const generateAnalysisPrompt = (lang: string, userProfile: any) => {
     - Allergens: ${allergens}
 
     TASK:
-    Analyze the product image/text provided. You must generate two distinct scores and a detailed breakdown.
+    Analyze the product image/text provided. You must generate two distinct scores, a detailed breakdown, and regulatory badges.
 
-    SCORING LOGIC:
-    1. SAFETY SCORE (0-100): Based on general health. 
-       - Deduct for: Hazardous additives (E-numbers), High Sugar, High Saturated Fat, Ultra-processed ingredients (NOVA 4).
-       - Bonus for: Organic, Whole grain, High Fiber, Protein.
-       - Independent of user profile.
+    SCORING LOGIC (STRICT MATHEMATICAL RULES):
+    1. SAFETY SCORE (Start at 100 points):
+       - If NOVA Group 4 (Ultra-processed): SUBTRACT 20.
+       - If High Sugar (>10g/100g): SUBTRACT 15.
+       - If High Saturated Fat (>5g/100g): SUBTRACT 10.
+       - For EACH 'Hazardous' additive: SUBTRACT 15.
+       - For EACH 'Risk' additive: SUBTRACT 5.
+       - If Organic: ADD 5 (Max 100).
+       - Minimum Score Floor: 0.
     
-    2. COMPATIBILITY SCORE (0-100): Based on the User Profile.
-       - Start with the Safety Score.
-       - IF product contains user's ALLERGEN: Score becomes 0 immediately.
-       - IF product violates user's DIET (e.g. Pork for Vegan): Score becomes 0.
-       - Explain the reason clearly.
+    2. COMPATIBILITY SCORE (Based on User Profile):
+       - Start with the calculated SAFETY SCORE.
+       - CRITICAL: If product contains ANY user allergen -> Force Score = 0.
+       - CRITICAL: If product violates user diet (e.g. Vegan but has milk) -> Force Score = 0.
+       - If no blocks, use the Safety Score as base and explain the match.
+
+    3. BADGE LOGIC (Detect regulatory status):
+       - "EU_BANNED": If contains additives banned in the EU (e.g., Titanium Dioxide E171, Potassium Bromate, BVO).
+       - "FDA_WARN": If contains additives with specific FDA warnings (e.g., Red 3).
+       - "NO_ADDITIVES": If the product has NO E-numbers/additives.
+       - "HIGH_PROTEIN": If protein > 20g/100g.
+       - "SUGAR_FREE": If sugar < 0.5g/100g.
 
     OUTPUT FORMAT (Raw JSON only, no markdown):
     {
@@ -55,6 +66,7 @@ const generateAnalysisPrompt = (lang: string, userProfile: any) => {
         "category": "string",
         "isFood": boolean
       },
+      "badges": ["string (Enum: EU_BANNED, FDA_WARN, NO_ADDITIVES, HIGH_PROTEIN, SUGAR_FREE)"],
       "scores": {
         "safety": {
           "value": number (0-100),
