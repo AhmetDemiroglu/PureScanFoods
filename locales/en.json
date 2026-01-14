@@ -160,6 +160,14 @@
         "unknownBrand": "Unknown Brand",
         "unknownProduct": "No Product Name",
         "detailedAnalysis": "DETAILED ANALYSIS",
+        "estimated_carb": "Estimated Carb Load",
+        "nutrition_data_missing": "Nutrition table not readable. Values are estimated based on ingredients.",
+        "carb_levels": {
+            "LOW": "LOW (<5g)",
+            "MEDIUM": "MEDIUM (5-10g)",
+            "HIGH": "HIGH (>10g)",
+            "UNKNOWN": "UNKNOWN"
+        },
         "family": {
             "title": "FAMILY COMPATIBILITY",
             "safe": "Safe",
@@ -206,14 +214,22 @@
             "findings": {
                 "high_allergen": "{{source}} Detected ({{keyword}}).",
                 "high_allergen_desc": "{{keyword}} detected. This ingredient is a derivative of {{source}} and is incompatible with your profile.",
-                "medium_ambiguous": "{{keyword}} Warning.",
-                "medium_ambiguous_desc": "{{keyword}} detected. Since its source (plant/animal/synthetic) is unspecified, it may carry a {{source}} risk. Please check the product label for certifications or 'Free From' statements.",
-                "diet_violation": "Violates {{diet}} diet: {{keyword}}.",
-                "diet_violation_desc": "This product contains {{keyword}}. This ingredient is typically avoided or considered risky in the {{diet}} diet.",
+                "macro_violation_desc": "{{keyword}} detected. May disrupt your {{diet}} balance due to potential high carbohydrate or sugar content.",
+                "medium_ambiguous_desc": "{{keyword}} detected. Since its source (plant/animal) is unspecified, it may carry a {{source}} risk.",
+                "medical_ambiguous_desc": "{{keyword}} detected. May carry a {{source}} risk (cross-contamination) depending on manufacturing. Check the label.",
+                "diet_violation": "Violates {{diet}} diet.",
+                "diet_violation_desc": "Contains {{keyword}}, which may not be suitable for {{diet}} rules.",
                 "safe_summary": "Ingredients list seems compatible with your profile.",
-                "high_risk_summary": "Ingredients derived from {{source}} detected. Proceed with caution.",
+                "high_risk_summary": "Ingredients derived from {{source}} detected. Consumption not recommended.",
                 "medium_risk_summary": "Some ingredients might cause sensitivity, please check details.",
-                "gluten_ambiguous": "Gluten ambiguity (Maltodextrin etc)."
+                "gluten_ambiguous": "Gluten ambiguity (Maltodextrin etc).",
+                "no_profile_title": "NO PROFILE",
+                "no_profile_summary": "Compatibility analysis cannot be performed because no diet or allergens are defined. Showing general safety score only.",
+                "keto_advice_strict": "CRITICAL: This amount risks Ketosis state.",
+                "keto_advice_moderate": "WARNING: Covers a significant part of your daily limit.",
+                "lowcarb_advice_high": "HIGH: Risky amount for Low Carb diet.",
+                "lowcarb_advice_ok": "SUITABLE: Can be consumed with portion control.",
+                "generic_diet_advice": "Should be consumed with caution based on ingredients and nutrition facts."
             }
         }
     },
@@ -240,11 +256,14 @@
             "title": "Family Profiles",
             "desc": "Create profiles for your child or spouse to customize analysis.",
             "add": "Add Family Member",
+            "edit": "Edit Family Member",
             "emptyTitle": "No profiles yet",
             "emptyDesc": "Add family members to analyze foods based on their dietary needs.",
             "inputName": "Name",
             "selectRole": "Relationship",
             "save": "Save",
+            "update": "Update",
+            "delete": "Delete",
             "roles": {
                 "myself": "Myself",
                 "spouse": "Spouse",

@@ -31,15 +31,30 @@ interface UserContextType {
     addFamilyMember: (name: string, role: FamilyRole) => void;
     updateProfileData: (profileId: string, key: keyof UserProfileData, value: any) => void;
     updateMemberInfo: (id: string, updates: Partial<FamilyMember>) => void;
+    deleteFamilyMember: (id: string) => void;
 
     // Helpers
     getActiveProfile: () => FamilyMember;
     getActiveData: () => UserProfileData;
 }
 
+export const getSafeIcon = (iconName: string): any => {
+    if (iconName === "person") return "account";  
+    return iconName;
+};
+
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-export const AVATAR_COLORS = ["#F59E0B", "#EA580C", "#DC2626", "#DB2777", "#9333EA", "#4F46E5", "#2563EB", "#0284C7", "#059669", "#65A30D"];
+export const AVATAR_ICONS = [
+    "face-man", "face-woman", "face-man-profile", "face-woman-profile",
+    "face-man-shimmer", "face-woman-shimmer", "baby-face", "robot",
+    "cat", "dog", "bear", "panda"
+];
+
+export const AVATAR_COLORS = [
+    "#EF4444", "#F97316", "#F59E0B", "#84CC16", "#10B981",
+    "#06B6D4", "#3B82F6", "#6366F1", "#8B5CF6", "#EC4899"
+];
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
     // --- STATE ---
@@ -53,29 +68,36 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         "main_user": { diet: null, allergens: [] }
     });
 
-    // --- ACTIONS ---
     const addFamilyMember = (name: string, role: FamilyRole) => {
-        const icons: Record<string, string> = {
-            spouse: "heart",
-            child: "baby-face",
-            mother: "face-woman",
-            father: "face-man",
-            sibling: "human-greeting",
-            friend: "emoticon-happy",
-            other: "account",
-            myself: "account"
-        };
+        const newId = Date.now().toString();
+
+        const randomColor = AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
+        const defaultIcon = "account";
 
         const newMember: FamilyMember = {
-            id: Date.now().toString(),
-            name: name,
-            role: role,
-            color: AVATAR_COLORS[familyMembers.length % AVATAR_COLORS.length],
-            avatarIcon: icons[role] || "person"
+            id: newId,
+            name,
+            role,
+            avatarIcon: defaultIcon,
+            color: randomColor
         };
 
         setFamilyMembers(prev => [...prev, newMember]);
-        setProfilesData(prev => ({ ...prev, [newMember.id]: { diet: null, allergens: [] } }));
+
+        setProfilesData(prev => ({
+            ...prev,
+            [newId]: { diet: null, allergens: [], dietaryPreferences: [] }
+        }));
+    };
+
+    const deleteFamilyMember = (id: string) => {
+        if (id === 'main_user') return;
+        setFamilyMembers(prev => prev.filter(m => m.id !== id));
+        setProfilesData(prev => {
+            const newState = { ...prev };
+            delete newState[id];
+            return newState;
+        });
     };
 
     const updateProfileData = (profileId: string, key: keyof UserProfileData, value: any) => {
@@ -89,7 +111,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         setFamilyMembers(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
     };
 
-    // --- HELPERS ---
     const getActiveProfile = () => familyMembers.find(m => m.id === activeProfileId) || familyMembers[0];
     const getActiveData = () => profilesData[activeProfileId] || { diet: null, allergens: [] };
 
@@ -100,6 +121,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             activeProfileId,
             setActiveProfileId,
             addFamilyMember,
+            deleteFamilyMember,
             updateProfileData,
             updateMemberInfo,
             getActiveProfile,

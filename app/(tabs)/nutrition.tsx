@@ -36,6 +36,8 @@ import {
 import { useUser, FamilyRole } from "../../context/UserContext";
 import * as Haptics from "expo-haptics";
 
+const getSafeIcon = (iconName: string): any => iconName === "person" ? "account" : iconName;
+
 if (Platform.OS === 'android') {
   if (UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -163,10 +165,18 @@ export default function NutritionScreen() {
     setActiveProfileId,
     addFamilyMember: contextAddMember,
     updateProfileData: contextUpdateData,
+    deleteFamilyMember: contextDeleteMember,
     updateMemberInfo,
     getActiveProfile,
     getActiveData
   } = useUser();
+
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+
+  const [tempName, setTempName] = useState("");
+  const [tempRole, setTempRole] = useState<FamilyRole>("child");
+  const [tempColor, setTempColor] = useState(Colors.primary);
+  const [tempIcon, setTempIcon] = useState<string>("account");
 
   // --- UI STATE  
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -199,6 +209,62 @@ export default function NutritionScreen() {
 
   const getFilteredIcons = () => {
     return AVATAR_ICON_CATEGORIES[iconCategory]?.icons || [];
+  };
+
+  const openAddModal = () => {
+    setEditingMemberId(null);
+    setTempName("");
+    setTempRole("child");
+    setTempColor(AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]);
+    setTempIcon("account");
+    setShowFamilyModal(true);
+  };
+
+  const handleLongPressMember = (member: any) => {
+    if (member.id === 'main_user') return;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setEditingMemberId(member.id);
+    setTempName(member.name);
+    setTempRole(member.role);
+    setTempColor(member.color);
+    setTempIcon(member.avatarIcon);
+    setShowFamilyModal(true);
+  };
+
+  const handleSaveMember = () => {
+    if (!tempName.trim()) return;
+
+    if (editingMemberId) {
+      updateMemberInfo(editingMemberId, {
+        name: tempName,
+        role: tempRole,
+        color: tempColor,
+        avatarIcon: tempIcon
+      });
+    } else {
+      contextAddMember(tempName, tempRole);
+    }
+
+    setShowFamilyModal(false);
+  };
+
+  const handleDeleteMember = () => {
+    if (editingMemberId) {
+      contextDeleteMember(editingMemberId);
+      setShowFamilyModal(false);
+    }
+  };
+
+  const openAvatarSelectorForEdit = () => {
+    setShowFamilyModal(false);
+
+    if (editingMemberId) {
+      setEditingAvatarId(editingMemberId);
+      setShowAvatarModal(true);
+    } else {
+      alert("Avatarı üye oluşturulduktan sonra değiştirebilirsiniz.");
+    }
   };
 
   const handleColorSelect = (color: string) => {
@@ -427,7 +493,7 @@ export default function NutritionScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{t("nutrition.family.title")}</Text>
-            <TouchableOpacity onPress={() => setShowFamilyModal(true)} style={styles.actionButton}>
+            <TouchableOpacity onPress={openAddModal} style={styles.actionButton}>
               <Ionicons name="add" size={16} color={Colors.primary} />
               <Text style={styles.actionButtonText}>{t("nutrition.family.add")}</Text>
             </TouchableOpacity>
@@ -441,6 +507,8 @@ export default function NutritionScreen() {
                   key={member.id}
                   style={[styles.memberCard, isActive && styles.memberCardActive]}
                   onPress={() => setActiveProfileId(member.id)}
+                  onLongPress={() => handleLongPressMember(member)}
+                  delayLongPress={500}
                 >
                   <View style={[styles.memberAvatar, { backgroundColor: member.color }]}>
                     <MaterialCommunityIcons name={member.avatarIcon as AvatarIconName} size={20} color="#FFF" />
@@ -493,19 +561,33 @@ export default function NutritionScreen() {
           <View style={[styles.bottomSheet, { paddingBottom: insets.bottom + 20 }]} {...panResponder.panHandlers}>
             <View style={styles.bottomSheetHandle} />
             <View style={styles.sheetHeader}>
-              <Text style={styles.sheetTitle}>{t("nutrition.family.add")}</Text>
+              <Text style={styles.sheetTitle}>
+                {editingMemberId ? t("nutrition.family.edit") : t("nutrition.family.add")}
+              </Text>
               <TouchableOpacity onPress={() => setShowFamilyModal(false)} style={styles.closeButton}>
                 <Ionicons name="close" size={20} color={Colors.gray[500]} />
               </TouchableOpacity>
             </View>
             <View style={{ padding: 20 }}>
+              { // AVATAR ÖNİZLEME (Tıklanabilir)
+                !!editingMemberId && (
+                  <TouchableOpacity style={{ alignSelf: 'center', marginBottom: 20 }} onPress={openAvatarSelectorForEdit}>
+                    <View style={[styles.memberAvatar, { width: 80, height: 80, borderRadius: 40, backgroundColor: tempColor }]}>
+                      <MaterialCommunityIcons name={getSafeIcon(tempIcon) as any} size={40} color="#FFF" />
+                      <View style={styles.editBadge}>
+                        <Ionicons name="pencil" size={14} color="#FFF" />
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                )
+              }
+
               <Text style={styles.inputLabel}>{t("nutrition.family.inputName")}</Text>
               <TextInput
                 style={styles.modalInput}
-                placeholder="Örn: Ali"
-                placeholderTextColor="#94A3B8"
-                value={newMemberName}
-                onChangeText={setNewMemberName}
+                value={tempName}
+                onChangeText={setTempName}
+                placeholder="İsim"
               />
               <Text style={styles.inputLabel}>{t("nutrition.family.selectRole")}</Text>
               <View style={styles.roleContainer}>
@@ -521,9 +603,45 @@ export default function NutritionScreen() {
                   </TouchableOpacity>
                 ))}
               </View>
-              <TouchableOpacity style={styles.saveButton} onPress={addFamilyMember}>
-                <Text style={styles.saveButtonText}>{t("nutrition.family.save")}</Text>
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', gap: 12, marginTop: 32 }}>
+
+                {/* SİL BUTONU */}
+                {!!editingMemberId && (
+                  <TouchableOpacity
+                    style={[
+                      styles.saveButton,
+                      {
+                        backgroundColor: '#FEE2E2',
+                        marginTop: 0,
+                        flex: 1,
+                        paddingHorizontal: 0
+                      }
+                    ]}
+                    onPress={handleDeleteMember}
+                  >
+                    <Text style={[styles.saveButtonText, { color: '#DC2626' }]}>
+                      {t("nutrition.family.delete")}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* KAYDET / GÜNCELLE BUTONU */}
+                <TouchableOpacity
+                  style={[
+                    styles.saveButton,
+                    {
+                      marginTop: 0,
+                      flex: 2
+                    }
+                  ]}
+                  onPress={handleSaveMember}
+                >
+                  <Text style={styles.saveButtonText}>
+                    {!!editingMemberId ? t("nutrition.family.update") : t("nutrition.family.save")}
+                  </Text>
+                </TouchableOpacity>
+
+              </View>
             </View>
           </View>
         </View>
@@ -1077,5 +1195,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: 'transparent',
+  },
+  editBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: Colors.secondary,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFF'
   },
 });

@@ -6,7 +6,7 @@ export const DIET_FORBIDDEN_KEYWORDS: Record<DietType, string[]> = {
     VEGAN: ["milk", "cream", "butter", "cheese", "yogurt", "whey", "casein", "lactose", "gelatin", "honey", "beeswax", "egg", "albumin", "meat", "beef", "pork", "chicken", "fish", "shellfish", "carmine", "cochineal", "e120", "collagen"],
     VEGETARIAN: ["meat", "beef", "pork", "chicken", "turkey", "lamb", "fish", "shellfish", "gelatin", "rennet", "lard", "tallow", "animal fat", "carmine", "cochineal"],
     PESCATARIAN: ["meat", "beef", "pork", "chicken", "turkey", "lamb", "gelatin", "lard", "tallow", "animal fat"],
-    KETO: ["sugar", "corn syrup", "honey", "agave", "maple syrup", "rice", "pasta", "bread", "potato", "corn", "starch", "wheat", "barley", "oats", "sucrose", "fructose"],
+    KETO: ["sugar", "corn syrup", "honey", "agave", "maple syrup", "potato", "corn", "starch", "sucrose", "fructose"],
     LOW_CARB: ["sugar", "corn syrup", "high fructose", "bread", "pasta", "rice", "potato"],
     ATKINS: ["sugar", "syrup", "bread", "pasta", "rice", "potato", "corn", "starch"],
     DUKAN: ["sugar", "oil", "butter", "cream", "starch", "bread", "pasta", "rice", "potato", "corn"],
@@ -53,7 +53,7 @@ export const ALLERGEN_KEYWORDS: Record<AllergenType, string[]> = {
 // --- MUĞLAK / ŞÜPHELİ İÇERİKLER ---
 export const AMBIGUOUS_KEYWORDS: Record<string, string[]> = {
     GLUTEN: ["maltodextrin", "dextrose", "glucose syrup", "starch", "modified starch", "flavoring", "aroma", "dextrin", "caramel color", "yeast extract", "hydrolyzed vegetable protein"],
-    KETO: ["maltodextrin", "dextrose", "modified starch", "corn starch", "potato starch", "flour", "wheat flour", "rice flour"],
+    KETO: ["maltodextrin", "dextrose", "modified starch", "corn starch", "potato starch", "flour", "wheat flour", "rice flour", "pasta", "spaghetti", "macaroni", "noodle", "bread", "bagel", "bun", "toast", "rice", "quinoa", "bulgur", "buckwheat", "lentil", "chickpea"],
     DAIRY_FREE: ["lactic acid", "lactate", "cocoa butter", "flavoring", "aroma", "culture"],
     VEGAN: ["lactic acid", "glycerin", "glycerol", "disodium inosinate", "natural flavor", "flavoring", "aroma", "artificial flavor", "mono- and diglycerides", "stearic acid", "vitamin d", "vitamin d3", "cholecalciferol", "kolekalsiferol", "lanolin", "calciferol", "d3"],
     HALAL: ["gelatin", "emulsifier", "e471", "enzymes", "vanilla extract", "pepsin", "rennet"],

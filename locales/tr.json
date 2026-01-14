@@ -160,6 +160,14 @@
         "unknownBrand": "Marka Bilinmiyor",
         "unknownProduct": "Ürün Adı Yok",
         "detailedAnalysis": "DETAYLI ANALİZ",
+        "nutrition_data_missing": "Besin tablosu okunamadı. Değerler içerik sırasına göre tahminidir.",
+        "estimated_carb": "Tahmini Karb Yükü",
+        "carb_levels": {
+            "LOW": "DÜŞÜK (<5g)",
+            "MEDIUM": "ORTA (5-10g)",
+            "HIGH": "YÜKSEK (>10g)",
+            "UNKNOWN": "BELİRSİZ"
+        },
         "family": {
             "title": "AİLE UYUMU",
             "safe": "Güvenli",
@@ -206,14 +214,22 @@
             "findings": {
                 "high_allergen": "{{source}} Tespiti ({{keyword}}).",
                 "high_allergen_desc": "{{keyword}} tespit edildi. Bu bileşen {{source}} türevidir ve profilinizle uyumsuzdur.",
-                "medium_ambiguous": "{{keyword}} Uyarısı.",
-                "medium_ambiguous_desc": "{{keyword}} tespit edildi. Kaynağı (bitkisel/hayvansal/sentetik) belirsiz olduğu için {{source}} hassasiyetine dokunabilir. Lütfen ürün üzerindeki sertifikaları veya 'İçermez' ibaresini kontrol ediniz.",
-                "diet_violation": "{{diet}} diyetiyle çelişiyor: {{keyword}}.",
-                "diet_violation_desc": "Bu ürün {{keyword}} içeriyor. Bu madde {{diet}} beslenme düzeninde genellikle tüketilmez veya riskli kabul edilir.",
+                "macro_violation_desc": "{{keyword}} tespit edildi. Yüksek karbonhidrat veya şeker potansiyeli nedeniyle {{diet}} dengenizi bozabilir.",
+                "medium_ambiguous_desc": "{{keyword}} tespit edildi. Kaynağı (bitkisel/hayvansal) belirsiz olduğu için {{source}} hassasiyetine dokunabilir.",
+                "medical_ambiguous_desc": "{{keyword}} tespit edildi. Üretim sürecine bağlı olarak {{source}} riski (çapraz bulaşma) taşıyabilir. Etiketi kontrol ediniz.",
+                "diet_violation": "{{diet}} diyetiyle çelişiyor.",
+                "diet_violation_desc": "{{keyword}} içerdiği için {{diet}} kurallarına uygun olmayabilir.",
                 "safe_summary": "İçerik listesi profilinizle uyumlu görünüyor.",
-                "high_risk_summary": "{{source}} kaynaklı bileşenler tespit edildi. Dikkatli olunuz.",
+                "high_risk_summary": "{{source}} kaynaklı bileşenler tespit edildi. Tüketmeniz önerilmez.",
                 "medium_risk_summary": "Bazı içerikler hassasiyet yaratabilir, detayları inceleyiniz.",
-                "gluten_ambiguous": "Gluten şüphesi (Maltodekstrin vb)."
+                "gluten_ambiguous": "Gluten şüphesi (Maltodekstrin vb).",
+                "no_profile_title": "PROFİL YOK",
+                "no_profile_summary": "Herhangi bir diyet veya alerjen tanımlamadığınız için uyumluluk analizi yapılamadı. Sadece genel güvenlik skoru gösteriliyor.",
+                "keto_advice_strict": "KRİTİK: Bu miktar Ketozis durumunu riske atar.",
+                "keto_advice_moderate": "DİKKAT: Günlük limitinizin önemli bir kısmını kapsar.",
+                "lowcarb_advice_high": "YÜKSEK: Düşük Karbonhidrat diyeti için riskli miktar.",
+                "lowcarb_advice_ok": "UYGUN: Porsiyon kontrolüyle tüketilebilir.",
+                "generic_diet_advice": "İçerik listesi ve besin değerlerine göre dikkatli tüketilmelidir."
             }
         }
     },
@@ -240,11 +256,14 @@
             "title": "Aile Profilleri",
             "desc": "Çocuğunuz veya eşiniz için profil oluşturun, analizler ona göre yapılsın.",
             "add": "Aile Üyesi Ekle",
+            "edit": "Aile Üyesi Düzenle",
             "emptyTitle": "Henüz kimse yok",
             "emptyDesc": "Aile üyelerinizi ekleyerek onların diyetlerine uygun analiz yapabilirsiniz.",
             "inputName": "İsim",
             "selectRole": "Yakınlık Derecesi",
             "save": "Kaydet",
+            "update": "Güncelle",
+            "delete": "Sil",
             "roles": {
                 "myself": "Kendim",
                 "spouse": "Eş",

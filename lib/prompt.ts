@@ -7,12 +7,15 @@ export function generateAnalysisPrompt(lang: string, userProfile: { allergens: s
     return `
 ROLE: Senior Food Scientist & Clinical Nutritionist
 OUTPUT LANGUAGE: ${targetLang}
+MODE: STRICT & EXHAUSTIVE
 
 USER PROFILE:
 - Allergens: ${allergens}
 - Diet: ${diet}
 
-TASK: Analyze product and calculate scores using STRICT MATHEMATICAL RULES below.
+TASK: 
+1. READ EVERY SINGLE WORD in the ingredient list. DO NOT SUMMARIZE. DO NOT SKIP minor ingredients.
+2. Analyze product and calculate scores using STRICT MATHEMATICAL RULES below.
 
 SAFETY SCORE CALCULATION (Start at 100, apply penalties):
 
@@ -52,13 +55,13 @@ COMPATIBILITY SCORE:
 OUTPUT FORMAT (Raw JSON only, no markdown):
 {
   "product": {
-    "name": "string (${targetLang})",
-    "brand": "string",
+    "name": "string (${targetLang}) - If unknown, say 'Bilinmeyen Ürün' or '${targetLang}' equivalent",
+    "brand": "string - If unknown, say 'Belirsiz Marka' or '${targetLang}' equivalent",
     "category": "string (${targetLang})",
     "isFood": boolean
   },
-"badges": ["ONLY use from this list - no other values allowed: EU_BANNED", "FDA_WARN", "NO_ADDITIVES", "HIGH_PROTEIN", "SUGAR_FREE", "WHOLE_GRAIN", "HIGH_FIBER", "LOW_FAT", "LOW_SODIUM", "ORGANIC", "HIGH_SUGAR", "HIGH_SODIUM", "HIGH_FAT", "CONTAINS_ALLERGENS", "VEGAN", "VEGETARIAN", "GLUTEN_FREE", "LACTOSE_FREE"],  
-"scores": {
+  "badges": ["ONLY use from this list - no other values allowed: EU_BANNED", "FDA_WARN", "NO_ADDITIVES", "HIGH_PROTEIN", "SUGAR_FREE", "WHOLE_GRAIN", "HIGH_FIBER", "LOW_FAT", "LOW_SODIUM", "ORGANIC", "HIGH_SUGAR", "HIGH_SODIUM", "HIGH_FAT", "CONTAINS_ALLERGENS", "VEGAN", "VEGETARIAN", "GLUTEN_FREE", "LACTOSE_FREE"],  
+  "scores": {
     "safety": {
       "value": number (5-100),
       "level": "Hazardous|Poor|Average|Good|Excellent",
@@ -92,6 +95,22 @@ OUTPUT FORMAT (Raw JSON only, no markdown):
       "pros": ["string (${targetLang}) - with brief explanation"],
       "cons": ["string (${targetLang}) - with brief explanation"]
     }
+  },
+  "nutrition_facts": {
+      // INSTRUCTION: Set 'data_available' to true ONLY if you can clearly read BOTH 'Carbohydrate' AND 'Fiber' values in a table.
+      // If the table is cut off, blurry, or partial, set this to false. DO NOT GUESS NUMBERS.
+      "data_available": boolean, 
+      "serving_size": "string or null",
+      "carbohydrates": number, // null if data_available is false
+      "fiber": number,         // null if data_available is false
+      "sugar": number,         // null if data_available is false
+      "protein": number        // null if data_available is false
+  },
+  "keto_analysis": {
+      "is_keto_friendly": boolean,
+      // STRICT ENUM: "LOW" | "MEDIUM" | "HIGH" | "UNKNOWN"
+      "net_carb_estimate": "LOW | MEDIUM | HIGH | UNKNOWN", 
+      "reasoning": "string (${targetLang}) - If data_available is false, explain estimation based on ingredient list order."
   }
 }
 
@@ -100,6 +119,8 @@ CRITICAL DATA INSTRUCTION:
 - "technical_name": Must be in ENGLISH (e.g., "Wheat Flour"). This is vital for the analysis engine.
 - If ingredient is "Maltodextrin", technical_name MUST be "Maltodextrin".
 - If ingredient is "Aroma/Flavor", technical_name MUST be "Flavoring".
+
+
 
 BADGE RULES (CRITICAL):
 - ONLY use badges from the allowed list above

@@ -19,6 +19,21 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 const { width } = Dimensions.get("window");
 const IMAGE_HEIGHT = 320;
 
+interface NutritionFacts {
+    data_available: boolean;
+    serving_size: string | null;
+    carbohydrates: number | null;
+    fiber: number | null;
+    sugar: number | null;
+    protein: number | null;
+}
+
+interface KetoAnalysis {
+    is_keto_friendly: boolean;
+    net_carb_estimate: string;
+    reasoning: string;
+}
+
 const BADGE_CONFIG: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string; bg: string; labelKey: string }> = {
     EU_BANNED: { icon: "ban", color: "#DC2626", bg: "#FEF2F2", labelKey: "results.badges.eu_banned" },
     FDA_WARN: { icon: "warning", color: "#D97706", bg: "#FFFBEB", labelKey: "results.badges.fda_warn" },
@@ -79,9 +94,179 @@ export default function ProductResultScreen() {
         );
     }
 
+    const renderDietScoreCard = () => {
+        const SUPPORTED_DIETS = ['KETO', 'LOW_CARB', 'ATKINS', 'DUKAN'];
+
+        const activeDietMember = familyMembers.find(m => {
+            const diet = profilesData[m.id]?.diet;
+            return diet && SUPPORTED_DIETS.includes(diet);
+        });
+
+        if (!activeDietMember) return null;
+
+        const userDiet = profilesData[activeDietMember.id].diet;
+        const ketoData = data?.keto_analysis as KetoAnalysis | undefined;
+        const nutritionData = data?.nutrition_facts as NutritionFacts | undefined;
+
+        if (!ketoData) return null;
+
+        let limit = 25;
+        let cardTitle = "LOW CARB ANALİZİ";
+
+        if (userDiet === 'KETO') {
+            limit = 10;
+            cardTitle = "KETO KARNESİ";
+        } else if (userDiet === 'ATKINS') {
+            limit = 20;
+            cardTitle = "ATKINS ANALİZİ";
+        } else if (userDiet === 'DUKAN') {
+            limit = 30;
+            cardTitle = "DUKAN ANALİZİ";
+        }
+
+        let netCarb = 0;
+        let isMathAvailable = false;
+
+        if (nutritionData?.data_available && nutritionData.carbohydrates !== null) {
+            netCarb = nutritionData.carbohydrates - (nutritionData.fiber || 0);
+            isMathAvailable = true;
+        }
+
+        let isRisky = false;
+        let adviceText = "";
+
+        if (isMathAvailable) {
+            if (userDiet === 'KETO') {
+                if (netCarb > limit) {
+                    isRisky = true;
+                    adviceText = t("results.analysis.findings.keto_advice_strict");
+                } else if (netCarb > limit / 2) {
+                    isRisky = false;
+                    adviceText = t("results.analysis.findings.keto_advice_moderate");
+                } else {
+                    adviceText = ketoData.reasoning;
+                }
+            } else {
+                // Low Carb
+                if (netCarb > limit) {
+                    isRisky = true;
+                    adviceText = t("results.analysis.findings.lowcarb_advice_high");
+                } else {
+                    isRisky = false;
+                    adviceText = t("results.analysis.findings.lowcarb_advice_ok");
+                }
+            }
+
+        } else {
+            const estimateKey = ketoData.net_carb_estimate as 'LOW' | 'MEDIUM' | 'HIGH' | 'UNKNOWN';
+
+            if (estimateKey === 'HIGH') {
+                isRisky = true;
+            }
+            else if (estimateKey === 'MEDIUM' && userDiet === 'KETO') {
+                isRisky = true;
+            } else {
+                isRisky = false;
+            }
+
+            adviceText = ketoData.reasoning;
+        }
+
+        const isSafe = !isRisky;
+
+        const bg = isSafe ? '#F0FDF4' : '#FEF2F2';
+        const border = isSafe ? '#BBF7D0' : '#FECACA';
+        const text = isSafe ? '#15803D' : '#B91C1C';
+        const label = userDiet === 'KETO' ? "KETO KARNESİ" : "LOW CARB ANALİZİ";
+
+        return (
+            <View style={[styles.dietCard, { backgroundColor: bg, borderColor: border }]}>
+
+                {/* Üst Kısım: Başlık ve İkon */}
+                <View style={styles.dietCardHeader}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Ionicons name={isSafe ? "leaf" : "flame"} size={18} color={text} />
+                        <Text style={[styles.dietCardTitle, { color: text }]}>{label}</Text>
+                    </View>
+                    {/* Sağ Üst Köşe: Durum Rozeti */}
+                    <View style={[styles.statusBadge, { backgroundColor: isSafe ? '#DCFCE7' : '#FEE2E2' }]}>
+                        <Text style={[styles.statusText, { color: text }]}>
+                            {isSafe ? t("common.suitable", "UYGUN") : t("common.limit_exceeded", "LİMİT AŞIMI")}
+                        </Text>
+                    </View>
+                </View>
+
+                {/* --- BESİN DEĞERİ OKUNAMADI --- */}
+                {(!nutritionData?.data_available) && (
+                    <View style={{
+                        flexDirection: 'row',
+                        gap: 6,
+                        marginBottom: 10,
+                        backgroundColor: 'rgba(255,255,0,0.15)',
+                        padding: 8,
+                        borderRadius: 6
+                    }}>
+                        <Ionicons name="eye-off" size={14} color="#B45309" />
+                        <Text style={{ fontSize: 11, color: "#B45309", flex: 1, fontWeight: '500' }}>
+                            {t("results.nutrition_data_missing")}
+                        </Text>
+                    </View>
+                )}
+
+                {/* Orta Kısım: Kompakt Veri Paneli */}
+                {isMathAvailable ? (
+                    <View style={styles.dietStatsRow}>
+                        {/* Karb */}
+                        <View style={styles.statCompact}>
+                            <Text style={styles.statLabel}>Karb</Text>
+                            <Text style={styles.statValue}>{nutritionData?.carbohydrates}g</Text>
+                        </View>
+
+                        <Text style={[styles.mathOperator, { color: text }]}>-</Text>
+
+                        {/* Lif */}
+                        <View style={styles.statCompact}>
+                            <Text style={styles.statLabel}>Lif</Text>
+                            <Text style={styles.statValue}>{nutritionData?.fiber || 0}g</Text>
+                        </View>
+
+                        <Text style={[styles.mathOperator, { color: text }]}>=</Text>
+
+                        {/* NET (Vurgulu) */}
+                        <View style={[styles.statResult, { borderColor: border }]}>
+                            <Text style={[styles.statResultLabel, { color: text }]}>NET</Text>
+                            <Text style={[styles.statResultValue, { color: text }]}>
+                                {netCarb.toFixed(1)}g
+                            </Text>
+                        </View>
+                    </View>
+                ) : (
+                    // Veri Yoksa Tahmin
+                    <View style={styles.estimateBox}>
+                        <Text style={[styles.estimateText, { color: text }]}>
+                            {t("results.estimated_carb")}: {
+                                t(`results.carb_levels.${ketoData.net_carb_estimate}`, { defaultValue: ketoData.net_carb_estimate })
+                            }
+                        </Text>
+                    </View>
+                )}
+
+                {/* Alt Kısım: AI Açıklaması */}
+                <View style={styles.dividerSimple} />
+                <Text style={[styles.dietReason, { color: Colors.gray[600] }]} >
+                    {ketoData.reasoning}
+                </Text>
+            </View>
+        );
+    };
+
     const { product, scores } = data;
 
     const analysisIngredients = data.details?.ingredients || [];
+
+    const criticalBadges = data.badges?.filter((b: string) =>
+        ['EU_BANNED', 'FDA_WARN', 'HAZARDOUS_ADDITIVE', 'CONTAINS_ALLERGENS'].includes(b)
+    ) || [];
 
     const familyAnalysis = familyMembers.map(member => {
         const profile = profilesData[member.id];
@@ -183,7 +368,6 @@ export default function ProductResultScreen() {
 
                         <View style={styles.scoreDivider} />
 
-                        {/* GÜNCELLEME: Artık 'displayScore' kullanılıyor (Profil Sahibi) */}
                         <ScoreRing
                             score={displayScore}
                             label={t("results.scores.compatibility")}
@@ -193,10 +377,13 @@ export default function ProductResultScreen() {
                         />
                     </View>
 
-                    {/* Verdict artık dinamik */}
+                    {/* --- BÖLÜM 1: KİŞİSEL UYUM ANALİZİ --- */}
                     <View style={[styles.verdictBox, {
                         backgroundColor: displayScore >= 80 ? '#F0FDF4' : (displayScore >= 50 ? '#FFF7ED' : '#FEF2F2'),
-                        borderColor: displayScore >= 80 ? '#BBF7D0' : (displayScore >= 50 ? '#FED7AA' : '#FECACA')
+                        borderColor: displayScore >= 80 ? '#BBF7D0' : (displayScore >= 50 ? '#FED7AA' : '#FECACA'),
+                        borderBottomLeftRadius: criticalBadges.length > 0 ? 4 : 16,
+                        borderBottomRightRadius: criticalBadges.length > 0 ? 4 : 16,
+                        borderBottomWidth: criticalBadges.length > 0 ? 0 : 1,
                     }]}>
                         <Ionicons
                             name={displayScore >= 80 ? "checkmark-circle" : "alert-circle"}
@@ -214,9 +401,42 @@ export default function ProductResultScreen() {
                             </Text>
                         </View>
                     </View>
+
+                    {/* --- BÖLÜM 2: YASAL / KRİTİK UYARILAR --- */}
+                    {criticalBadges.length > 0 && (
+                        <View style={[styles.warningBox, {
+                            backgroundColor: '#FEF2F2',
+                            borderColor: '#FECACA',
+                            borderTopLeftRadius: 4,
+                            borderTopRightRadius: 4,
+                        }]}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                                <Ionicons name="megaphone" size={18} color="#B91C1C" />
+                                <Text style={{ fontSize: 12, fontWeight: '800', color: '#B91C1C', textTransform: 'uppercase' }}>
+                                    {t("results.critical_warnings", "KRİTİK UYARILAR")}
+                                </Text>
+                            </View>
+
+                            {criticalBadges.map((badge: string, idx: number) => (
+                                <View key={idx} style={{ flexDirection: 'row', gap: 6, marginBottom: 4 }}>
+                                    <Text style={{ fontSize: 12, color: '#B91C1C' }}>•</Text>
+                                    <Text style={{ fontSize: 12, color: '#7F1D1D', flex: 1 }}>
+                                        {t(`results.badges.${badge.toLowerCase()}_desc`, {
+                                            defaultValue: badge === 'EU_BANNED' ? "Avrupa Birliği'nde yasaklanmış katkı maddeleri içeriyor." :
+                                                badge === 'FDA_WARN' ? "FDA tarafından sağlık uyarısı verilmiş bileşenler içeriyor." :
+                                                    "Alerjen uyarısı."
+                                        })}
+                                    </Text>
+                                </View>
+                            ))}
+                        </View>
+                    )}
+
+                    {renderDietScoreCard()}
+
                 </View>
 
-                {/* --- YENİ EKLENTİ: AİLE LİSTESİ --- */}
+                {/* --- AİLE LİSTESİ --- */}
                 <View style={styles.familySection}>
                     <Text style={styles.sectionHeader}>{t("results.family.title")}</Text>
                     <ScrollView
@@ -247,7 +467,7 @@ export default function ProductResultScreen() {
                                             <Text style={styles.miniScoreText}>{mScore}</Text>
                                         </View>
                                     </View>
-                                    <Text style={styles.memberName} numberOfLines={1}>{item.member.name}</Text>
+                                    <Text style={styles.memberName} numberOfLines={2}>{item.member.name}</Text>
                                 </TouchableOpacity>
                             );
                         })}
@@ -282,22 +502,26 @@ export default function ProductResultScreen() {
                     <View
                         style={[
                             styles.bottomSheet,
-                            { paddingBottom: insets.bottom > 0 ? insets.bottom + 30 : 40 }
+                            { paddingBottom: insets.bottom > 0 ? insets.bottom + 20 : 30 }
                         ]}
-                        {...panResponder.panHandlers}
+                    // DİKKAT: panResponder'ı buradan kaldırdık! Artık içerik scroll edilebilir.
                     >
-                        <View style={styles.bottomSheetHandle} />
+                        {/* Sadece bu gri çubuğa dokunarak kapatabilirsin */}
+                        <View
+                            style={styles.bottomSheetHandleContainer}
+                            {...panResponder.panHandlers}
+                        >
+                            <View style={styles.bottomSheetHandle} />
+                        </View>
 
                         {selectedMemberReport && (
-                            <>
+                            <View style={{ flex: 1 }}>
+                                {/* Header Sabit Kalır */}
                                 <View style={styles.sheetHeader}>
+                                    {/* ... Avatar ve İsim Kodları Aynı ... */}
                                     <View style={styles.sheetHeaderLeft}>
                                         <View style={[styles.modalAvatar, { backgroundColor: selectedMemberReport.member.color }]}>
-                                            <MaterialCommunityIcons
-                                                name={selectedMemberReport.member.avatarIcon as any}
-                                                size={24}
-                                                color="#FFF"
-                                            />
+                                            <MaterialCommunityIcons name={selectedMemberReport.member.avatarIcon as any} size={24} color="#FFF" />
                                         </View>
                                         <View>
                                             <Text style={styles.modalTitle}>{selectedMemberReport.member.name}</Text>
@@ -306,24 +530,27 @@ export default function ProductResultScreen() {
                                             </Text>
                                         </View>
                                     </View>
-
                                     <View style={[styles.modalScoreBadge, { backgroundColor: selectedMemberReport.report.color }]}>
                                         <Text style={styles.modalScoreText}>{selectedMemberReport.report.score}</Text>
                                     </View>
                                 </View>
 
                                 <View style={styles.divider} />
-
                                 <Text style={styles.reasonsTitle}>{t("results.family.reasons")}</Text>
 
-                                {selectedMemberReport.report.findings.length === 0 ? (
-                                    <View style={styles.emptyStateBox}>
-                                        <Ionicons name="checkmark-circle" size={32} color={Colors.success} />
-                                        <Text style={styles.emptyStateText}>{selectedMemberReport.report.summary}</Text>
-                                    </View>
-                                ) : (
-                                    <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false}>
-                                        {selectedMemberReport.report.findings.map((finding, index) => (
+                                {/* ScrollView Artık Çalışacak */}
+                                <ScrollView
+                                    style={{ flex: 1 }}
+                                    contentContainerStyle={{ paddingBottom: 20 }}
+                                    showsVerticalScrollIndicator={true}
+                                >
+                                    {selectedMemberReport.report.findings.length === 0 ? (
+                                        <View style={styles.emptyStateBox}>
+                                            <Ionicons name="checkmark-circle" size={32} color={Colors.success} />
+                                            <Text style={styles.emptyStateText}>{selectedMemberReport.report.summary}</Text>
+                                        </View>
+                                    ) : (
+                                        selectedMemberReport.report.findings.map((finding, index) => (
                                             <View key={index} style={[styles.findingCard, {
                                                 backgroundColor: finding.severity === 'high' ? '#FEF2F2' : '#FFF7ED',
                                                 borderColor: finding.severity === 'high' ? '#FECACA' : '#FED7AA'
@@ -339,10 +566,10 @@ export default function ProductResultScreen() {
                                                     {finding.message}
                                                 </Text>
                                             </View>
-                                        ))}
-                                    </ScrollView>
-                                )}
-                            </>
+                                        ))
+                                    )}
+                                </ScrollView>
+                            </View>
                         )}
                     </View>
                 </View>
@@ -588,6 +815,7 @@ const styles = StyleSheet.create({
         fontSize: 11,
         color: Colors.gray[600],
         fontWeight: '600',
+        textAlign: 'center',
     },
     // --- MODAL STİLLERİ ---
     modalOverlay: {
@@ -603,12 +831,18 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         padding: 24,
-        paddingBottom: 40,
+        height: '60%',
         shadowColor: "#000",
         shadowOffset: { width: 0, height: -4 },
         shadowOpacity: 0.1,
         shadowRadius: 12,
         elevation: 20,
+    },
+    bottomSheetHandleContainer: {
+        width: '100%',
+        alignItems: 'center',
+        paddingBottom: 20,
+        backgroundColor: 'transparent',
     },
     bottomSheetHandle: {
         width: 40,
@@ -692,5 +926,103 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#15803D',
         fontWeight: '600',
+    },
+    dietCard: {
+        marginTop: 16,
+        borderRadius: 16,
+        borderWidth: 1,
+        padding: 16,
+    },
+    dietCardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    dietCardTitle: {
+        fontSize: 14,
+        fontWeight: '800',
+        letterSpacing: 0.5,
+    },
+    statusBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
+    },
+    statusText: {
+        fontSize: 10,
+        fontWeight: '700',
+    },
+    dietStatsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: 'rgba(255,255,255,0.6)',
+        borderRadius: 12,
+        padding: 10,
+    },
+    statCompact: {
+        alignItems: 'center',
+    },
+    statLabel: {
+        fontSize: 10,
+        color: Colors.gray[500],
+        marginBottom: 2,
+        fontWeight: '600',
+    },
+    statValue: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: Colors.secondary,
+    },
+    mathOperator: {
+        fontSize: 18,
+        fontWeight: '300',
+        paddingBottom: 4,
+    },
+    statResult: {
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        backgroundColor: '#FFF',
+        borderRadius: 8,
+        borderWidth: 1,
+        minWidth: 70,
+    },
+    statResultLabel: {
+        fontSize: 9,
+        fontWeight: '800',
+        marginBottom: 0,
+    },
+    statResultValue: {
+        fontSize: 18,
+        fontWeight: '900',
+    },
+    estimateBox: {
+        padding: 12,
+        backgroundColor: 'rgba(255,255,255,0.5)',
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    estimateText: {
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    dividerSimple: {
+        height: 1,
+        backgroundColor: 'rgba(0,0,0,0.05)',
+        marginVertical: 12,
+    },
+    dietReason: {
+        fontSize: 12,
+        lineHeight: 18,
+        fontWeight: '500',
+    },
+    warningBox: {
+        marginTop: 0,
+        marginBottom: 24,
+        padding: 16,
+        borderRadius: 16,
+        borderWidth: 1,
     },
 });
