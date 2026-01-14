@@ -8,9 +8,11 @@ export interface UserProfile {
     subscriptionStatus: "free" | "premium";
     dietaryPreferences: string[];
     allergens: string[];
+    displayName?: string;
+    avatarIcon?: string;
+    color?: string;
     createdAt: any;
 }
-
 export interface UsageStats {
     scanCount: number;
     scanLimit: number;
@@ -92,12 +94,12 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
 };
 
 // --- 3. PROFİL GÜNCELLEME (Diyet/Alerjen) ---
-export const updateUserPreferences = async (uid: string, preferences: { dietary?: string[]; allergens?: string[] }) => {
+export const updateUserPreferences = async (uid: string, updates: Partial<UserProfile>) => {
     try {
         const userRef = doc(db, "users", uid);
-        await updateDoc(userRef, preferences);
+        await updateDoc(userRef, updates);
     } catch (error) {
-        console.error("Error updating preferences:", error);
+        console.error("Error updating profile:", error);
         throw error;
     }
 };
@@ -137,6 +139,22 @@ export const checkDeviceLimit = async (deviceId: string): Promise<UsageStats> =>
         scanLimit: 3,
         weekStartDate: formatDateSafe(weekStart),
     };
+};
+
+export const getUserStats = async (uid: string): Promise<{ scanCount: number; weekStartDate: any }> => {
+    try {
+        const statsRef = doc(db, "users", uid, "stats", "weekly");
+        const docSnap = await getDoc(statsRef);
+
+        if (docSnap.exists()) {
+            return docSnap.data() as { scanCount: number; weekStartDate: any };
+        } else {
+            return { scanCount: 0, weekStartDate: serverTimestamp() };
+        }
+    } catch (error) {
+        console.error("Error getting user stats:", error);
+        return { scanCount: 0, weekStartDate: new Date() };
+    }
 };
 
 // --- 5. TARAMA HAKKI DÜŞME ---

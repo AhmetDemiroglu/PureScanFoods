@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
     View, Text, StyleSheet, Image, ScrollView, TouchableOpacity,
     Dimensions, StatusBar, Modal, Pressable, PanResponder
@@ -15,6 +15,10 @@ import { useUser } from "../context/UserContext";
 import { analyzeEngine, CompatibilityReport, SeverityLevel } from "../lib/analysisEngine";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { saveScanResultToDB } from "../lib/firestore";
+import { uploadImage } from "../lib/storageHelper";
+import { useAuth } from "../context/AuthContext";
+import { incrementScanCount } from "../lib/firestore";
 
 const { width } = Dimensions.get("window");
 const IMAGE_HEIGHT = 320;
@@ -68,7 +72,8 @@ export default function ProductResultScreen() {
     const { t } = useTranslation();
     const router = useRouter();
     const { familyMembers, profilesData } = useUser();
-
+    const { user, deviceId, refreshLimits } = useAuth();
+    const hasSaved = useRef(false);
     const insets = useSafeAreaInsets();
 
     // TempStore Verisi
@@ -101,6 +106,66 @@ export default function ProductResultScreen() {
             </View>
         );
     }
+
+    useEffect(() => {
+        const processScan = async () => {
+            // 1. Kilit Kontrolü
+            if (!user || !data || hasSaved.current) {
+                console.log("🚫 Scan process skipped (User missing, Data missing, or Already Saved)");
+                return;
+            }
+
+            hasSaved.current = true;
+            console.log("🚀 Starting Scan Process...");
+
+            try {
+                // A) SAYAÇ ARTIRMA (Hem User Hem Cihaz)
+                console.log(`⏳ Incrementing scan count for User: ${user.uid} & Device: ${deviceId}`);
+
+                await incrementScanCount(user.uid, deviceId);
+                refreshLimits();
+                console.log("✅ Scan count incremented.");
+
+                // B) RESİM YÜKLEME (Storage)
+                let imageUrl = null;
+                if (imageUri) {
+                    try {
+                        const filename = `scans/${user.uid}/${Date.now()}.jpg`;
+                        console.log("⏳ Uploading image to Storage...");
+                        imageUrl = await uploadImage(imageUri, filename);
+                        console.log("✅ Image uploaded:", imageUrl ? "Success" : "Failed (Null)");
+                    } catch (imgError) {
+                        console.error("⚠️ Image upload failed but continuing:", imgError);
+                    }
+                }
+
+                // C) VERİTABANI KAYDI (Firestore)
+                console.log("⏳ Saving scan result to Firestore...");
+                await saveScanResultToDB(user.uid, {
+                    productName: data.product?.name || t("results.unknownProduct"),
+                    brand: data.product?.brand || t("results.unknownBrand"),
+                    imageUrl: imageUrl,
+                    score: data.scores?.safety?.value || 0,
+                    verdict: data.scores?.compatibility?.verdict || "Analiz Edildi",
+                    badges: data.badges || [],
+                    miniData: JSON.stringify(data.product)
+                });
+
+                console.log("🎉 Scan saved to history successfully!");
+
+            } catch (error) {
+                console.error("❌ CRITICAL SCAN ERROR:", error);
+            }
+        };
+
+        processScan();
+    }, []);
+
+    const handleRescan = () => {
+        TempStore.clear();
+        // Parametre ile ana sayfaya git
+        router.replace({ pathname: "/", params: { autoStart: "true" } });
+    };
 
     const renderDietScoreCard = () => {
         const SUPPORTED_DIETS = ['KETO', 'LOW_CARB', 'ATKINS', 'DUKAN'];
@@ -328,6 +393,10 @@ export default function ProductResultScreen() {
 
                     <TouchableOpacity style={styles.floatingBackButton} onPress={() => router.back()}>
                         <Ionicons name="arrow-back" size={24} color="#FFF" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={[styles.floatingBackButton, { left: undefined, right: 20 }]} onPress={handleRescan}>
+                        <Ionicons name="scan" size={24} color="#FFF" />
                     </TouchableOpacity>
                 </View>
 

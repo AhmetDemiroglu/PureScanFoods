@@ -10,6 +10,7 @@ import {
 import { Alert } from 'react-native';
 import { DietType } from '../lib/diets';
 import { AllergenType } from '../lib/allergens';
+import { updateUserPreferences } from '../lib/firestore';
 
 // --- TİPLER ---
 export type FamilyRole = "spouse" | "child" | "mother" | "father" | "sibling" | "friend" | "other" | "self";
@@ -79,13 +80,13 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
         setIsLoading(true);
         try {
-            // A) Ana Kullanıcı
+            // A) Ana Kullanıcıyı (Kendisi) Oluştur
             const mainUser: FamilyMember = {
                 id: 'main_user',
-                name: userProfile?.email?.split('@')[0] || "Ben",
+                name: userProfile?.displayName || userProfile?.email?.split('@')[0] || "Ben",
                 role: 'self',
-                avatarIcon: "account",
-                color: AVATAR_COLORS[0],
+                avatarIcon: userProfile?.avatarIcon || "account",
+                color: userProfile?.color || AVATAR_COLORS[0],
                 diet: (userProfile?.dietaryPreferences?.[0] as DietType) || null,
                 allergens: (userProfile?.allergens as AllergenType[]) || [],
                 createdAt: userProfile?.createdAt
@@ -155,13 +156,31 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
     // 4. GÜNCELLEME (UPDATE)
     const updateMemberInfo = async (id: string, updates: Partial<FamilyMember>) => {
         if (!user) return;
+
         try {
+            setFamilyMembers(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
+
             if (id === 'main_user') {
-                setFamilyMembers(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
+                const profileUpdates: any = {};
+
+                if (updates.diet !== undefined) {
+                    profileUpdates.dietaryPreferences = updates.diet ? [updates.diet] : [];
+                }
+                if (updates.allergens !== undefined) {
+                    profileUpdates.allergens = updates.allergens;
+                }
+                if (updates.name) profileUpdates.displayName = updates.name;
+                if (updates.avatarIcon) profileUpdates.avatarIcon = updates.avatarIcon;
+                if (updates.color) profileUpdates.color = updates.color;
+
+                if (Object.keys(profileUpdates).length > 0) {
+                    await updateUserPreferences(user.uid, profileUpdates);
+                }
+
             } else {
                 await updateFamilyMemberInDB(user.uid, id, updates as any);
-                setFamilyMembers(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
             }
+
         } catch (error) {
             console.error("Güncelleme hatası:", error);
         }

@@ -239,7 +239,10 @@
         "disclaimer": {
             "title": "YASAL UYARI",
             "text": "Bu analiz yapay zeka tarafından oluşturulmuştur ve tıbbi tavsiye niteliği taşımaz. Sonuçlar, genel veritabanı eşleşmelerine dayanır ve kesinlik garantisi vermez. Alerjen riskiniz varsa lütfen ürün üzerindeki etiketi kontrol ediniz ve doktorunuza danışınız."
-        }
+        },
+        "refresh": "Yenile",
+        "refreshing": "Yenileniyor...",
+        "saved_to_history": "Geçmişe Kaydedildi"
     },
     "nutrition": {
         "subtitle": "Kişisel sağlık tercihlerinizi yönetin",

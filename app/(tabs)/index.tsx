@@ -17,12 +17,11 @@ import { generateAnalysisPrompt } from "../../lib/prompt";
 import * as ImagePicker from "expo-image-picker";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { useUser } from "../../context/UserContext";
+import { useLocalSearchParams } from "expo-router";
 
 type ScanTab = "camera" | "barcode" | "text";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
-
-
 
 export default function ScanScreen() {
   const { t, i18n } = useTranslation();
@@ -45,7 +44,16 @@ export default function ScanScreen() {
   const [barcodeInput, setBarcodeInput] = useState("");
   const [textInput, setTextInput] = useState("");
 
+  const params = useLocalSearchParams();
+
   const { getActiveData } = useUser();
+
+  useEffect(() => {
+    if (params.autoStart === "true") {
+      setShowCamera(true);
+      setActiveTab("camera");
+    }
+  }, [params.autoStart]);
 
   useEffect(() => {
     if (showCamera) {
@@ -128,7 +136,7 @@ export default function ScanScreen() {
               {/* DURUM 1: KAMERA MODU */}
               {activeTab === "camera" && (
                 <>
-                  {/* 1. Ana Sayfa Butonu (Eski Tasarım Geri Geldi) */}
+                  {/* 1. Ana Sayfa Butonu  */}
                   <Pressable
                     style={styles.mainButtonWrapper}
                     onPress={() => {

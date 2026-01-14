@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from "react";
 import { auth } from "../lib/firebase";
 import { onAuthStateChanged, signInAnonymously, User } from "firebase/auth";
-import { initializeUser, getUserProfile, checkDeviceLimit, UserProfile, UsageStats } from "../lib/firestore";
+import { initializeUser, getUserProfile, checkDeviceLimit, getUserStats, UserProfile, UsageStats } from "../lib/firestore";
 import * as Application from "expo-application";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
@@ -68,19 +68,57 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const targetDeviceId = currentDeviceId || deviceId;
         const targetUid = currentUid || user?.uid;
 
-        if (!targetDeviceId) return;
+        let deviceStats = { scanCount: 0, scanLimit: 3 };
+        if (targetDeviceId) {
+            const ds = await checkDeviceLimit(targetDeviceId);
+            deviceStats = { scanCount: ds.scanCount, scanLimit: 3 };
+        }
 
-        const stats = await checkDeviceLimit(targetDeviceId);
+        let userStats = { scanCount: 0, scanLimit: 5 };
+        let isPremium = false;
 
         if (targetUid) {
             const profile = await getUserProfile(targetUid);
-            if (profile?.subscriptionStatus === "premium") {
-                stats.scanLimit = 9999;
+            if (profile) {
+                setUserProfile(profile);
+                isPremium = profile.subscriptionStatus === "premium";
             }
-            setUserProfile(profile);
+
+            const us = await getUserStats(targetUid);
+            userStats.scanCount = us.scanCount;
+            userStats.scanLimit = isPremium ? 9999 : 5;
         }
 
-        setUsageStats(stats);
+        let finalStats: UsageStats;
+
+        if (isPremium) {
+            finalStats = {
+                scanCount: userStats.scanCount,
+                scanLimit: 9999,
+                weekStartDate: new Date().toISOString()
+            };
+        } else {
+            const deviceRemaining = deviceStats.scanLimit - deviceStats.scanCount;
+            const userRemaining = userStats.scanLimit - userStats.scanCount;
+
+            if (deviceRemaining < userRemaining) {
+                finalStats = {
+                    scanCount: deviceStats.scanCount,
+                    scanLimit: deviceStats.scanLimit,
+                    weekStartDate: new Date().toISOString()
+                };
+                console.log("🔒 Limiting by DEVICE stats");
+            } else {
+                finalStats = {
+                    scanCount: userStats.scanCount,
+                    scanLimit: userStats.scanLimit,
+                    weekStartDate: new Date().toISOString()
+                };
+                console.log("🔒 Limiting by USER stats");
+            }
+        }
+
+        setUsageStats(finalStats);
     };
 
     useEffect(() => {
