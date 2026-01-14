@@ -24,7 +24,6 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import {
   getAllDietTypes,
-  DietType,
   getDietDefinition,
   DIET_DEFINITIONS
 } from "../../lib/diets";
@@ -35,6 +34,7 @@ import {
   ALLERGEN_DEFINITIONS
 } from "../../lib/allergens";
 import { useUser, FamilyRole } from "../../context/UserContext";
+import * as Haptics from "expo-haptics";
 
 if (Platform.OS === 'android') {
   if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -45,94 +45,95 @@ if (Platform.OS === 'android') {
 type AvatarIconName = keyof typeof MaterialCommunityIcons.glyphMap;
 
 // --- AVATAR ASSETS ---
-const AVATAR_COLORS = [
-  // Sıcak Tonlar (Kırmızı, Turuncu, Sarı)
-  "#EF4444", "#DC2626", "#B91C1C", // Red
-  "#F97316", "#EA580C", "#C2410C", // Orange
-  "#F59E0B", "#D97706", "#B45309", // Amber
-  "#EAB308", "#CA8A04", "#A16207", // Yellow
+const AVATAR_COLOR_CATEGORIES = {
+  red: {
+    labelTr: "Kırmızı",
+    labelEn: "Red",
+    colors: ["#FEE2E2", "#FECACA", "#FCA5A5", "#F87171", "#EF4444", "#DC2626", "#B91C1C", "#991B1B", "#7F1D1D"]
+  },
+  orange: {
+    labelTr: "Turuncu",
+    labelEn: "Orange",
+    colors: ["#FFEDD5", "#FED7AA", "#FDBA74", "#FB923C", "#F97316", "#EA580C", "#C2410C", "#9A3412", "#7C2D12"]
+  },
+  yellow: {
+    labelTr: "Sarı",
+    labelEn: "Yellow",
+    colors: ["#FEF9C3", "#FEF08A", "#FDE047", "#FACC15", "#EAB308", "#CA8A04", "#A16207", "#854D0E", "#713F12"]
+  },
+  green: {
+    labelTr: "Yeşil",
+    labelEn: "Green",
+    colors: ["#DCFCE7", "#BBF7D0", "#86EFAC", "#4ADE80", "#22C55E", "#16A34A", "#15803D", "#166534", "#14532D"]
+  },
+  teal: {
+    labelTr: "Turkuaz",
+    labelEn: "Teal",
+    colors: ["#CCFBF1", "#99F6E4", "#5EEAD4", "#2DD4BF", "#14B8A6", "#0D9488", "#0F766E", "#115E59", "#134E4A"]
+  },
+  blue: {
+    labelTr: "Mavi",
+    labelEn: "Blue",
+    colors: ["#DBEAFE", "#BFDBFE", "#93C5FD", "#60A5FA", "#3B82F6", "#2563EB", "#1D4ED8", "#1E40AF", "#1E3A8A"]
+  },
+  purple: {
+    labelTr: "Mor",
+    labelEn: "Purple",
+    colors: ["#F3E8FF", "#E9D5FF", "#D8B4FE", "#C084FC", "#A855F7", "#9333EA", "#7E22CE", "#6B21A8", "#581C87"]
+  },
+  pink: {
+    labelTr: "Pembe",
+    labelEn: "Pink",
+    colors: ["#FCE7F3", "#FBCFE8", "#F9A8D4", "#F472B6", "#EC4899", "#DB2777", "#BE185D", "#9D174D", "#831843"]
+  },
+  gray: {
+    labelTr: "Gri",
+    labelEn: "Gray",
+    colors: ["#F8FAFC", "#E2E8F0", "#CBD5E1", "#94A3B8", "#64748B", "#475569", "#334155", "#1E293B", "#0F172A"]
+  }
+};
 
-  // Soğuk Tonlar (Yeşil, Teal, Cyan)
-  "#84CC16", "#65A30D", "#4D7C0F", // Lime
-  "#10B981", "#059669", "#047857", // Emerald
-  "#14B8A6", "#0D9488", "#0F766E", // Teal
-  "#06B6D4", "#0891B2", "#0E7490", // Cyan
+const AVATAR_COLORS = Object.values(AVATAR_COLOR_CATEGORIES).flatMap(cat => cat.colors);
 
-  // Mavi ve İndigo Tonlar
-  "#3B82F6", "#2563EB", "#1D4ED8", // Blue
-  "#6366F1", "#4F46E5", "#4338CA", // Indigo
-  "#8B5CF6", "#7C3AED", "#6D28D9", // Violet
+const AVATAR_ICON_CATEGORIES: Record<string, { labelTr: string; labelEn: string; icons: AvatarIconName[] }> = {
+  people: {
+    labelTr: "Kişiler",
+    labelEn: "People",
+    icons: ["account", "account-circle", "face-man", "face-woman", "human", "human-handsup", "human-greeting", "ninja", "pirate", "baby-face"]
+  },
+  emotions: {
+    labelTr: "Duygular",
+    labelEn: "Emotions",
+    icons: ["emoticon", "emoticon-happy", "emoticon-cool", "emoticon-wink", "emoticon-kiss", "emoticon-excited", "emoticon-tongue", "emoticon-devil", "emoticon-angry", "emoticon-sad", "emoticon-cry", "emoticon-lol"]
+  },
+  animals: {
+    labelTr: "Hayvanlar",
+    labelEn: "Animals",
+    icons: ["cat", "dog", "rabbit", "panda", "koala", "penguin", "owl", "bird", "duck", "fish", "dolphin", "turtle", "butterfly", "bee", "ladybug", "elephant", "horse", "unicorn", "cow", "pig", "sheep", "teddy-bear", "paw"]
+  },
+  food: {
+    labelTr: "Yiyecek",
+    labelEn: "Food",
+    icons: ["food-apple", "fruit-cherries", "fruit-grapes", "fruit-watermelon", "carrot", "corn", "chili-hot", "pizza", "hamburger", "food-hot-dog", "noodles", "bread-slice", "cookie", "cupcake", "cake", "ice-cream", "candy", "coffee", "beer"]
+  },
+  sports: {
+    labelTr: "Spor",
+    labelEn: "Sports",
+    icons: ["basketball", "soccer", "football", "tennis", "volleyball", "baseball", "golf", "bowling", "bike", "run", "swim", "yoga", "meditation", "dumbbell", "trophy", "medal"]
+  },
+  fantasy: {
+    labelTr: "Fantastik",
+    labelEn: "Fantasy",
+    icons: ["crown", "diamond-stone", "crystal-ball", "magic-staff", "wizard-hat", "shield", "shield-star", "sword", "lightning-bolt", "heart", "star", "rocket", "ufo", "alien", "robot", "ghost", "skull"]
+  },
+  nature: {
+    labelTr: "Doğa",
+    labelEn: "Nature",
+    icons: ["flower", "flower-tulip", "clover", "tree", "palm-tree", "pine-tree", "cactus", "leaf", "weather-sunny", "moon-waning-crescent", "star-four-points", "fire", "water", "snowflake", "earth"]
+  }
+};
 
-  // Pembe ve Mor Tonlar
-  "#A855F7", "#9333EA", "#7E22CE", // Purple
-  "#D946EF", "#C026D3", "#A21CAF", // Fuchsia
-  "#EC4899", "#DB2777", "#BE185D", // Pink
-  "#F43F5E", "#E11D48", "#BE123C", // Rose
-
-  // Nötr ve Koyu Tonlar
-  "#64748B", "#475569", "#334155", // Slate
-  "#78716C", "#57534E", "#44403C"  // Stone
-];
-
-const AVATAR_ICONS: AvatarIconName[] = [
-  // 👤 KİŞİLER & YÜZLER
-  "account", "account-circle", "face-man", "face-woman", "face-man-profile",
-  "human-greeting", "ninja", "pirate", "baby-face", "account-cowboy-hat",
-  "emoticon", "emoticon-happy", "emoticon-cool", "emoticon-wink", "emoticon-kiss",
-  "emoticon-excited", "emoticon-tongue", "emoticon-devil", "emoticon-poop", "emoticon-neutral",
-
-  // 🐾 HAYVANLAR (Hatalı olanlar en yakın valid ikonla değiştirildi)
-  "cat", "dog", "rabbit", "panda", "koala",
-  "penguin", "owl", "bird", "duck", "ladybug",
-  "fish", "jellyfish", "spider", "snake",
-  "tortoise", "pig", "cow", "sheep", "horse",
-  "donkey", "kangaroo", "bat", "rodent", // squirrel/rat yerine rodent
-  "paw", "bone", "teddy-bear", "zodiac-scorpio", // scorpion yerine
-  "zodiac-leo", "zodiac-cancer", "zodiac-capricorn", // diğer hayvanlar için zodiac
-
-  // 🍎 YEMEK & İÇECEK
-  "food", "food-apple", "fruit-cherries", "fruit-citrus", "fruit-grapes",
-  "fruit-pineapple", "fruit-watermelon", "corn", "mushroom", "peanut",
-  "pizza", "hamburger", "taco", "food-croissant", "bread-slice",
-  "cupcake", "cake", "ice-cream", "candycane",
-  "coffee", "tea", "beer", "glass-wine", "cup",
-  "food-drumstick", "food-steak", "egg", "egg-fried", "cheese",
-  "shaker", "pot-mix", "bowl-mix", "carrot", "chili-mild",
-
-  // 🌿 DOĞA & ELEMENTLER
-  "flower", "flower-tulip", "flower-poppy", "clover", "tree",
-  "pine-tree", "palm-tree", "cactus", "sprout", "grass",
-  "weather-sunny", "weather-night", "moon-waning-crescent", "star", "star-four-points",
-  "fire", "water", "snowflake", "cloud", "image-filter-hdr", // mountain yerine terrain/hdr
-  "terrain", "earth", "waves", "island", "leaf",
-
-  // ⚽ SPOR & AKTİVİTE
-  "basketball", "soccer", "football", "tennis", "volleyball",
-  "baseball", "golf", "bowling", "billiards",
-  "ski", "snowboard", "skate", "skateboard", "bike",
-  "run", "walk", "swim", "yoga", "meditation",
-  "weight-lifter", "dumbbell", "boxing-glove", "karate", "trophy",
-  "medal", "ribbon", "target",
-
-  // 🎮 HOBİ & EĞLENCE
-  "gamepad-variant", "controller-classic", "ghost", "pac-man",
-  "dice-5", "cards-playing", "puzzle", "chess-knight", "chess-queen",
-  "music", "music-note", "guitar-acoustic", "guitar-electric", "piano",
-  "violin", "microphone-variant", "headphones", "palette",
-  "brush", "camera", "movie", "theater",
-  "balloon", "party-popper", "cake-variant",
-
-  // 👑 FANTASTIK & SEMBOLLER
-  "crown", "diamond-stone", "wizard-hat", "shield", "shield-star",
-  "sword", "axe", "lightning-bolt",
-  "heart", "heart-multiple", "cards-heart", "horseshoe",
-  "yin-yang", "peace", "infinity", "atom", "brain",
-  "rocket", "telescope", "compass", "anchor", "skull",
-
-  // 🏥 SAĞLIK
-  "heart-pulse", "hospital-box", "pill", "medical-bag", "stethoscope",
-  "bacteria", "virus", "lungs", "stomach"
-];
+const AVATAR_ICONS = Object.values(AVATAR_ICON_CATEGORIES).flatMap(cat => cat.icons);
 
 export default function NutritionScreen() {
   const router = useRouter();
@@ -167,10 +168,13 @@ export default function NutritionScreen() {
     getActiveData
   } = useUser();
 
-  // --- UI STATE (Sadece sayfa içi görsellik için kalanlar) ---
+  // --- UI STATE  
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isDietExpanded, setIsDietExpanded] = useState(false);
-  const [expandedAllergens, setExpandedAllergens] = useState<string[]>([]);
+
+  const [avatarTab, setAvatarTab] = useState<'colors' | 'icons'>('colors');
+  const [colorCategory, setColorCategory] = useState<string>('blue');
+  const [iconCategory, setIconCategory] = useState<string>('animals');
 
   // Modallar UI State
   const [showFamilyModal, setShowFamilyModal] = useState(false);
@@ -184,10 +188,43 @@ export default function NutritionScreen() {
   const [editingAvatarId, setEditingAvatarId] = useState<string | null>(null);
 
   // --- HELPERS ---
-  const activeUser = getActiveProfile();
   const activeData = getActiveData();
   const selectedDiet = activeData.diet;
   const userAllergens = activeData.allergens;
+
+  // --- AVATAR HELPERS ---
+  const getFilteredColors = () => {
+    return AVATAR_COLOR_CATEGORIES[colorCategory as keyof typeof AVATAR_COLOR_CATEGORIES]?.colors || [];
+  };
+
+  const getFilteredIcons = () => {
+    return AVATAR_ICON_CATEGORIES[iconCategory]?.icons || [];
+  };
+
+  const handleColorSelect = (color: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (editingAvatarId) {
+      const activeMember = familyMembers.find(m => m.id === editingAvatarId);
+      updateMemberAvatar(editingAvatarId, color, activeMember?.avatarIcon || "account");
+    }
+  };
+
+  const handleIconSelect = (icon: AvatarIconName) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (editingAvatarId) {
+      const activeMember = familyMembers.find(m => m.id === editingAvatarId);
+      updateMemberAvatar(editingAvatarId, activeMember?.color || Colors.primary, icon);
+    }
+  };
+
+  const randomizeAvatar = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    if (editingAvatarId) {
+      const randomColor = AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
+      const randomIcon = AVATAR_ICONS[Math.floor(Math.random() * AVATAR_ICONS.length)];
+      updateMemberAvatar(editingAvatarId, randomColor, randomIcon);
+    }
+  };
 
   // --- HANDLERS ---
   const handleNameChange = (text: string) => {
@@ -576,99 +613,169 @@ export default function NutritionScreen() {
         <View style={styles.modalOverlay}>
           <Pressable style={styles.modalDismiss} onPress={() => setShowAvatarModal(false)} />
 
-          <View style={[styles.bottomSheet, { paddingBottom: insets.bottom + 10, height: '70%', maxHeight: '70%' }]} {...panResponder.panHandlers}>
+          <View style={[styles.avatarSheet, { paddingBottom: insets.bottom + 12 }]} {...panResponder.panHandlers}>
+            {/* Handle */}
+            <View style={styles.avatarSheetHandle} />
 
-            <View style={styles.bottomSheetHandle} />
-            <View style={[styles.sheetHeader, { marginBottom: 10, paddingHorizontal: 16 }]}>
-              <Text style={styles.sheetTitle}>{isTr ? "Avatar Düzenle" : "Edit Avatar"}</Text>
-              <TouchableOpacity onPress={() => setShowAvatarModal(false)} style={styles.closeButton}>
-                <Ionicons name="close" size={20} color={Colors.gray[500]} />
-              </TouchableOpacity>
-            </View>
+            {/* Header with Hero Avatar */}
+            {(() => {
+              const activeMember = editingAvatarId ? familyMembers.find(m => m.id === editingAvatarId) : null;
+              const activeColor = activeMember?.color || Colors.primary;
+              const activeIcon = (activeMember?.avatarIcon || "account") as AvatarIconName;
 
-            <View style={{ flex: 1, paddingHorizontal: 16 }}>
-              {(() => {
-                const activeMember = editingAvatarId ? familyMembers.find(m => m.id === editingAvatarId) : null;
-                const activeColor = activeMember?.color || Colors.primary;
-                const activeIcon = activeMember?.avatarIcon || "person";
-
-                return (
-                  <>
-                    {/* Compact Preview Section */}
-                    <View style={styles.modalPreviewContainer}>
-                      <View style={[styles.previewAvatarCircle, { backgroundColor: activeColor }]}>
-                        <MaterialCommunityIcons name={activeIcon as AvatarIconName} size={30} color="#FFF" />
-                      </View>
-                      <View>
-                        <Text style={styles.previewTitleText}>
-                          {activeMember?.name || (isTr ? "Önizleme" : "Preview")}
-                        </Text>
-                        <Text style={styles.previewSubtitleText}>
-                          {isTr ? "Seçili Görünüm" : "Selected Appearance"}
-                        </Text>
-                      </View>
+              return (
+                <>
+                  {/* Hero Section */}
+                  <View style={styles.avatarHeroSection}>
+                    <View style={[styles.avatarHeroCircle, { backgroundColor: activeColor }]}>
+                      <MaterialCommunityIcons name={activeIcon} size={44} color="#FFF" />
                     </View>
+                    <Text style={styles.avatarHeroName}>{activeMember?.name}</Text>
+                    <TouchableOpacity style={styles.randomButton} onPress={randomizeAvatar} activeOpacity={0.7}>
+                      <MaterialCommunityIcons name="dice-5" size={16} color={Colors.primary} />
+                      <Text style={styles.randomButtonText}>{isTr ? "Rastgele" : "Random"}</Text>
+                    </TouchableOpacity>
+                  </View>
 
-                    {/* Color Selector */}
-                    <Text style={[styles.inputLabel, { marginBottom: 8, fontSize: 13 }]}>{isTr ? "Renk" : "Color"}</Text>
-                    <View style={{ height: 44, marginBottom: 16 }}>
-                      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.colorListContainer}>
-                        {AVATAR_COLORS.map(color => {
-                          const isSelected = activeColor === color;
-                          return (
+                  {/* Segmented Tab */}
+                  <View style={styles.segmentedControl}>
+                    <TouchableOpacity
+                      style={[styles.segmentTab, avatarTab === 'colors' && styles.segmentTabActive]}
+                      onPress={() => setAvatarTab('colors')}
+                    >
+                      <MaterialCommunityIcons
+                        name="palette"
+                        size={16}
+                        color={avatarTab === 'colors' ? '#FFF' : Colors.gray[500]}
+                      />
+                      <Text style={[styles.segmentTabText, avatarTab === 'colors' && styles.segmentTabTextActive]}>
+                        {isTr ? "Renkler" : "Colors"}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.segmentTab, avatarTab === 'icons' && styles.segmentTabActive]}
+                      onPress={() => setAvatarTab('icons')}
+                    >
+                      <MaterialCommunityIcons
+                        name="emoticon-outline"
+                        size={16}
+                        color={avatarTab === 'icons' ? '#FFF' : Colors.gray[500]}
+                      />
+                      <Text style={[styles.segmentTabText, avatarTab === 'icons' && styles.segmentTabTextActive]}>
+                        {isTr ? "İkonlar" : "Icons"}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Content Area */}
+                  <View style={styles.avatarContentArea}>
+                    {avatarTab === 'colors' ? (
+                      <View style={styles.colorTabContent}>
+                        {/* Color Category Chips */}
+                        <ScrollView
+                          horizontal
+                          showsHorizontalScrollIndicator={false}
+                          contentContainerStyle={styles.categoryChipsContainer}
+                        >
+                          {Object.entries(AVATAR_COLOR_CATEGORIES).map(([key, cat]) => (
                             <TouchableOpacity
-                              key={color}
-                              activeOpacity={0.8}
-                              style={[
-                                styles.colorCircle,
-                                { backgroundColor: color },
-                                isSelected && { borderWidth: 3, borderColor: Colors.gray[200] }
-                              ]}
-                              onPress={() => editingAvatarId && updateMemberAvatar(editingAvatarId, color, activeIcon)}
+                              key={key}
+                              style={[styles.categoryChip, colorCategory === key && styles.categoryChipActive]}
+                              onPress={() => setColorCategory(key)}
                             >
-                              {isSelected && <Ionicons name="checkmark" size={16} color="white" />}
+                              <View style={[styles.categoryChipDot, { backgroundColor: cat.colors[4] }]} />
+                              <Text style={[styles.categoryChipText, colorCategory === key && styles.categoryChipTextActive]}>
+                                {isTr ? cat.labelTr : cat.labelEn}
+                              </Text>
                             </TouchableOpacity>
-                          );
-                        })}
-                      </ScrollView>
-                    </View>
+                          ))}
+                        </ScrollView>
 
-                    {/* Icon Selector */}
-                    <Text style={[styles.inputLabel, { marginBottom: 8, fontSize: 13 }]}>{isTr ? "İkon" : "Icon"}</Text>
-                    <View style={{ flex: 1 }}>
-                      <FlatList
-                        data={AVATAR_ICONS}
-                        keyExtractor={(item) => item}
-                        numColumns={6}
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={{ paddingBottom: 20 }}
-                        columnWrapperStyle={styles.iconGridColumnWrapper}
-                        ItemSeparatorComponent={() => <View style={{ height: 8 }} />} // Y ekseni boşluğu düzeltildi
-                        renderItem={({ item }) => {
-                          const isSelected = activeIcon === item;
-                          return (
+                        {/* Color Grid */}
+                        <View style={styles.colorGrid}>
+                          {getFilteredColors().map(color => {
+                            const isSelected = activeColor === color;
+                            return (
+                              <TouchableOpacity
+                                key={color}
+                                style={[
+                                  styles.colorItem,
+                                  { backgroundColor: color },
+                                  isSelected && styles.colorItemSelected
+                                ]}
+                                onPress={() => handleColorSelect(color)}
+                                activeOpacity={0.8}
+                              >
+                                {isSelected && (
+                                  <View style={styles.colorCheckmark}>
+                                    <Ionicons name="checkmark" size={14} color="#FFF" />
+                                  </View>
+                                )}
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    ) : (
+                      <>
+                        {/* Icon Category Chips */}
+                        <ScrollView
+                          horizontal
+                          showsHorizontalScrollIndicator={false}
+                          contentContainerStyle={styles.categoryChipsContainer}
+                        >
+                          {Object.entries(AVATAR_ICON_CATEGORIES).map(([key, cat]) => (
                             <TouchableOpacity
-                              style={[
-                                styles.iconBox,
-                                { backgroundColor: isSelected ? activeColor + '15' : Colors.gray[100] },
-                                isSelected && { borderColor: activeColor }
-                              ]}
-                              onPress={() => editingAvatarId && updateMemberAvatar(editingAvatarId, activeColor, item)}
+                              key={key}
+                              style={[styles.categoryChip, iconCategory === key && styles.categoryChipActive]}
+                              onPress={() => setIconCategory(key)}
                             >
                               <MaterialCommunityIcons
-                                name={item}
-                                size={22}
-                                color={isSelected ? activeColor : Colors.gray[600]}
+                                name={cat.icons[0]}
+                                size={14}
+                                color={iconCategory === key ? '#FFF' : Colors.gray[500]}
                               />
+                              <Text style={[styles.categoryChipText, iconCategory === key && styles.categoryChipTextActive]}>
+                                {isTr ? cat.labelTr : cat.labelEn}
+                              </Text>
                             </TouchableOpacity>
-                          );
-                        }}
-                      />
-                    </View>
-                  </>
-                );
-              })()}
-            </View>
+                          ))}
+                        </ScrollView>
+
+                        {/* Icon Grid */}
+                        <FlatList
+                          data={getFilteredIcons()}
+                          keyExtractor={(item) => item}
+                          numColumns={5}
+                          showsVerticalScrollIndicator={false}
+                          contentContainerStyle={styles.iconGridContainer}
+                          columnWrapperStyle={styles.iconGridRow}
+                          renderItem={({ item }) => {
+                            const isSelected = activeIcon === item;
+                            return (
+                              <TouchableOpacity
+                                style={[
+                                  styles.iconItem,
+                                  isSelected && { backgroundColor: activeColor + '20', borderColor: activeColor }
+                                ]}
+                                onPress={() => handleIconSelect(item)}
+                                activeOpacity={0.7}
+                              >
+                                <MaterialCommunityIcons
+                                  name={item}
+                                  size={24}
+                                  color={isSelected ? activeColor : Colors.gray[600]}
+                                />
+                              </TouchableOpacity>
+                            );
+                          }}
+                        />
+                      </>
+                    )}
+                  </View>
+                </>
+              );
+            })()}
           </View>
         </View>
       </Modal>
@@ -795,5 +902,180 @@ const styles = StyleSheet.create({
     maxWidth: '16%', // 6 sütun için limit
     borderWidth: 1,
     borderColor: 'transparent'
+  },
+  // AVATAR MODAL STYLES
+  avatarSheet: {
+    backgroundColor: "#FFF",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    height: '65%',
+    maxHeight: '65%',
+  },
+  avatarSheetHandle: {
+    width: 36,
+    height: 4,
+    backgroundColor: Colors.gray[300],
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 10,
+    marginBottom: 12,
+  },
+  avatarHeroSection: {
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.gray[100],
+  },
+  avatarHeroCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  avatarHeroName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.gray[800],
+    marginBottom: 8,
+  },
+  randomButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: Colors.primary + '10',
+    borderRadius: 16,
+  },
+  randomButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.primary,
+  },
+  segmentedControl: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginTop: 12,
+    backgroundColor: Colors.gray[100],
+    borderRadius: 10,
+    padding: 3,
+  },
+  segmentTab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  segmentTabActive: {
+    backgroundColor: Colors.primary,
+  },
+  segmentTabText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.gray[500],
+  },
+  segmentTabTextActive: {
+    color: '#FFF',
+  },
+  avatarContentArea: {
+    flex: 1,
+    paddingTop: 12,
+  },
+  colorTabContent: {
+    flex: 0,
+  },
+  categoryChipsContainer: {
+    paddingHorizontal: 16,
+    gap: 8,
+    marginBottom: 10,
+    height: 32,
+  },
+  categoryChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    height: 32,
+    paddingHorizontal: 10,
+    backgroundColor: Colors.gray[100],
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.gray[200],
+  },
+  categoryChipActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  categoryChipDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  categoryChipText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.gray[600],
+    lineHeight: 14,
+  },
+  categoryChipTextActive: {
+    color: '#FFF',
+  },
+  colorGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 16,
+    gap: 10,
+  },
+  colorItem: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  colorItemSelected: {
+    borderWidth: 3,
+    borderColor: '#FFF',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  colorCheckmark: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconGridContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
+  iconGridRow: {
+    gap: 8,
+    marginBottom: 8,
+  },
+  iconItem: {
+    flex: 1,
+    aspectRatio: 1,
+    maxWidth: '18.5%',
+    borderRadius: 12,
+    backgroundColor: Colors.gray[100],
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'transparent',
   },
 });

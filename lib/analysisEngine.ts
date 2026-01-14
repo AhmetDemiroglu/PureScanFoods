@@ -21,15 +21,30 @@ export interface CompatibilityReport {
     summary: string;
 }
 
+export interface IngredientInput {
+    display_name: string;
+    technical_name: string;
+    isAllergen?: boolean;
+    riskLevel?: string;
+}
+
 const STATUS_COLORS = {
-    safe: "#10B981", // Yeşil
-    risk: "#F59E0B", // Turuncu
-    avoid: "#EF4444", // Kırmızı
-    uncertain: "#64748B", // Gri
+    safe: "#10B981",
+    risk: "#F59E0B",
+    avoid: "#EF4444",
+    uncertain: "#64748B",
 };
 
-export function analyzeEngine(ingredients: string[], userProfile: { diet: DietType | null; allergens: AllergenType[] }, safetyScore: number = 50, t: (key: string, options?: any) => string): CompatibilityReport {
-    // 1. Profil Yoksa -> Güvenlik Puanını Kullan
+const STRICT_EXCEPTIONS: Record<string, string[]> = {
+    malt: ["maltodextrin", "maltodekstrin", "maltitol", "isomalt"],
+
+    flour: ["almond flour", "coconut flour", "flaxseed flour", "flax flour", "hazelnut flour", "chia flour"],
+
+    un: ["badem unu", "hindistan cevizi unu", "keten tohumu unu", "fındık unu", "chia unu"],
+};
+
+export function analyzeEngine(ingredients: IngredientInput[], userProfile: { diet: DietType | null; allergens: AllergenType[] }, safetyScore: number = 50, t: (key: string, options?: any) => string): CompatibilityReport {
+    // 1. Profil Yoksa
     if (!userProfile.diet && userProfile.allergens.length === 0) {
         let derivedStatus: CompatibilityStatus = "safe";
         if (safetyScore < 40) derivedStatus = "avoid";
@@ -38,85 +53,140 @@ export function analyzeEngine(ingredients: string[], userProfile: { diet: DietTy
         return {
             score: safetyScore,
             status: derivedStatus,
-            title: t(`results.analysis.status.${derivedStatus}`), // DİNAMİK
+            title: t(`results.analysis.status.${derivedStatus}`),
             color: STATUS_COLORS[derivedStatus],
             findings: [],
-            summary: t("results.analysis.findings.safe_summary"), // DİNAMİK
+            summary: t("results.analysis.findings.safe_summary"),
         };
     }
 
-    const normalizedIngredients = ingredients.map((i) => i.toLowerCase().trim());
     const findings: Finding[] = [];
+    const processedIndices = new Set<number>();
     let score = 100;
 
-    // 2. Alerjen Kontrolü
+    const techIngredients = ingredients.map((i) => i.technical_name.toLowerCase().trim());
+
+    // A) ÖNCE MUĞLAK (AMBIGUOUS) KONTROLÜ
     userProfile.allergens.forEach((allergen) => {
-        const strictKeywords = ALLERGEN_KEYWORDS[allergen] || [];
         const ambiguousKeywords = AMBIGUOUS_KEYWORDS[allergen] || [];
 
-        // A) Kesin Yasaklar
-        strictKeywords.forEach((key) => {
-            const found = normalizedIngredients.find((ing) => ing.includes(key));
-            if (found) {
-                const isAmbiguous = ambiguousKeywords.some((ambKey) => found.includes(ambKey));
-                if (isAmbiguous && key === "malt" && found.includes("maltodextrin")) {
-                    return; 
-                }
+        ambiguousKeywords.forEach((key) => {
+            techIngredients.forEach((ingTech, index) => {
+                if (processedIndices.has(index)) return;
 
-                if (!findings.some((f) => f.keyword === found)) {
+                if (ingTech.includes(key)) {
                     findings.push({
-                        keyword: found,
-                        source: allergen,
-                        type: "allergen",
-                        severity: "high",
-                        message: t("results.analysis.findings.high_allergen", { source: allergen, keyword: found }), // DİNAMİK
-                    });
-                    score = 0;
-                }
-            }
-        });
-
-        // B) Muğlak/Şüpheli Durumlar
-        if (score > 0) {
-            ambiguousKeywords.forEach((key) => {
-                const found = normalizedIngredients.find((ing) => ing === key || ing.includes(` ${key} `) || ing.startsWith(`${key} `));
-                if (found) {
-                    findings.push({
-                        keyword: found,
+                        keyword: ingredients[index].display_name,
                         source: allergen,
                         type: "ambiguous",
                         severity: "medium",
-                        message: t("results.analysis.findings.medium_ambiguous", { source: allergen, keyword: found }), // DİNAMİK
+                        message: t("results.analysis.findings.medium_ambiguous_desc", {
+                            source: allergen,
+                            keyword: ingredients[index].display_name,
+                        }),
                     });
+
                     score -= 25;
+                    processedIndices.add(index);
                 }
             });
-        }
+        });
     });
 
-    // 3. Diyet Kontrolü
+    // B) KESİN YASAKLAR (STRICT) KONTROLÜ
+    userProfile.allergens.forEach((allergen) => {
+        const strictKeywords = ALLERGEN_KEYWORDS[allergen] || [];
+
+        strictKeywords.forEach((key) => {
+            techIngredients.forEach((ingTech, index) => {
+                if (processedIndices.has(index)) return;
+
+                if (ingTech.includes(key)) {
+                    const exceptions = STRICT_EXCEPTIONS[key];
+                    if (exceptions && exceptions.some((ex) => ingTech.includes(ex))) {
+                        return;
+                    }
+
+                    if (!findings.some((f) => f.keyword === ingredients[index].display_name && f.severity === "high")) {
+                        findings.push({
+                            keyword: ingredients[index].display_name,
+                            source: allergen,
+                            type: "allergen",
+                            severity: "high",
+                            message: t("results.analysis.findings.high_allergen_desc", {
+                                source: allergen,
+                                keyword: ingredients[index].display_name,
+                            }),
+                        });
+                        score = 0;
+                        processedIndices.add(index);
+                    }
+                }
+            });
+        });
+    });
+
+    // C) DİYET KONTROLÜ
     if (userProfile.diet && score > 0) {
         const forbidden = DIET_FORBIDDEN_KEYWORDS[userProfile.diet] || [];
         const dietDef = getDietDefinition(userProfile.diet);
-        const isStrict = dietDef.severity === "strict";
+        const isStrict = dietDef?.severity === "strict";
 
         forbidden.forEach((key) => {
-            const found = normalizedIngredients.find((ing) => ing.includes(key));
-            if (found) {
-                if (!findings.some((f) => f.keyword === found)) {
-                    const deduction = isStrict ? 100 : 30;
-                    if (isStrict) score = 0;
-                    else score -= deduction;
+            techIngredients.forEach((ingTech, index) => {
+                if (processedIndices.has(index)) return;
+
+                if (ingTech.includes(key)) {
+                    if (!findings.some((f) => f.keyword === ingredients[index].display_name && f.type === "diet")) {
+                        const deduction = isStrict ? 100 : 30;
+                        if (isStrict) score = 0;
+                        else score -= deduction;
+
+                        findings.push({
+                            keyword: ingredients[index].display_name,
+                            source: userProfile.diet!,
+                            type: "diet",
+                            severity: isStrict ? "high" : "medium",
+                            message: t("results.analysis.findings.diet_violation_desc", {
+                                diet: userProfile.diet,
+                                keyword: ingredients[index].display_name,
+                            }),
+                        });
+                        processedIndices.add(index);
+                    }
+                }
+            });
+        });
+    }
+
+    if (userProfile.diet) {
+        const dietAmbiguous = AMBIGUOUS_KEYWORDS[userProfile.diet] || [];
+
+        dietAmbiguous.forEach((key) => {
+            techIngredients.forEach((ingTech, index) => {
+                if (processedIndices.has(index)) return;
+
+                if (ingTech.includes(key)) {
+                    // İSTİSNA KONTROLÜ
+                    const exceptions = STRICT_EXCEPTIONS[key];
+                    if (exceptions && exceptions.some((ex) => ingTech.includes(ex))) {
+                        return;
+                    }
 
                     findings.push({
-                        keyword: found,
+                        keyword: ingredients[index].display_name,
                         source: userProfile.diet!,
-                        type: "diet",
-                        severity: isStrict ? "high" : "medium",
-                        message: t("results.analysis.findings.diet_violation", { diet: userProfile.diet, keyword: found }), // DİNAMİK
+                        type: "ambiguous",
+                        severity: "medium",
+                        message: t("results.analysis.findings.medium_ambiguous_desc", {
+                            source: userProfile.diet,
+                            keyword: ingredients[index].display_name,
+                        }),
                     });
+                    score -= 25;
+                    processedIndices.add(index);
                 }
-            }
+            });
         });
     }
 
@@ -136,10 +206,10 @@ export function analyzeEngine(ingredients: string[], userProfile: { diet: DietTy
     if (highRisk.length > 0) {
         summary = t("results.analysis.findings.high_risk_summary", { source: highRisk[0].source });
     } else if (mediumRisk.length > 0) {
-        if (mediumRisk.some((f) => f.keyword.includes("maltodextrin") && f.source === "GLUTEN")) {
+        if (mediumRisk.some((f) => f.keyword.toLowerCase().includes("maltodextrin") || f.keyword.toLowerCase().includes("maltodekstrin"))) {
             summary = t("results.analysis.findings.gluten_ambiguous");
         } else {
-            summary = t("results.analysis.findings.medium_risk_summary", { keyword: mediumRisk[0].keyword });
+            summary = t("results.analysis.findings.medium_risk_summary");
         }
     }
 

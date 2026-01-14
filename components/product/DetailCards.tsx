@@ -73,7 +73,7 @@ export default function DetailCards({ data }: DetailCardsProps) {
                                         ing.riskLevel === 'High' ? styles.tagTextDanger :
                                             ing.riskLevel === 'Medium' ? styles.tagTextWarning : styles.tagTextSuccess
                                     ]}>
-                                        {ing.name}
+                                        {ing.display_name || ing.name}
                                     </Text>
                                 </View>
                             ))}

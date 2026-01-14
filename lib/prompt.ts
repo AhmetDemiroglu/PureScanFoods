@@ -74,7 +74,12 @@ OUTPUT FORMAT (Raw JSON only, no markdown):
   },
   "details": {
     "ingredients": [
-      { "name": "string (${targetLang})", "isAllergen": boolean, "riskLevel": "High|Medium|Low|Safe" }
+      { 
+        "display_name": "string (${targetLang} - common name for UI)", 
+        "technical_name": "string (ENGLISH - standardized scientific/common name for Engine matching)",
+        "isAllergen": boolean, 
+        "riskLevel": "High|Medium|Low|Safe" 
+      }
     ],
     "additives": [
       { "code": "E-number", "name": "string (${targetLang})", "risk": "Hazardous|Caution|Safe", "description": "string (${targetLang})" }
@@ -89,6 +94,12 @@ OUTPUT FORMAT (Raw JSON only, no markdown):
     }
   }
 }
+
+CRITICAL DATA INSTRUCTION:
+- "display_name": Must be in ${targetLang} (e.g., "Buğday Unu").
+- "technical_name": Must be in ENGLISH (e.g., "Wheat Flour"). This is vital for the analysis engine.
+- If ingredient is "Maltodextrin", technical_name MUST be "Maltodextrin".
+- If ingredient is "Aroma/Flavor", technical_name MUST be "Flavoring".
 
 BADGE RULES (CRITICAL):
 - ONLY use badges from the allowed list above

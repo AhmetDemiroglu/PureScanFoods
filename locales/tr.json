@@ -195,23 +195,26 @@
         "scores": {
             "safety": "GÜVENLİK",
             "compatibility": "UYUM"
-        }
-    },
-    "analysis": {
-        "status": {
-            "safe": "Uyumlu",
-            "risk": "Dikkat",
-            "avoid": "Uyumsuz",
-            "uncertain": "Belirsiz"
         },
-        "findings": {
-            "high_allergen": "{{source}} riski ({{keyword}}).",
-            "medium_ambiguous": "{{keyword}} potansiyel {{source}} kaynağı olabilir.",
-            "diet_violation": "{{diet}} diyetine uygun değil: {{keyword}}",
-            "safe_summary": "Profilinize uygun görünüyor.",
-            "high_risk_summary": "{{source}} tespit edildi. Tüketmeyiniz.",
-            "medium_risk_summary": "{{keyword}} içeriyor, riskli olabilir.",
-            "gluten_ambiguous": "Gluten şüphesi (Maltodekstrin kaynağı belirsiz)."
+        "analysis": {
+            "status": {
+                "safe": "Uyumlu",
+                "risk": "Dikkat",
+                "avoid": "Uyumsuz",
+                "uncertain": "Belirsiz"
+            },
+            "findings": {
+                "high_allergen": "{{source}} Tespiti ({{keyword}}).",
+                "high_allergen_desc": "{{keyword}} tespit edildi. Bu bileşen {{source}} türevidir ve profilinizle uyumsuzdur.",
+                "medium_ambiguous": "{{keyword}} Uyarısı.",
+                "medium_ambiguous_desc": "{{keyword}} tespit edildi. Kaynağı (bitkisel/hayvansal/sentetik) belirsiz olduğu için {{source}} hassasiyetine dokunabilir. Lütfen ürün üzerindeki sertifikaları veya 'İçermez' ibaresini kontrol ediniz.",
+                "diet_violation": "{{diet}} diyetiyle çelişiyor: {{keyword}}.",
+                "diet_violation_desc": "Bu ürün {{keyword}} içeriyor. Bu madde {{diet}} beslenme düzeninde genellikle tüketilmez veya riskli kabul edilir.",
+                "safe_summary": "İçerik listesi profilinizle uyumlu görünüyor.",
+                "high_risk_summary": "{{source}} kaynaklı bileşenler tespit edildi. Dikkatli olunuz.",
+                "medium_risk_summary": "Bazı içerikler hassasiyet yaratabilir, detayları inceleyiniz.",
+                "gluten_ambiguous": "Gluten şüphesi (Maltodekstrin vb)."
+            }
         }
     },
     "common": {
@@ -261,4 +264,4 @@
         "frameSubtitlePortrait": "Uzun içerik listeleri için telefonu yatay tutun",
         "frameSubtitleLandscape": "İçerik listesini tarama alanına yerleştirin"
     }
-}   
+}

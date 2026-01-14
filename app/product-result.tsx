@@ -14,6 +14,7 @@ import DetailCards from "../components/product/DetailCards";
 import { useUser } from "../context/UserContext";
 import { analyzeEngine, CompatibilityReport } from "../lib/analysisEngine";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 const IMAGE_HEIGHT = 320;
@@ -44,6 +45,8 @@ export default function ProductResultScreen() {
     const { t } = useTranslation();
     const router = useRouter();
     const { familyMembers, profilesData } = useUser();
+
+    const insets = useSafeAreaInsets();
 
     // TempStore Verisi
     const { data, image } = TempStore.getResult();
@@ -78,20 +81,31 @@ export default function ProductResultScreen() {
 
     const { product, scores } = data;
 
-    const ingredientNames = data.details?.ingredients?.map((i: any) => i.name) || [];
+    const analysisIngredients = data.details?.ingredients || [];
 
     const familyAnalysis = familyMembers.map(member => {
         const profile = profilesData[member.id];
+
         const safetyScore = scores.safety?.value || 50;
-        const report = analyzeEngine(ingredientNames, profile, safetyScore, t);
+        const report = analyzeEngine(analysisIngredients, profile, safetyScore, t);
 
         return { member, report };
     });
 
     const ownerAnalysis = familyAnalysis.find(f => f.member.id === "main_user") || familyAnalysis[0];
-    const displayScore = ownerAnalysis ? ownerAnalysis.report.score : (scores.compatibility?.value || 0);
-    const displayVerdict = ownerAnalysis ? ownerAnalysis.report.title : (scores.compatibility?.verdict || "");
 
+    const displayScore = ownerAnalysis ? ownerAnalysis.report.score : (scores.compatibility?.value || 0);
+
+    let displayVerdict = "";
+    let displaySummary = "";
+
+    if (ownerAnalysis && ownerAnalysis.report.status !== 'safe') {
+        displayVerdict = ownerAnalysis.report.title;
+        displaySummary = ownerAnalysis.report.summary;
+    } else {
+        displayVerdict = scores.compatibility?.verdict || t("analysis.status.safe");
+        displaySummary = ownerAnalysis?.report.summary || t("analysis.findings.safe_summary");
+    }
     const handleMemberPress = (item: { member: any, report: CompatibilityReport }) => {
         setSelectedMemberReport(item);
         setShowDetailModal(true);
@@ -179,21 +193,26 @@ export default function ProductResultScreen() {
                         />
                     </View>
 
-                    {/* GÜNCELLEME: Verdict artık dinamik */}
+                    {/* Verdict artık dinamik */}
                     <View style={[styles.verdictBox, {
-                        backgroundColor: displayScore > 50 ? '#F0FDF4' : '#FEF2F2',
-                        borderColor: displayScore > 50 ? '#BBF7D0' : '#FECACA'
+                        backgroundColor: displayScore >= 80 ? '#F0FDF4' : (displayScore >= 50 ? '#FFF7ED' : '#FEF2F2'),
+                        borderColor: displayScore >= 80 ? '#BBF7D0' : (displayScore >= 50 ? '#FED7AA' : '#FECACA')
                     }]}>
                         <Ionicons
-                            name={displayScore > 50 ? "checkmark-circle" : "alert-circle"}
-                            size={22}
-                            color={displayScore > 50 ? Colors.success : Colors.error}
+                            name={displayScore >= 80 ? "checkmark-circle" : "alert-circle"}
+                            size={24}
+                            color={displayScore >= 80 ? Colors.success : (displayScore >= 50 ? '#EA580C' : Colors.error)}
                         />
-                        <Text style={[styles.verdictText, {
-                            color: displayScore > 50 ? '#15803D' : '#B91C1C'
-                        }]}>
-                            {displayVerdict}
-                        </Text>
+                        <View style={{ flex: 1, gap: 4 }}>
+                            <Text style={[styles.verdictTitle, {
+                                color: displayScore >= 80 ? '#15803D' : (displayScore >= 50 ? '#9A3412' : '#B91C1C')
+                            }]}>
+                                {displayVerdict}
+                            </Text>
+                            <Text style={styles.verdictText}>
+                                {displaySummary}
+                            </Text>
+                        </View>
                     </View>
                 </View>
 
@@ -250,7 +269,7 @@ export default function ProductResultScreen() {
 
                 <View style={{ height: 40 }} />
             </ScrollView>
-            {/* --- DETAY MODALI (BOTTOM SHEET) --- */}
+            {/* --- DETAY MODALI --- */}
             <Modal
                 visible={showDetailModal}
                 transparent
@@ -260,13 +279,17 @@ export default function ProductResultScreen() {
                 <View style={styles.modalOverlay}>
                     <Pressable style={styles.modalDismiss} onPress={() => setShowDetailModal(false)} />
 
-                    {/* PanResponder burada devreye giriyor (Kaydır-Kapat) */}
-                    <View style={styles.bottomSheet} {...panResponder.panHandlers}>
+                    <View
+                        style={[
+                            styles.bottomSheet,
+                            { paddingBottom: insets.bottom > 0 ? insets.bottom + 30 : 40 }
+                        ]}
+                        {...panResponder.panHandlers}
+                    >
                         <View style={styles.bottomSheetHandle} />
 
                         {selectedMemberReport && (
                             <>
-                                {/* Modal Header: Kişi ve Skor */}
                                 <View style={styles.sheetHeader}>
                                     <View style={styles.sheetHeaderLeft}>
                                         <View style={[styles.modalAvatar, { backgroundColor: selectedMemberReport.member.color }]}>
@@ -291,17 +314,14 @@ export default function ProductResultScreen() {
 
                                 <View style={styles.divider} />
 
-                                {/* Modal Content: Nedenler */}
                                 <Text style={styles.reasonsTitle}>{t("results.family.reasons")}</Text>
 
                                 {selectedMemberReport.report.findings.length === 0 ? (
-                                    // Sorun Yoksa
                                     <View style={styles.emptyStateBox}>
                                         <Ionicons name="checkmark-circle" size={32} color={Colors.success} />
                                         <Text style={styles.emptyStateText}>{selectedMemberReport.report.summary}</Text>
                                     </View>
                                 ) : (
-                                    // Sorun Varsa (Listele)
                                     <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false}>
                                         {selectedMemberReport.report.findings.map((finding, index) => (
                                             <View key={index} style={[styles.findingCard, {
@@ -500,10 +520,15 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         borderWidth: 1,
     },
+    verdictTitle: {
+        fontSize: 14,
+        fontWeight: "700",
+        textTransform: 'uppercase',
+    },
     verdictText: {
         fontSize: 13,
-        fontWeight: "600",
-        flex: 1,
+        fontWeight: "500",
+        color: Colors.gray[600],
         lineHeight: 18,
     },
 

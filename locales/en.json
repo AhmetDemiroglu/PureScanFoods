@@ -195,23 +195,26 @@
         "scores": {
             "safety": "SAFETY",
             "compatibility": "COMPATIBILITY"
-        }
-    },
-    "analysis": {
-        "status": {
-            "safe": "Compatible",
-            "risk": "Caution",
-            "avoid": "Incompatible",
-            "uncertain": "Uncertain"
         },
-        "findings": {
-            "high_allergen": "{{source}} risk detected ({{keyword}}).",
-            "medium_ambiguous": "{{keyword}} could be a potential source of {{source}}.",
-            "diet_violation": "Violates {{diet}} diet: {{keyword}}",
-            "safe_summary": "Seems compatible with your profile.",
-            "high_risk_summary": "{{source}} detected. Avoid consumption.",
-            "medium_risk_summary": "Contains {{keyword}}, might be risky.",
-            "gluten_ambiguous": "Gluten ambiguity (Maltodextrin source unclear)."
+        "analysis": {
+            "status": {
+                "safe": "Compatible",
+                "risk": "Caution",
+                "avoid": "Incompatible",
+                "uncertain": "Uncertain"
+            },
+            "findings": {
+                "high_allergen": "{{source}} Detected ({{keyword}}).",
+                "high_allergen_desc": "{{keyword}} detected. This ingredient is a derivative of {{source}} and is incompatible with your profile.",
+                "medium_ambiguous": "{{keyword}} Warning.",
+                "medium_ambiguous_desc": "{{keyword}} detected. Since its source (plant/animal/synthetic) is unspecified, it may carry a {{source}} risk. Please check the product label for certifications or 'Free From' statements.",
+                "diet_violation": "Violates {{diet}} diet: {{keyword}}.",
+                "diet_violation_desc": "This product contains {{keyword}}. This ingredient is typically avoided or considered risky in the {{diet}} diet.",
+                "safe_summary": "Ingredients list seems compatible with your profile.",
+                "high_risk_summary": "Ingredients derived from {{source}} detected. Proceed with caution.",
+                "medium_risk_summary": "Some ingredients might cause sensitivity, please check details.",
+                "gluten_ambiguous": "Gluten ambiguity (Maltodextrin etc)."
+            }
         }
     },
     "common": {
