@@ -265,7 +265,7 @@
             "update": "Güncelle",
             "delete": "Sil",
             "roles": {
-                "myself": "Kendim",
+                "self": "Kendim",
                 "spouse": "Eş",
                 "child": "Çocuk",
                 "mother": "Anne",

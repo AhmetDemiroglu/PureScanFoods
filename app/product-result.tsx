@@ -3,7 +3,7 @@ import {
     View, Text, StyleSheet, Image, ScrollView, TouchableOpacity,
     Dimensions, StatusBar, Modal, Pressable, PanResponder
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Colors } from "../constants/colors";
 import { Ionicons } from "@expo/vector-icons";
@@ -12,7 +12,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { TempStore } from "../lib/tempStore";
 import DetailCards from "../components/product/DetailCards";
 import { useUser } from "../context/UserContext";
-import { analyzeEngine, CompatibilityReport } from "../lib/analysisEngine";
+import { analyzeEngine, CompatibilityReport, SeverityLevel } from "../lib/analysisEngine";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -54,6 +54,14 @@ const BADGE_CONFIG: Record<string, { icon: keyof typeof Ionicons.glyphMap; color
     GLUTEN_FREE: { icon: "checkmark-circle", color: "#0891B2", bg: "#ECFEFF", labelKey: "results.badges.gluten_free" },
     LACTOSE_FREE: { icon: "checkmark-circle", color: "#0891B2", bg: "#ECFEFF", labelKey: "results.badges.lactose_free" },
     DEFAULT: { icon: "information-circle", color: Colors.gray[600], bg: Colors.gray[100], labelKey: "results.badges.general" }
+};
+
+const SEVERITY_STYLES: Record<SeverityLevel, { bg: string; border: string; text: string; icon: string }> = {
+    forbidden: { bg: '#FEF2F2', border: '#FECACA', text: '#B91C1C', icon: 'ban' },
+    restricted: { bg: '#FEF2F2', border: '#FECACA', text: '#DC2626', icon: 'warning' },
+    caution: { bg: '#FFF7ED', border: '#FED7AA', text: '#9A3412', icon: 'alert-circle' },
+    limit: { bg: '#FFFBEB', border: '#FDE68A', text: '#92400E', icon: 'information-circle' },
+    monitor: { bg: '#F0FDF4', border: '#BBF7D0', text: '#166534', icon: 'eye-outline' },
 };
 
 export default function ProductResultScreen() {
@@ -550,23 +558,27 @@ export default function ProductResultScreen() {
                                             <Text style={styles.emptyStateText}>{selectedMemberReport.report.summary}</Text>
                                         </View>
                                     ) : (
-                                        selectedMemberReport.report.findings.map((finding, index) => (
-                                            <View key={index} style={[styles.findingCard, {
-                                                backgroundColor: finding.severity === 'high' ? '#FEF2F2' : '#FFF7ED',
-                                                borderColor: finding.severity === 'high' ? '#FECACA' : '#FED7AA'
-                                            }]}>
-                                                <Ionicons
-                                                    name={finding.severity === 'high' ? "ban" : "alert-circle"}
-                                                    size={20}
-                                                    color={finding.severity === 'high' ? Colors.error : "#EA580C"}
-                                                />
-                                                <Text style={[styles.findingText, {
-                                                    color: finding.severity === 'high' ? '#B91C1C' : '#9A3412'
+                                        selectedMemberReport.report.findings.map((finding, index) => {
+                                            const isHighSeverity = finding.severity === 'forbidden' || finding.severity === 'restricted';
+
+                                            return (
+                                                <View key={index} style={[styles.findingCard, {
+                                                    backgroundColor: isHighSeverity ? '#FEF2F2' : '#FFF7ED',
+                                                    borderColor: isHighSeverity ? '#FECACA' : '#FED7AA'
                                                 }]}>
-                                                    {finding.message}
-                                                </Text>
-                                            </View>
-                                        ))
+                                                    <Ionicons
+                                                        name={isHighSeverity ? "ban" : "alert-circle"}
+                                                        size={20}
+                                                        color={isHighSeverity ? Colors.error : "#EA580C"}
+                                                    />
+                                                    <Text style={[styles.findingText, {
+                                                        color: isHighSeverity ? '#B91C1C' : '#9A3412'
+                                                    }]}>
+                                                        {finding.message}
+                                                    </Text>
+                                                </View>
+                                            );
+                                        })
                                     )}
                                 </ScrollView>
                             </View>

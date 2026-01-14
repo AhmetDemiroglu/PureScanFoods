@@ -10,13 +10,23 @@ function matchesKeyword(text: string, keyword: string): boolean {
     return regex.test(text);
 }
 
+export type SeverityLevel = "forbidden" | "restricted" | "caution" | "limit" | "monitor";
+
 export interface Finding {
     keyword: string;
     source: string;
-    type: "allergen" | "diet" | "ambiguous";
-    severity: "high" | "medium" | "low";
+    type: "allergen" | "diet" | "ambiguous" | "lifestage";
+    severity: SeverityLevel;
     message: string;
 }
+
+const SEVERITY_IMPACT: Record<SeverityLevel, number> = {
+    forbidden: -100,
+    restricted: -50,
+    caution: -25,
+    limit: -10,
+    monitor: 0,
+};
 
 export interface CompatibilityReport {
     score: number;
@@ -42,13 +52,11 @@ const STATUS_COLORS = {
 };
 
 const STRICT_EXCEPTIONS: Record<string, string[]> = {
-    malt: ["maltodextrin", "maltodekstrin", "maltitol", "isomalt"],
+    malt: ["maltodextrin", "maltitol", "isomalt"],
     flour: ["almond flour", "coconut flour", "flaxseed flour", "flax flour", "hazelnut flour", "chia flour"],
-    un: ["badem unu", "hindistan cevizi unu", "keten tohumu unu", "fındık unu", "chia unu"],
     wheat: ["buckwheat", "buck wheat"],
-    buğday: ["karabuğday"],
+    oat: ["coating", "oatrim"],
 };
-
 export function analyzeEngine(ingredients: IngredientInput[], userProfile: { diet: DietType | null; allergens: AllergenType[] }, safetyScore: number = 50, t: (key: string, options?: any) => string): CompatibilityReport {
     // 1. Profil Yoksa
     if (!userProfile.diet && userProfile.allergens.length === 0) {
@@ -68,34 +76,6 @@ export function analyzeEngine(ingredients: IngredientInput[], userProfile: { die
 
     const techIngredients = ingredients.map((i) => i.technical_name.toLowerCase().trim());
 
-    // A) ÖNCE MUĞLAK (AMBIGUOUS) KONTROLÜ
-    userProfile.allergens.forEach((allergen) => {
-        const ambiguousKeywords = AMBIGUOUS_KEYWORDS[allergen] || [];
-
-        ambiguousKeywords.forEach((key) => {
-            techIngredients.forEach((ingTech, index) => {
-                if (processedIndices.has(index)) return;
-
-                if (matchesKeyword(ingTech, key)) {
-                    findings.push({
-                        keyword: ingredients[index].display_name,
-                        source: allergen,
-                        type: "ambiguous",
-                        severity: "medium",
-                        message: t("results.analysis.findings.medium_ambiguous_desc", {
-                            source: allergen,
-                            keyword: ingredients[index].display_name,
-                        }),
-                    });
-
-                    score -= 25;
-                    processedIndices.add(index);
-                }
-            });
-        });
-    });
-
-    // B) KESİN YASAKLAR (STRICT) KONTROLÜ
     userProfile.allergens.forEach((allergen) => {
         const strictKeywords = ALLERGEN_KEYWORDS[allergen] || [];
 
@@ -105,22 +85,23 @@ export function analyzeEngine(ingredients: IngredientInput[], userProfile: { die
 
                 if (matchesKeyword(ingTech, key)) {
                     const exceptions = STRICT_EXCEPTIONS[key];
-                    if (exceptions && exceptions.some((ex) => ingTech.includes(ex))) {
+                    if (exceptions && exceptions.some((ex) => matchesKeyword(ingTech, ex))) {
                         return;
                     }
 
-                    if (!findings.some((f) => f.keyword === ingredients[index].display_name && f.severity === "high")) {
+                    if (!findings.some((f) => f.keyword === ingredients[index].display_name && f.severity === "forbidden")) {
+                        const severity: SeverityLevel = "forbidden";
                         findings.push({
                             keyword: ingredients[index].display_name,
                             source: allergen,
                             type: "allergen",
-                            severity: "high",
+                            severity,
                             message: t("results.analysis.findings.high_allergen_desc", {
                                 source: allergen,
                                 keyword: ingredients[index].display_name,
                             }),
                         });
-                        score = 0;
+                        score = Math.max(0, score + SEVERITY_IMPACT[severity]);
                         processedIndices.add(index);
                     }
                 }
@@ -128,7 +109,33 @@ export function analyzeEngine(ingredients: IngredientInput[], userProfile: { die
         });
     });
 
-    // C) DİYET KONTROLÜ
+    userProfile.allergens.forEach((allergen) => {
+        const ambiguousKeywords = AMBIGUOUS_KEYWORDS[allergen] || [];
+
+        ambiguousKeywords.forEach((key) => {
+            techIngredients.forEach((ingTech, index) => {
+                if (processedIndices.has(index)) return;
+
+                if (matchesKeyword(ingTech, key)) {
+                    const severity: SeverityLevel = "caution";
+                    findings.push({
+                        keyword: ingredients[index].display_name,
+                        source: allergen,
+                        type: "ambiguous",
+                        severity,
+                        message: t("results.analysis.findings.medium_ambiguous_desc", {
+                            source: allergen,
+                            keyword: ingredients[index].display_name,
+                        }),
+                    });
+
+                    score = Math.max(0, score + SEVERITY_IMPACT[severity]);
+                    processedIndices.add(index);
+                }
+            });
+        });
+    });
+
     if (userProfile.diet && score > 0) {
         const forbidden = DIET_FORBIDDEN_KEYWORDS[userProfile.diet] || [];
         const dietDef = getDietDefinition(userProfile.diet);
@@ -140,20 +147,20 @@ export function analyzeEngine(ingredients: IngredientInput[], userProfile: { die
 
                 if (matchesKeyword(ingTech, key)) {
                     if (!findings.some((f) => f.keyword === ingredients[index].display_name && f.type === "diet")) {
-                        const deduction = isStrict ? 100 : 30;
-                        if (isStrict) score = 0;
-                        else score -= deduction;
+                        const severity: SeverityLevel = isStrict ? "forbidden" : "restricted";
 
                         findings.push({
                             keyword: ingredients[index].display_name,
                             source: userProfile.diet!,
                             type: "diet",
-                            severity: isStrict ? "high" : "medium",
+                            severity,
                             message: t("results.analysis.findings.diet_violation_desc", {
                                 diet: userProfile.diet,
                                 keyword: ingredients[index].display_name,
                             }),
                         });
+
+                        score = Math.max(0, score + SEVERITY_IMPACT[severity]);
                         processedIndices.add(index);
                     }
                 }
@@ -173,7 +180,7 @@ export function analyzeEngine(ingredients: IngredientInput[], userProfile: { die
 
                 if (matchesKeyword(ingTech, key)) {
                     const exceptions = STRICT_EXCEPTIONS[key];
-                    if (exceptions && exceptions.some((ex) => ingTech.includes(ex))) return;
+                    if (exceptions && exceptions.some((ex) => matchesKeyword(ingTech, ex))) return;
 
                     let messageKey = "medium_ambiguous_desc";
                     let sourceOrDiet = userProfile.diet;
@@ -184,11 +191,12 @@ export function analyzeEngine(ingredients: IngredientInput[], userProfile: { die
                         messageKey = "medical_ambiguous_desc";
                     }
 
+                    const severity: SeverityLevel = "caution";
                     findings.push({
                         keyword: ingredients[index].display_name,
                         source: userProfile.diet!,
                         type: "ambiguous",
-                        severity: "medium",
+                        severity,
                         message: t(`results.analysis.findings.${messageKey}`, {
                             diet: userProfile.diet,
                             source: userProfile.diet,
@@ -196,7 +204,7 @@ export function analyzeEngine(ingredients: IngredientInput[], userProfile: { die
                         }),
                     });
 
-                    score -= 25;
+                    score = Math.max(0, score + SEVERITY_IMPACT[severity]);
                     processedIndices.add(index);
                 }
             });
@@ -213,8 +221,8 @@ export function analyzeEngine(ingredients: IngredientInput[], userProfile: { die
     // 5. ÖZET METNİ (DÜZELTİLDİ)
     let summary = t("results.analysis.findings.safe_summary");
 
-    const highRisk = findings.filter((f) => f.severity === "high");
-    const mediumRisk = findings.filter((f) => f.severity === "medium");
+    const highRisk = findings.filter((f) => f.severity === "forbidden" || f.severity === "restricted");
+    const mediumRisk = findings.filter((f) => f.severity === "caution" || f.severity === "limit");
 
     if (highRisk.length > 0) {
         summary = t("results.analysis.findings.high_risk_summary", { source: highRisk[0].source });

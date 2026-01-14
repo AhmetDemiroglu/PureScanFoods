@@ -1,5 +1,5 @@
 import { db } from "./firebase";
-import { doc, setDoc, getDoc, updateDoc, serverTimestamp, increment, FieldValue } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp, increment, collection, addDoc, getDocs, query, orderBy, limit, deleteDoc, where, startAfter } from "firebase/firestore";
 
 export interface UserProfile {
     uid: string;
@@ -17,6 +17,29 @@ export interface UsageStats {
     weekStartDate: string;
 }
 
+export interface FamilyMember {
+    id: string;
+    name: string;
+    role: "spouse" | "child" | "mother" | "father" | "sibling" | "friend" | "other" | "self";
+    avatarIcon: string;
+    color: string;
+    diet: string | null;
+    allergens: string[];
+    createdAt: any;
+}
+
+export interface ScanResult {
+    id: string;
+    productName: string;
+    brand: string;
+    imageUrl?: string | null;
+    score: number;
+    verdict: string;
+    badges: string[];
+    createdAt: any;
+    miniData: string;
+}
+
 const formatDateSafe = (timestamp: any) => {
     if (!timestamp) return new Date().toISOString();
     if (timestamp.toDate) return timestamp.toDate().toISOString();
@@ -30,7 +53,6 @@ export const initializeUser = async (user: any) => {
         const userSnap = await getDoc(userRef);
 
         if (!userSnap.exists()) {
-            // Yeni Kullanıcı Şeması
             const newProfile: UserProfile = {
                 uid: user.uid,
                 email: user.email || null,
@@ -43,14 +65,12 @@ export const initializeUser = async (user: any) => {
 
             await setDoc(userRef, newProfile);
 
-            // İstatistikleri Başlat
             const statsRef = doc(db, "users", user.uid, "stats", "weekly");
             await setDoc(statsRef, {
                 scanCount: 0,
                 weekStartDate: serverTimestamp(),
             });
         } else {
-            // Mevcut kullanıcı giriş yaptı, son görülmeyi güncelle
             await updateDoc(userRef, { lastLoginAt: serverTimestamp() });
         }
     } catch (error) {
@@ -91,7 +111,6 @@ export const checkDeviceLimit = async (deviceId: string): Promise<UsageStats> =>
 
     const now = new Date();
 
-    // Cihaz hiç yoksa oluştur
     if (!deviceSnap.exists()) {
         await setDoc(deviceRef, {
             scanCount: 0,
@@ -105,7 +124,6 @@ export const checkDeviceLimit = async (deviceId: string): Promise<UsageStats> =>
     const weekStart = data.weekStartDate?.toDate() || now;
     const daysDiff = (now.getTime() - weekStart.getTime()) / (1000 * 3600 * 24);
 
-    // Hafta dolduysa sıfırla
     if (daysDiff >= 7) {
         await updateDoc(deviceRef, {
             scanCount: 0,
@@ -121,18 +139,16 @@ export const checkDeviceLimit = async (deviceId: string): Promise<UsageStats> =>
     };
 };
 
-// --- 5. TARAMA HAKKI DÜŞME (SAYAÇ ARTIRMA) ---
+// --- 5. TARAMA HAKKI DÜŞME ---
 export const incrementScanCount = async (uid: string, deviceId: string | null) => {
     try {
         const promises = [];
 
-        // Kullanıcı sayacını artır
         if (uid) {
             const statsRef = doc(db, "users", uid, "stats", "weekly");
             promises.push(updateDoc(statsRef, { scanCount: increment(1) }));
         }
 
-        // Cihaz sayacını artır (Misafir koruması)
         if (deviceId) {
             const deviceRef = doc(db, "device_limits", deviceId);
             promises.push(updateDoc(deviceRef, { scanCount: increment(1) }));
@@ -141,5 +157,107 @@ export const incrementScanCount = async (uid: string, deviceId: string | null) =
         await Promise.all(promises);
     } catch (error) {
         console.error("Error incrementing scan:", error);
+    }
+};
+
+// --- 6. AİLE ÜYESİ YÖNETİMİ (ALT KOLEKSİYON) ---
+
+// Aile Üyesi Ekle
+export const addFamilyMemberToDB = async (uid: string, member: Omit<FamilyMember, "id" | "createdAt">) => {
+    try {
+        const membersRef = collection(db, "users", uid, "family_members");
+        const docRef = await addDoc(membersRef, {
+            ...member,
+            createdAt: serverTimestamp(),
+        });
+        return docRef.id;
+    } catch (error) {
+        console.error("Error adding family member:", error);
+        throw error;
+    }
+};
+
+// Aile Üyelerini Getir
+export const getFamilyMembersFromDB = async (uid: string): Promise<FamilyMember[]> => {
+    try {
+        const membersRef = collection(db, "users", uid, "family_members");
+        const q = query(membersRef, orderBy("createdAt", "asc"));
+        const snapshot = await getDocs(q);
+
+        return snapshot.docs.map(
+            (doc) =>
+                ({
+                    id: doc.id,
+                    ...doc.data(),
+                } as FamilyMember)
+        );
+    } catch (error) {
+        console.error("Error fetching family members:", error);
+        return [];
+    }
+};
+
+// Aile Üyesi Sil
+export const deleteFamilyMemberFromDB = async (uid: string, memberId: string) => {
+    try {
+        const memberRef = doc(db, "users", uid, "family_members", memberId);
+        await deleteDoc(memberRef);
+    } catch (error) {
+        console.error("Error deleting family member:", error);
+        throw error;
+    }
+};
+
+// Aile Üyesi Güncelle
+export const updateFamilyMemberInDB = async (uid: string, memberId: string, updates: Partial<FamilyMember>) => {
+    try {
+        const memberRef = doc(db, "users", uid, "family_members", memberId);
+        await updateDoc(memberRef, updates);
+    } catch (error) {
+        console.error("Error updating family member:", error);
+        throw error;
+    }
+};
+
+// --- 7. TARAMA GEÇMİŞİ YÖNETİMİ  ---
+
+// Taramayı Kaydet
+export const saveScanResultToDB = async (uid: string, scanData: Omit<ScanResult, "id" | "createdAt">) => {
+    try {
+        const scansRef = collection(db, "users", uid, "scans");
+        await addDoc(scansRef, {
+            ...scanData,
+            createdAt: serverTimestamp(),
+        });
+    } catch (error) {
+        console.error("Error saving scan:", error);
+    }
+};
+
+// Geçmişi Getir
+export const getScanHistoryFromDB = async (uid: string, lastDoc: any = null, limitCount = 15) => {
+    try {
+        const scansRef = collection(db, "users", uid, "scans");
+
+        let q;
+        if (lastDoc) {
+            q = query(scansRef, orderBy("createdAt", "desc"), startAfter(lastDoc), limit(limitCount));
+        } else {
+            q = query(scansRef, orderBy("createdAt", "desc"), limit(limitCount));
+        }
+
+        const snapshot = await getDocs(q);
+        const data = snapshot.docs.map(
+            (doc) =>
+                ({
+                    id: doc.id,
+                    ...doc.data(),
+                } as ScanResult)
+        );
+
+        return { data, lastDoc: snapshot.docs[snapshot.docs.length - 1] };
+    } catch (error) {
+        console.error("Error fetching history:", error);
+        return { data: [], lastDoc: null };
     }
 };

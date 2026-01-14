@@ -1,118 +1,191 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { Colors } from "../constants/colors";
-import { Ionicons } from "@expo/vector-icons";
-import { DietType } from "../lib/diets";
-import { AllergenType } from "../lib/allergens";
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
+import {
+    getFamilyMembersFromDB,
+    addFamilyMemberToDB,
+    deleteFamilyMemberFromDB,
+    updateFamilyMemberInDB,
+    FamilyMember as FirestoreMember
+} from '../lib/firestore';
+import { Alert } from 'react-native';
+import { DietType } from '../lib/diets';
+import { AllergenType } from '../lib/allergens';
 
-// --- TYPES ---
-export type FamilyRole = "myself" | "spouse" | "child" | "mother" | "father" | "sibling" | "friend" | "other";
+// --- TİPLER ---
+export type FamilyRole = "spouse" | "child" | "mother" | "father" | "sibling" | "friend" | "other" | "self";
 
-export interface UserProfileData {
+export interface FamilyMember extends Omit<FirestoreMember, 'diet' | 'allergens'> {
     diet: DietType | null;
     allergens: AllergenType[];
 }
 
-export interface FamilyMember {
-    id: string;
-    name: string;
-    role: FamilyRole;
-    color: string;
-    avatarIcon: string;
+export interface ProfileData {
+    diet: DietType | null;
+    allergens: AllergenType[];
+    dietaryPreferences: string[];
 }
 
-interface UserContextType {
-    // Data
+export interface UserContextType {
     familyMembers: FamilyMember[];
-    profilesData: Record<string, UserProfileData>;
+    profilesData: Record<string, ProfileData>;
     activeProfileId: string;
-
-    // Actions
     setActiveProfileId: (id: string) => void;
-    addFamilyMember: (name: string, role: FamilyRole) => void;
-    updateProfileData: (profileId: string, key: keyof UserProfileData, value: any) => void;
-    updateMemberInfo: (id: string, updates: Partial<FamilyMember>) => void;
-    deleteFamilyMember: (id: string) => void;
 
-    // Helpers
-    getActiveProfile: () => FamilyMember;
-    getActiveData: () => UserProfileData;
+    addFamilyMember: (name: string, role: FamilyRole) => Promise<void>;
+    deleteFamilyMember: (id: string) => Promise<void>;
+    updateMemberInfo: (id: string, updates: Partial<FamilyMember>) => Promise<void>;
+    updateProfileData: (id: string, field: keyof ProfileData, value: any) => Promise<void>;
+
+    getActiveProfile: () => FamilyMember | undefined;
+    getActiveData: () => ProfileData;
+
+    isLoading: boolean;
 }
 
-export const getSafeIcon = (iconName: string): any => {
-    if (iconName === "person") return "account";  
-    return iconName;
-};
-
-const UserContext = createContext<UserContextType | undefined>(undefined);
-
-export const AVATAR_ICONS = [
-    "face-man", "face-woman", "face-man-profile", "face-woman-profile",
-    "face-man-shimmer", "face-woman-shimmer", "baby-face", "robot",
-    "cat", "dog", "bear", "panda"
-];
+const UserContext = createContext<UserContextType>({} as UserContextType);
 
 export const AVATAR_COLORS = [
     "#EF4444", "#F97316", "#F59E0B", "#84CC16", "#10B981",
     "#06B6D4", "#3B82F6", "#6366F1", "#8B5CF6", "#EC4899"
 ];
 
-export function UserProvider({ children }: { children: React.ReactNode }) {
-    // --- STATE ---
-    const [activeProfileId, setActiveProfileId] = useState<string>("main_user");
+export const getSafeIcon = (iconName: string): any => {
+    if (!iconName || iconName === "person") return "account";
+    return iconName;
+};
 
-    const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([
-        { id: "main_user", name: "Ahmet Demiroğlu", role: "myself", color: Colors.primary, avatarIcon: "person" }
-    ]);
+export const UserProvider = ({ children }: { children: React.ReactNode }) => {
+    const { user, userProfile } = useAuth();
 
-    const [profilesData, setProfilesData] = useState<Record<string, UserProfileData>>({
-        "main_user": { diet: null, allergens: [] }
+    const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
+    const [activeProfileId, setActiveProfileId] = useState<string>('main_user');
+    const [isLoading, setIsLoading] = useState(true);
+
+    const profilesData: Record<string, ProfileData> = {};
+    familyMembers.forEach(m => {
+        profilesData[m.id] = {
+            diet: m.diet,
+            allergens: m.allergens || [],
+            dietaryPreferences: []
+        };
     });
 
-    const addFamilyMember = (name: string, role: FamilyRole) => {
-        const newId = Date.now().toString();
+    // 1. VERİLERİ ÇEKME (FETCH)
+    const fetchFamily = async () => {
+        if (!user) {
+            setFamilyMembers([]);
+            return;
+        }
 
-        const randomColor = AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
-        const defaultIcon = "account";
+        setIsLoading(true);
+        try {
+            // A) Ana Kullanıcı
+            const mainUser: FamilyMember = {
+                id: 'main_user',
+                name: userProfile?.email?.split('@')[0] || "Ben",
+                role: 'self',
+                avatarIcon: "account",
+                color: AVATAR_COLORS[0],
+                diet: (userProfile?.dietaryPreferences?.[0] as DietType) || null,
+                allergens: (userProfile?.allergens as AllergenType[]) || [],
+                createdAt: userProfile?.createdAt
+            };
 
-        const newMember: FamilyMember = {
-            id: newId,
-            name,
-            role,
-            avatarIcon: defaultIcon,
-            color: randomColor
+            // B) Alt Üyeler
+            const subMembersDocs = await getFamilyMembersFromDB(user.uid);
+            const subMembers: FamilyMember[] = subMembersDocs.map(m => ({
+                ...m,
+                diet: (m.diet as DietType) || null,
+                allergens: (m.allergens as AllergenType[]) || []
+            }));
+
+            // C) Birleştir
+            setFamilyMembers([mainUser, ...subMembers]);
+
+        } catch (error) {
+            console.error("Aile üyeleri çekilemedi:", error);
+            Alert.alert("Hata", "Aile bilgileri yüklenemedi.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchFamily();
+    }, [user, userProfile]);
+
+    // 2. EKLEME (ADD)
+    const addFamilyMember = async (name: string, role: FamilyRole) => {
+        if (!user) return;
+
+        try {
+            const randomColor = AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
+
+            const newMemberData = {
+                name,
+                role,
+                avatarIcon: "account",
+                color: randomColor,
+                diet: null,
+                allergens: []
+            };
+
+            await addFamilyMemberToDB(user.uid, newMemberData);
+            await fetchFamily();
+
+        } catch (error) {
+            console.error("Üye eklenemedi:", error);
+            Alert.alert("Hata", "Yeni üye eklenirken sorun oluştu.");
+        }
+    };
+
+    // 3. SİLME (DELETE)
+    const deleteFamilyMember = async (id: string) => {
+        if (!user || id === 'main_user') return;
+        try {
+            await deleteFamilyMemberFromDB(user.uid, id);
+            if (activeProfileId === id) setActiveProfileId('main_user');
+            setFamilyMembers(prev => prev.filter(m => m.id !== id));
+        } catch (error) {
+            console.error("Üye silinemedi:", error);
+            Alert.alert("Hata", "Üye silinemedi.");
+        }
+    };
+
+    // 4. GÜNCELLEME (UPDATE)
+    const updateMemberInfo = async (id: string, updates: Partial<FamilyMember>) => {
+        if (!user) return;
+        try {
+            if (id === 'main_user') {
+                setFamilyMembers(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
+            } else {
+                await updateFamilyMemberInDB(user.uid, id, updates as any);
+                setFamilyMembers(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
+            }
+        } catch (error) {
+            console.error("Güncelleme hatası:", error);
+        }
+    };
+
+    // 5. DATA GÜNCELLEME
+    const updateProfileData = async (id: string, field: keyof ProfileData, value: any) => {
+        if (!user) return;
+        const updates: any = {};
+        if (field === 'diet') updates.diet = value;
+        if (field === 'allergens') updates.allergens = value;
+        await updateMemberInfo(id, updates);
+    };
+
+    const getActiveProfile = () => familyMembers.find(m => m.id === activeProfileId);
+
+    const getActiveData = () => {
+        const profile = getActiveProfile();
+        return {
+            diet: profile?.diet || null,
+            allergens: profile?.allergens || [],
+            dietaryPreferences: []
         };
-
-        setFamilyMembers(prev => [...prev, newMember]);
-
-        setProfilesData(prev => ({
-            ...prev,
-            [newId]: { diet: null, allergens: [], dietaryPreferences: [] }
-        }));
     };
-
-    const deleteFamilyMember = (id: string) => {
-        if (id === 'main_user') return;
-        setFamilyMembers(prev => prev.filter(m => m.id !== id));
-        setProfilesData(prev => {
-            const newState = { ...prev };
-            delete newState[id];
-            return newState;
-        });
-    };
-
-    const updateProfileData = (profileId: string, key: keyof UserProfileData, value: any) => {
-        setProfilesData(prev => ({
-            ...prev,
-            [profileId]: { ...prev[profileId], [key]: value }
-        }));
-    };
-
-    const updateMemberInfo = (id: string, updates: Partial<FamilyMember>) => {
-        setFamilyMembers(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
-    };
-
-    const getActiveProfile = () => familyMembers.find(m => m.id === activeProfileId) || familyMembers[0];
-    const getActiveData = () => profilesData[activeProfileId] || { diet: null, allergens: [] };
 
     return (
         <UserContext.Provider value={{
@@ -122,20 +195,15 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             setActiveProfileId,
             addFamilyMember,
             deleteFamilyMember,
-            updateProfileData,
             updateMemberInfo,
+            updateProfileData,
             getActiveProfile,
-            getActiveData
+            getActiveData,
+            isLoading
         }}>
             {children}
         </UserContext.Provider>
     );
-}
+};
 
-export function useUser() {
-    const context = useContext(UserContext);
-    if (!context) {
-        throw new Error("useUser must be used within a UserProvider");
-    }
-    return context;
-}
+export const useUser = () => useContext(UserContext);

@@ -594,11 +594,11 @@ export default function NutritionScreen() {
                 {["spouse", "child", "mother", "father", "sibling", "friend", "other"].map((role) => (
                   <TouchableOpacity
                     key={role}
-                    style={[styles.roleChip, newMemberRole === role && styles.roleChipActive]}
-                    onPress={() => setNewMemberRole(role as FamilyRole)}
+                    style={[styles.roleChip, tempRole === role && styles.roleChipActive]}
+                    onPress={() => setTempRole(role as FamilyRole)}
                   >
-                    <Text style={[styles.roleText, newMemberRole === role && { color: '#FFF' }]}>
-                      {t(`nutrition.family.roles.${role}`)}
+                    <Text style={[styles.roleText, tempRole === role && { color: '#FFF' }]}>
+                      {t(`nutrition.family.roles.${role}`, role)}
                     </Text>
                   </TouchableOpacity>
                 ))}

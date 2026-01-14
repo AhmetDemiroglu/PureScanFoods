@@ -265,7 +265,7 @@
             "update": "Update",
             "delete": "Delete",
             "roles": {
-                "myself": "Myself",
+                "self": "Myself",
                 "spouse": "Spouse",
                 "child": "Child",
                 "mother": "Mother",
