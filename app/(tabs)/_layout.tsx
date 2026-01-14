@@ -26,21 +26,30 @@ export default function TabsLayout() {
           paddingTop: 8,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: "500",
         },
       }}
     >
+      {/* 1. SOL: Beslenme */}
       <Tabs.Screen
         name="nutrition"
         options={{
           title: t("navigation.nutrition"),
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="nutrition-outline" size={24} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <Ionicons name="nutrition-outline" size={24} color={color} />,
         }}
       />
 
+      {/* 2. SOL-ORTA: Listeler */}
+      <Tabs.Screen
+        name="lists"
+        options={{
+          title: t("navigation.lists"),
+          tabBarIcon: ({ color }) => <Ionicons name="list-outline" size={24} color={color} />,
+        }}
+      />
+
+      {/* 3. ORTA: Scan (Home) */}
       <Tabs.Screen
         name="index"
         options={{
@@ -58,13 +67,21 @@ export default function TabsLayout() {
         }}
       />
 
+      {/* 4. SAĞ-ORTA: Ansiklopedi */}
+      <Tabs.Screen
+        name="encyclopedia"
+        options={{
+          title: t("navigation.encyclopedia"),
+          tabBarIcon: ({ color }) => <Ionicons name="book-outline" size={24} color={color} />,
+        }}
+      />
+
+      {/* 5. SAĞ: Ayarlar */}
       <Tabs.Screen
         name="settings"
         options={{
           title: t("navigation.settings"),
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="settings-outline" size={24} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <Ionicons name="settings-outline" size={24} color={color} />,
         }}
       />
     </Tabs>

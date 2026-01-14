@@ -1,8 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { View, Text, Pressable, StyleSheet, Dimensions, TextInput, ActivityIndicator, Modal, TouchableOpacity } from "react-native";
+import { View, Text, Pressable, StyleSheet, Dimensions, TextInput, ActivityIndicator, Modal, TouchableOpacity, Animated, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -14,6 +14,8 @@ import { callGemini } from "../../lib/api";
 import ProcessingView from "../../components/ui/ProcessingView";
 import { TempStore } from "../../lib/tempStore";
 import { generateAnalysisPrompt } from "../../lib/prompt";
+import * as ImagePicker from "expo-image-picker";
+import * as ScreenOrientation from "expo-screen-orientation";
 
 type ScanTab = "camera" | "barcode" | "text";
 
@@ -25,6 +27,10 @@ export default function ScanScreen() {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<ScanTab>("camera");
   const { userProfile } = useAuth();
+  const [flashOn, setFlashOn] = useState(false);
+
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
 
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
@@ -32,9 +38,39 @@ export default function ScanScreen() {
   const router = useRouter();
 
   const [showCamera, setShowCamera] = useState(false);
+  const scanLineAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   const [barcodeInput, setBarcodeInput] = useState("");
   const [textInput, setTextInput] = useState("");
+
+
+
+  useEffect(() => {
+    if (showCamera) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(scanLineAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
+          Animated.timing(scanLineAnim, { toValue: 0, duration: 2000, useNativeDriver: true }),
+        ])
+      ).start();
+
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, { toValue: 1.1, duration: 1000, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
+        ])
+      ).start();
+    }
+  }, [showCamera]);
+
+  useEffect(() => {
+    if (showCamera) {
+      ScreenOrientation.unlockAsync();
+    } else {
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+    }
+  }, [showCamera]);
 
   if (isScanning) {
     return <ProcessingView />;
@@ -118,102 +154,238 @@ export default function ScanScreen() {
                   <Modal
                     visible={showCamera}
                     animationType="slide"
+                    supportedOrientations={["portrait", "landscape"]}
                     onRequestClose={() => setShowCamera(false)}
                   >
-                    <View style={{ flex: 1, backgroundColor: "black" }}>
-                      {/* 1. Kamera Katmanı */}
+                    <View style={styles.cameraContainer}>
+                      {/* Kamera */}
                       <CameraView
                         style={StyleSheet.absoluteFill}
                         facing="back"
                         ref={cameraRef}
+                        enableTorch={flashOn}
+                      />
+                      {/* Üst Gradient Overlay */}
+                      <LinearGradient
+                        colors={["rgba(0,0,0,0.7)", "transparent"]}
+                        style={styles.topOverlay}
                       />
 
-                      {/* 2. Üst Bar: Kapatma Butonu  */}
-                      <View style={styles.cameraHeader}>
-                        <TouchableOpacity style={styles.closeButton} onPress={() => setShowCamera(false)}>
-                          <Ionicons name="close" size={28} color={Colors.white} />
+                      {/* Alt Gradient Overlay */}
+                      <LinearGradient
+                        colors={["transparent", "rgba(0,0,0,0.8)"]}
+                        style={styles.bottomOverlay}
+                      />
+
+                      {/* Header */}
+                      <SafeAreaView style={styles.cameraHeaderNew}>
+                        <TouchableOpacity style={styles.closeButtonNew} onPress={() => setShowCamera(false)}>
+                          <Ionicons name="close" size={24} color={Colors.white} />
                         </TouchableOpacity>
+                        <View style={styles.headerTitle}>
+                          <Ionicons name="scan" size={20} color={Colors.primary} />
+                          <Text style={styles.headerTitleText}>PureScan Foods</Text>
+                        </View>
+                        <View style={{ width: 40 }} />
+                      </SafeAreaView>
+
+                      {/* Tarama Çerçevesi */}
+                      <View style={[
+                        styles.scanFrameContainer,
+                        {
+                          width: isLandscape ? width * 0.75 : width * 0.85,
+                          height: isLandscape ? 220 : 180,
+                          marginLeft: isLandscape ? -(width * 0.75) / 2 : -(width * 0.85) / 2,
+                          marginTop: isLandscape ? -110 : -90,
+                        }
+                      ]}>
+
+                        {/* Köşe İşaretleri */}
+                        <View style={[styles.corner, styles.cornerTL]} />
+                        <View style={[styles.corner, styles.cornerTR]} />
+                        <View style={[styles.corner, styles.cornerBL]} />
+                        <View style={[styles.corner, styles.cornerBR]} />
+
+                        {/* Animasyonlu Scan Line */}
+                        <Animated.View
+                          style={[
+                            styles.scanLine,
+                            {
+                              transform: [{
+                                translateY: scanLineAnim.interpolate({
+                                  inputRange: [0, 1],
+                                  outputRange: [0, isLandscape ? 200 : 160],
+                                }),
+                              }],
+                            },
+                          ]}
+                        />
+
+                        {/* Merkez İkonu */}
+                        <View style={styles.centerIcon}>
+                          <Ionicons name="leaf-outline" size={32} color="rgba(255,255,255,0.3)" />
+                        </View>
                       </View>
 
-                      {/* 3. Alt Bar: Çekim Butonu  */}
-                      <View style={styles.cameraFooter}>
-                        <Pressable
-                          style={styles.captureButton}
-                          onPress={async () => {
-                            if (cameraRef.current) {
-                              try {
-                                console.log("📸 Çekim komutu gönderildi...");
+                      {/* Yönlendirme Metni */}
+                      <View style={styles.guidanceContainer}>
+                        {!isLandscape && (
+                          <View style={styles.rotateWarning}>
+                            <Ionicons name="phone-landscape-outline" size={20} color={Colors.primary} />
+                            <Text style={styles.rotateWarningText}>
+                              {t("scan.rotateHint")} {"\n"}
+                              <Text style={styles.rotateWarningSubtext}>
+                                {t("scan.rotationLockHint")}
+                              </Text>
+                            </Text>
+                          </View>
+                        )}
+                        <Text style={styles.guidanceTitle}>
+                          {t("scan.frameTitle")}
+                        </Text>
+                        <Text style={styles.guidanceSubtitle}>
+                          {isLandscape ? t("scan.frameSubtitleLandscape") : t("scan.frameSubtitlePortrait")}
+                        </Text>
+                      </View>
 
-                                const photo = await cameraRef.current.takePictureAsync({
-                                  base64: true,
-                                  quality: 0.3,
-                                  skipProcessing: true,
-                                  shutterSound: false
-                                });
+                      {/* Alt Kontroller */}
+                      <View style={styles.cameraControls}>
+                        {/* Flash Toggle */}
+                        <TouchableOpacity
+                          style={[styles.controlButton, flashOn && styles.controlButtonActive]}
+                          onPress={() => setFlashOn(!flashOn)}
+                        >
+                          <Ionicons
+                            name={flashOn ? "flash" : "flash-off-outline"}
+                            size={24}
+                            color={flashOn ? Colors.primary : Colors.white}
+                          />
+                        </TouchableOpacity>
 
-                                console.log("✅ Fotoğraf başarıyla hafızada.");
+                        {/* Ana Çekim Butonu */}
+                        <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+                          <Pressable
+                            style={styles.captureButtonNew}
+                            onPress={async () => {
+                              if (cameraRef.current) {
+                                try {
+                                  console.log("📸 Çekim komutu gönderildi...");
 
-                                setIsScanning(true);
-                                setShowCamera(false);
+                                  const photo = await cameraRef.current.takePictureAsync({
+                                    base64: true,
+                                    quality: 0.3,
+                                    skipProcessing: true,
+                                    shutterSound: false
+                                  });
 
-                                if (photo.base64) {
+                                  console.log("✅ Fotoğraf başarıyla hafızada.");
+
+                                  setIsScanning(true);
+                                  setShowCamera(false);
+
+                                  if (photo.base64) {
+                                    const currentLang = i18n.language;
+                                    const systemPrompt = generateAnalysisPrompt(currentLang, userProfile);
+
+                                    callGemini("gemini-2.5-flash-preview-09-2025:generateContent", {
+                                      contents: [{
+                                        parts: [
+                                          { text: systemPrompt },
+                                          { inlineData: { mimeType: "image/jpeg", data: photo.base64 } }
+                                        ]
+                                      }]
+                                    })
+                                      .then((result) => {
+                                        const rawText = (result as any).candidates[0].content.parts[0].text;
+                                        console.log("🔍 Ham Gemini Yanıtı:", rawText);
+
+                                        const startIndex = rawText.indexOf('{');
+                                        const endIndex = rawText.lastIndexOf('}');
+
+                                        if (startIndex === -1 || endIndex === -1) {
+                                          throw new Error("Yanıtta JSON bulunamadı.");
+                                        }
+
+                                        const cleanJson = rawText.substring(startIndex, endIndex + 1);
+                                        const parsedData = JSON.parse(cleanJson);
+
+                                        console.log("✅ AI Response:", parsedData);
+
+                                        TempStore.setResult(parsedData, photo.uri);
+                                        router.push("/product-result");
+
+                                        setTimeout(() => setIsScanning(false), 500);
+                                      })
+                                      .catch((parseError) => {
+                                        console.error("Hata:", parseError);
+                                        alert("Veri işlenemedi. Tekrar deneyin.");
+                                        setIsScanning(false);
+                                      });
+                                  }
+                                } catch (e) {
+                                  console.error("❌ Hata:", e);
+                                  alert("Hata oluştu, tekrar deneyin.");
+                                  setIsScanning(false);
+                                }
+                              }
+                            }}
+                          >
+                            {isScanning ? (
+                              <ActivityIndicator size="large" color={Colors.primary} />
+                            ) : (
+                              <View style={styles.captureButtonInner}>
+                                <Ionicons name="scan" size={28} color={Colors.white} />
+                              </View>
+                            )}
+                          </Pressable>
+                        </Animated.View>
+
+                        {/* Galeri */}
+                        <TouchableOpacity
+                          style={styles.controlButton}
+                          onPress={() => {
+                            ImagePicker.launchImageLibraryAsync({
+                              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                              base64: true,
+                              quality: 0.3,
+                            })
+                              .then((result) => {
+                                if (!result.canceled && result.assets[0].base64) {
+                                  setShowCamera(false);
+                                  setIsScanning(true);
+
                                   const currentLang = i18n.language;
                                   const systemPrompt = generateAnalysisPrompt(currentLang, userProfile);
 
-                                  const result = await callGemini("gemini-2.5-flash-preview-09-2025:generateContent", {
+                                  return callGemini("gemini-2.5-flash-preview-09-2025:generateContent", {
                                     contents: [{
                                       parts: [
                                         { text: systemPrompt },
-                                        { inlineData: { mimeType: "image/jpeg", data: photo.base64 } }
+                                        { inlineData: { mimeType: "image/jpeg", data: result.assets[0].base64 } }
                                       ]
                                     }]
-                                  });
+                                  })
+                                    .then((apiResult) => {
+                                      const rawText = (apiResult as any).candidates[0].content.parts[0].text;
+                                      const startIndex = rawText.indexOf('{');
+                                      const endIndex = rawText.lastIndexOf('}');
+                                      const cleanJson = rawText.substring(startIndex, endIndex + 1);
+                                      const parsedData = JSON.parse(cleanJson);
 
-                                  try {
-                                    const rawText = (result as any).candidates[0].content.parts[0].text;
-                                    console.log("🔍 Ham Gemini Yanıtı:", rawText);
-
-                                    const startIndex = rawText.indexOf('{');
-                                    const endIndex = rawText.lastIndexOf('}');
-
-                                    if (startIndex === -1 || endIndex === -1) {
-                                      throw new Error("Yanıtta JSON bulunamadı.");
-                                    }
-
-                                    const cleanJson = rawText.substring(startIndex, endIndex + 1);
-                                    const parsedData = JSON.parse(cleanJson);
-
-                                    console.log("✅ AI Response:", parsedData);
-                                    console.log("📊 Safety Breakdown:", parsedData.scores?.safety?.breakdown);
-
-                                    TempStore.setResult(parsedData, photo.uri);
-                                    router.push("/product-result");
-
-                                    setTimeout(() => {
-                                      setIsScanning(false);
-                                    }, 500);
-
-                                  } catch (parseError) {
-                                    console.error("JSON Parse Hatası:", parseError);
-                                    alert("Veri işlenemedi. Tekrar deneyin.");
-                                    setIsScanning(false);
-                                  }
+                                      TempStore.setResult(parsedData, result.assets[0].uri);
+                                      router.push("/product-result");
+                                      setTimeout(() => setIsScanning(false), 500);
+                                    });
                                 }
-
-                              } catch (e) {
-                                console.error("❌ Hata:", e);
-                                alert("Hata oluştu, tekrar deneyin.");
+                              })
+                              .catch((err) => {
+                                console.error("Galeri hatası:", err);
                                 setIsScanning(false);
-                              }
-                            }
+                              });
                           }}
                         >
-                          {isScanning ? (
-                            <ActivityIndicator size="large" color={Colors.primary} />
-                          ) : (
-                            <View style={styles.captureInner} />
-                          )}
-                        </Pressable>
+                          <Ionicons name="images-outline" size={24} color={Colors.white} />
+                        </TouchableOpacity>
                       </View>
                     </View>
                   </Modal>
@@ -299,7 +471,7 @@ export default function ScanScreen() {
         </View>
 
       </View>
-    </SafeAreaView>
+    </SafeAreaView >
   );
 }
 
@@ -466,45 +638,207 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 15,
   },
-
-  captureButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "rgba(255,255,255,0.3)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  fullScreenCamera: {
+  cameraContainer: {
     flex: 1,
     backgroundColor: "black",
   },
-  cameraHeader: {
+  topOverlay: {
     position: "absolute",
-    top: 50,
-    right: 20,
-    zIndex: 10,
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 150,
   },
-  closeButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(0,0,0,0.5)",
+  bottomOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 200,
+  },
+  cameraHeaderNew: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  closeButtonNew: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.15)",
     alignItems: "center",
     justifyContent: "center",
   },
-  cameraFooter: {
+  headerTitle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  headerTitleText: {
+    color: Colors.white,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  scanFrameContainer: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+  },
+  corner: {
+    position: "absolute",
+    width: 40,
+    height: 40,
+    borderColor: Colors.primary,
+  },
+  cornerTL: {
+    top: 0,
+    left: 0,
+    borderTopWidth: 4,
+    borderLeftWidth: 4,
+    borderTopLeftRadius: 16,
+  },
+  cornerTR: {
+    top: 0,
+    right: 0,
+    borderTopWidth: 4,
+    borderRightWidth: 4,
+    borderTopRightRadius: 16,
+  },
+  cornerBL: {
+    bottom: 0,
+    left: 0,
+    borderBottomWidth: 4,
+    borderLeftWidth: 4,
+    borderBottomLeftRadius: 16,
+  },
+  cornerBR: {
+    bottom: 0,
+    right: 0,
+    borderBottomWidth: 4,
+    borderRightWidth: 4,
+    borderBottomRightRadius: 16,
+  },
+  scanLine: {
+    position: "absolute",
+    left: 10,
+    right: 10,
+    height: 2,
+    backgroundColor: Colors.primary,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
+  },
+  centerIcon: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    marginLeft: -16,
+    marginTop: -16,
+  },
+  guidanceContainer: {
+    position: "absolute",
+    bottom: 180,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    paddingHorizontal: 40,
+  },
+  guidanceTitle: {
+    color: Colors.white,
+    fontSize: 18,
+    fontWeight: "700",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  guidanceSubtitle: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  cameraControls: {
     position: "absolute",
     bottom: 50,
     left: 0,
     right: 0,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    gap: 40,
   },
-  captureInner: {
+  controlButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  captureButtonNew: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  captureButtonInner: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.primary,
+    borderWidth: 3,
+    borderColor: "rgba(255,255,255,0.3)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  controlButtonActive: {
+    backgroundColor: "rgba(255,255,255,0.3)",
+  },
+  scanFramePortrait: {
+    width: "85%",
+    height: 180,
+    marginLeft: "-42.5%",
+    marginTop: -90,
+  },
+  scanFrameLandscape: {
+    width: "75%",
+    height: 220,
+    marginLeft: "-37.5%",
+    marginTop: -110,
+  },
+  rotateWarning: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "rgba(255, 152, 0, 0.2)",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255, 152, 0, 0.3)",
+  },
+  rotateWarningText: {
+    color: Colors.primary,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  rotateWarningSubtext: {
+    fontSize: 11,
+    fontWeight: "400",
+    color: "rgba(255, 152, 0, 0.8)",
   },
 });

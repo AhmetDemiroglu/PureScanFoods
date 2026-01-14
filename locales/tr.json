@@ -4,8 +4,14 @@
         "tagline": "Foods"
     },
     "navigation": {
-        "nutrition": "Beslenme Profili",
+        "nutrition": "Beslenme",
+        "lists": "Listeler",
+        "encyclopedia": "Sözlük",
         "settings": "Ayarlar"
+    },
+    "library": {
+        "title": "Gıda Kütüphanesi",
+        "subtitle": "Katkı maddeleri ve NOVA rehberi"
     },
     "home": {
         "headline": "Gıdalarınızda Neler Var?",
@@ -136,7 +142,12 @@
             "Nohut, 7500 yıldır insanlar tarafından tüketilmektedir.",
             "Soya fasulyesi, bitkisel protein kaynakları arasında en tam aminoasit profiline sahiptir."
         ],
-        "waitMessages": ["Detaylara iniyoruz...", "Yapay zeka verileri karşılaştırıyor...", "Az kaldı, sabrınız için teşekkürler...", "Son rötuşlar yapılıyor..."]
+        "waitMessages": [
+            "Detaylara iniyoruz...",
+            "Yapay zeka verileri karşılaştırıyor...",
+            "Az kaldı, sabrınız için teşekkürler...",
+            "Son rötuşlar yapılıyor..."
+        ]
     },
     "results": {
         "ingredients": "İçindekiler",
@@ -184,5 +195,44 @@
             "title": "YASAL UYARI",
             "text": "Bu analiz yapay zeka tarafından oluşturulmuştur ve tıbbi tavsiye niteliği taşımaz. Sonuçlar, genel veritabanı eşleşmelerine dayanır ve kesinlik garantisi vermez. Alerjen riskiniz varsa lütfen ürün üzerindeki etiketi kontrol ediniz ve doktorunuza danışınız."
         }
+    },
+    "nutrition": {
+        "subtitle": "Kişisel sağlık tercihlerinizi yönetin",
+        "dietTitle": "Diyet Programı",
+        "allergenTitle": "Alerjenlerim",
+        "change": "Değiştir",
+        "edit": "Düzenle",
+        "noDiet": "Henüz bir diyet seçilmedi.",
+        "noAllergen": "Kayıtlı alerjen yok.",
+        "strict": "Sıkı Kural",
+        "modalDiet": "Diyet Seçimi",
+        "modalAllergen": "Alerjenleri Yönet",
+        "family": {
+            "title": "Aile Profilleri",
+            "desc": "Çocuğunuz veya eşiniz için profil oluşturun, analizler ona göre yapılsın.",
+            "add": "Aile Üyesi Ekle",
+            "emptyTitle": "Henüz kimse yok",
+            "emptyDesc": "Aile üyelerinizi ekleyerek onların diyetlerine uygun analiz yapabilirsiniz.",
+            "inputName": "İsim",
+            "selectRole": "Yakınlık Derecesi",
+            "save": "Kaydet",
+            "roles": {
+                "myself": "Kendim",
+                "spouse": "Eş",
+                "child": "Çocuk",
+                "mother": "Anne",
+                "father": "Baba",
+                "sibling": "Kardeş",
+                "friend": "Arkadaş",
+                "other": "Diğer"
+            }
+        }
+    },
+    "scan": {
+        "rotateHint": "Daha iyi sonuç için telefonu yatay çevirin",
+        "rotationLockHint": "Dönmüyorsa: Ayarlar > Ekran döndürme kilidini kapatın",
+        "frameTitle": "İçerik Listesini Çerçeveleyin",
+        "frameSubtitlePortrait": "Uzun içerik listeleri için telefonu yatay tutun",
+        "frameSubtitleLandscape": "İçerik listesini tarama alanına yerleştirin"
     }
 }
