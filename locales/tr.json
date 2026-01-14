@@ -160,6 +160,15 @@
         "unknownBrand": "Marka Bilinmiyor",
         "unknownProduct": "Ürün Adı Yok",
         "detailedAnalysis": "DETAYLI ANALİZ",
+        "family": {
+            "title": "AİLE UYUMU",
+            "safe": "Güvenli",
+            "risk": "Riskli",
+            "unsafe": "Sakıncalı",
+            "unknown": "Bilinmiyor",
+            "alertTitle": "Uyum Analizi",
+            "reasons": "Tespit edilenler:"
+        },
         "badges": {
             "food": "Gıda Ürünü",
             "notFood": "Gıda Değil",
@@ -186,6 +195,23 @@
         "scores": {
             "safety": "GÜVENLİK",
             "compatibility": "UYUM"
+        }
+    },
+    "analysis": {
+        "status": {
+            "safe": "Uyumlu",
+            "risk": "Dikkat",
+            "avoid": "Uyumsuz",
+            "uncertain": "Belirsiz"
+        },
+        "findings": {
+            "high_allergen": "{{source}} riski ({{keyword}}).",
+            "medium_ambiguous": "{{keyword}} potansiyel {{source}} kaynağı olabilir.",
+            "diet_violation": "{{diet}} diyetine uygun değil: {{keyword}}",
+            "safe_summary": "Profilinize uygun görünüyor.",
+            "high_risk_summary": "{{source}} tespit edildi. Tüketmeyiniz.",
+            "medium_risk_summary": "{{keyword}} içeriyor, riskli olabilir.",
+            "gluten_ambiguous": "Gluten şüphesi (Maltodekstrin kaynağı belirsiz)."
         }
     },
     "common": {
@@ -235,4 +261,4 @@
         "frameSubtitlePortrait": "Uzun içerik listeleri için telefonu yatay tutun",
         "frameSubtitleLandscape": "İçerik listesini tarama alanına yerleştirin"
     }
-}
+}   

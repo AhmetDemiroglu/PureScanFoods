@@ -1,5 +1,8 @@
-import React from "react";
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions, StatusBar } from "react-native";
+import React, { useState, useRef } from "react";
+import {
+    View, Text, StyleSheet, Image, ScrollView, TouchableOpacity,
+    Dimensions, StatusBar, Modal, Pressable, PanResponder
+} from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Colors } from "../constants/colors";
@@ -8,6 +11,9 @@ import ScoreRing from "../components/ui/ScoreRing";
 import { LinearGradient } from "expo-linear-gradient";
 import { TempStore } from "../lib/tempStore";
 import DetailCards from "../components/product/DetailCards";
+import { useUser } from "../context/UserContext";
+import { analyzeEngine, CompatibilityReport } from "../lib/analysisEngine";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 const { width } = Dimensions.get("window");
 const IMAGE_HEIGHT = 320;
@@ -37,21 +43,59 @@ const BADGE_CONFIG: Record<string, { icon: keyof typeof Ionicons.glyphMap; color
 export default function ProductResultScreen() {
     const { t } = useTranslation();
     const router = useRouter();
+    const { familyMembers, profilesData } = useUser();
 
+    // TempStore Verisi
     const { data, image } = TempStore.getResult();
     const imageUri = image || undefined;
+
+    // Modal State
+    const [selectedMemberReport, setSelectedMemberReport] = useState<{ member: any, report: CompatibilityReport } | null>(null);
+    const [showDetailModal, setShowDetailModal] = useState(false);
+
+    // PanResponder (Modal Kapatma İçin)
+    const panResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 5,
+            onPanResponderRelease: (_, gestureState) => {
+                if (gestureState.dy > 50) setShowDetailModal(false);
+            },
+        })
+    ).current;
 
     if (!data) {
         return (
             <View style={styles.errorContainer}>
                 <Ionicons name="alert-circle-outline" size={48} color={Colors.gray[400]} />
-                <Text style={styles.errorText}>{t("results.errorLoad")}</Text>                <TouchableOpacity style={styles.backButtonSimple} onPress={() => router.back()}>
-                    <Text style={styles.backButtonText}>{t("common.back")}</Text>                </TouchableOpacity>
+                <Text style={styles.errorText}>{t("results.errorLoad")}</Text>
+                <TouchableOpacity style={styles.backButtonSimple} onPress={() => router.back()}>
+                    <Text style={styles.backButtonText}>{t("common.back")}</Text>
+                </TouchableOpacity>
             </View>
         );
     }
 
     const { product, scores } = data;
+
+    const ingredientNames = data.details?.ingredients?.map((i: any) => i.name) || [];
+
+    const familyAnalysis = familyMembers.map(member => {
+        const profile = profilesData[member.id];
+        const safetyScore = scores.safety?.value || 50;
+        const report = analyzeEngine(ingredientNames, profile, safetyScore, t);
+
+        return { member, report };
+    });
+
+    const ownerAnalysis = familyAnalysis.find(f => f.member.id === "main_user") || familyAnalysis[0];
+    const displayScore = ownerAnalysis ? ownerAnalysis.report.score : (scores.compatibility?.value || 0);
+    const displayVerdict = ownerAnalysis ? ownerAnalysis.report.title : (scores.compatibility?.verdict || "");
+
+    const handleMemberPress = (item: { member: any, report: CompatibilityReport }) => {
+        setSelectedMemberReport(item);
+        setShowDetailModal(true);
+    };
 
     return (
         <View style={styles.container}>
@@ -125,8 +169,9 @@ export default function ProductResultScreen() {
 
                         <View style={styles.scoreDivider} />
 
+                        {/* GÜNCELLEME: Artık 'displayScore' kullanılıyor (Profil Sahibi) */}
                         <ScoreRing
-                            score={scores.compatibility?.value || 0}
+                            score={displayScore}
                             label={t("results.scores.compatibility")}
                             type="compatibility"
                             size={90}
@@ -134,23 +179,60 @@ export default function ProductResultScreen() {
                         />
                     </View>
 
-                    {scores.compatibility?.verdict && (
-                        <View style={[styles.verdictBox, {
-                            backgroundColor: scores.compatibility.value > 50 ? '#F0FDF4' : '#FEF2F2',
-                            borderColor: scores.compatibility.value > 50 ? '#BBF7D0' : '#FECACA'
+                    {/* GÜNCELLEME: Verdict artık dinamik */}
+                    <View style={[styles.verdictBox, {
+                        backgroundColor: displayScore > 50 ? '#F0FDF4' : '#FEF2F2',
+                        borderColor: displayScore > 50 ? '#BBF7D0' : '#FECACA'
+                    }]}>
+                        <Ionicons
+                            name={displayScore > 50 ? "checkmark-circle" : "alert-circle"}
+                            size={22}
+                            color={displayScore > 50 ? Colors.success : Colors.error}
+                        />
+                        <Text style={[styles.verdictText, {
+                            color: displayScore > 50 ? '#15803D' : '#B91C1C'
                         }]}>
-                            <Ionicons
-                                name={scores.compatibility.value > 50 ? "checkmark-circle" : "alert-circle"}
-                                size={22}
-                                color={scores.compatibility.value > 50 ? Colors.success : Colors.error}
-                            />
-                            <Text style={[styles.verdictText, {
-                                color: scores.compatibility.value > 50 ? '#15803D' : '#B91C1C'
-                            }]}>
-                                {scores.compatibility.verdict}
-                            </Text>
-                        </View>
-                    )}
+                            {displayVerdict}
+                        </Text>
+                    </View>
+                </View>
+
+                {/* --- YENİ EKLENTİ: AİLE LİSTESİ --- */}
+                <View style={styles.familySection}>
+                    <Text style={styles.sectionHeader}>{t("results.family.title")}</Text>
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
+                    >
+                        {familyAnalysis.map((item) => {
+                            const mScore = item.report.score;
+                            // Renk belirleme (Basit mantık)
+                            const ringColor = mScore >= 80 ? "#22C55E" : mScore >= 50 ? "#F59E0B" : "#EF4444";
+
+                            return (
+                                <TouchableOpacity
+                                    key={item.member.id}
+                                    style={styles.memberCard}
+                                    onPress={() => handleMemberPress(item)}
+                                >
+                                    <View style={[styles.memberAvatarRing, { borderColor: ringColor }]}>
+                                        <View style={[styles.memberAvatar, { backgroundColor: item.member.color }]}>
+                                            <MaterialCommunityIcons
+                                                name={item.member.avatarIcon as any}
+                                                size={20}
+                                                color="#FFF"
+                                            />
+                                        </View>
+                                        <View style={[styles.miniScoreBadge, { backgroundColor: ringColor }]}>
+                                            <Text style={styles.miniScoreText}>{mScore}</Text>
+                                        </View>
+                                    </View>
+                                    <Text style={styles.memberName} numberOfLines={1}>{item.member.name}</Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
                 </View>
 
                 <View style={styles.detailsContainer}>
@@ -168,6 +250,83 @@ export default function ProductResultScreen() {
 
                 <View style={{ height: 40 }} />
             </ScrollView>
+            {/* --- DETAY MODALI (BOTTOM SHEET) --- */}
+            <Modal
+                visible={showDetailModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowDetailModal(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <Pressable style={styles.modalDismiss} onPress={() => setShowDetailModal(false)} />
+
+                    {/* PanResponder burada devreye giriyor (Kaydır-Kapat) */}
+                    <View style={styles.bottomSheet} {...panResponder.panHandlers}>
+                        <View style={styles.bottomSheetHandle} />
+
+                        {selectedMemberReport && (
+                            <>
+                                {/* Modal Header: Kişi ve Skor */}
+                                <View style={styles.sheetHeader}>
+                                    <View style={styles.sheetHeaderLeft}>
+                                        <View style={[styles.modalAvatar, { backgroundColor: selectedMemberReport.member.color }]}>
+                                            <MaterialCommunityIcons
+                                                name={selectedMemberReport.member.avatarIcon as any}
+                                                size={24}
+                                                color="#FFF"
+                                            />
+                                        </View>
+                                        <View>
+                                            <Text style={styles.modalTitle}>{selectedMemberReport.member.name}</Text>
+                                            <Text style={[styles.modalSubtitle, { color: selectedMemberReport.report.color }]}>
+                                                {selectedMemberReport.report.title}
+                                            </Text>
+                                        </View>
+                                    </View>
+
+                                    <View style={[styles.modalScoreBadge, { backgroundColor: selectedMemberReport.report.color }]}>
+                                        <Text style={styles.modalScoreText}>{selectedMemberReport.report.score}</Text>
+                                    </View>
+                                </View>
+
+                                <View style={styles.divider} />
+
+                                {/* Modal Content: Nedenler */}
+                                <Text style={styles.reasonsTitle}>{t("results.family.reasons")}</Text>
+
+                                {selectedMemberReport.report.findings.length === 0 ? (
+                                    // Sorun Yoksa
+                                    <View style={styles.emptyStateBox}>
+                                        <Ionicons name="checkmark-circle" size={32} color={Colors.success} />
+                                        <Text style={styles.emptyStateText}>{selectedMemberReport.report.summary}</Text>
+                                    </View>
+                                ) : (
+                                    // Sorun Varsa (Listele)
+                                    <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false}>
+                                        {selectedMemberReport.report.findings.map((finding, index) => (
+                                            <View key={index} style={[styles.findingCard, {
+                                                backgroundColor: finding.severity === 'high' ? '#FEF2F2' : '#FFF7ED',
+                                                borderColor: finding.severity === 'high' ? '#FECACA' : '#FED7AA'
+                                            }]}>
+                                                <Ionicons
+                                                    name={finding.severity === 'high' ? "ban" : "alert-circle"}
+                                                    size={20}
+                                                    color={finding.severity === 'high' ? Colors.error : "#EA580C"}
+                                                />
+                                                <Text style={[styles.findingText, {
+                                                    color: finding.severity === 'high' ? '#B91C1C' : '#9A3412'
+                                                }]}>
+                                                    {finding.message}
+                                                </Text>
+                                            </View>
+                                        ))}
+                                    </ScrollView>
+                                )}
+                            </>
+                        )}
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -358,5 +517,155 @@ const styles = StyleSheet.create({
         marginBottom: 12,
         marginLeft: 24,
         letterSpacing: 1,
+    },
+    familySection: {
+        marginTop: 24,
+    },
+    memberCard: {
+        alignItems: 'center',
+        width: 64,
+    },
+    memberAvatarRing: {
+        width: 54,
+        height: 54,
+        borderRadius: 27,
+        borderWidth: 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 6,
+        backgroundColor: '#FFF',
+    },
+    memberAvatar: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    miniScoreBadge: {
+        position: 'absolute',
+        bottom: -4,
+        right: -4,
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: '#FFF',
+    },
+    miniScoreText: {
+        fontSize: 9,
+        fontWeight: 'bold',
+        color: '#FFF',
+    },
+    memberName: {
+        fontSize: 11,
+        color: Colors.gray[600],
+        fontWeight: '600',
+    },
+    // --- MODAL STİLLERİ ---
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        justifyContent: "flex-end",
+    },
+    modalDismiss: {
+        flex: 1,
+    },
+    bottomSheet: {
+        backgroundColor: "#FFF",
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 24,
+        paddingBottom: 40,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 20,
+    },
+    bottomSheetHandle: {
+        width: 40,
+        height: 5,
+        backgroundColor: Colors.gray[200],
+        borderRadius: 2.5,
+        alignSelf: 'center',
+        marginBottom: 20,
+    },
+    sheetHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    sheetHeaderLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    modalAvatar: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: Colors.secondary,
+    },
+    modalSubtitle: {
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    modalScoreBadge: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    modalScoreText: {
+        fontSize: 16,
+        fontWeight: '900',
+        color: '#FFF',
+    },
+    reasonsTitle: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: Colors.gray[500],
+        marginBottom: 12,
+        textTransform: 'uppercase',
+    },
+    findingCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        marginBottom: 8,
+        gap: 10,
+    },
+    findingText: {
+        fontSize: 13,
+        fontWeight: '600',
+        flex: 1,
+        lineHeight: 18,
+    },
+    emptyStateBox: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 20,
+        backgroundColor: '#F0FDF4',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#BBF7D0',
+        gap: 8,
+    },
+    emptyStateText: {
+        fontSize: 14,
+        color: '#15803D',
+        fontWeight: '600',
     },
 });

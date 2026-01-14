@@ -20,7 +20,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { Colors } from "../../constants/colors";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import {
   getAllDietTypes,
@@ -34,6 +34,7 @@ import {
   getAllergenDefinition,
   ALLERGEN_DEFINITIONS
 } from "../../lib/allergens";
+import { useUser, FamilyRole } from "../../context/UserContext";
 
 if (Platform.OS === 'android') {
   if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -41,29 +42,97 @@ if (Platform.OS === 'android') {
   }
 }
 
+type AvatarIconName = keyof typeof MaterialCommunityIcons.glyphMap;
+
 // --- AVATAR ASSETS ---
-const AVATAR_COLORS = ["#F59E0B", "#EA580C", "#DC2626", "#DB2777", "#9333EA", "#4F46E5", "#2563EB", "#0284C7", "#059669", "#65A30D"];
-const AVATAR_ICONS: (keyof typeof Ionicons.glyphMap)[] = [
-  "person", "woman", "man", "happy", "glasses", "body",
-  "heart", "star", "leaf", "rose", "flame", "water",
-  "barbell", "bicycle", "football", "tennisball", "paw", "fish",
-  "restaurant", "nutrition", "cafe", "beer", "game-controller", "rocket"
+const AVATAR_COLORS = [
+  // Sıcak Tonlar (Kırmızı, Turuncu, Sarı)
+  "#EF4444", "#DC2626", "#B91C1C", // Red
+  "#F97316", "#EA580C", "#C2410C", // Orange
+  "#F59E0B", "#D97706", "#B45309", // Amber
+  "#EAB308", "#CA8A04", "#A16207", // Yellow
+
+  // Soğuk Tonlar (Yeşil, Teal, Cyan)
+  "#84CC16", "#65A30D", "#4D7C0F", // Lime
+  "#10B981", "#059669", "#047857", // Emerald
+  "#14B8A6", "#0D9488", "#0F766E", // Teal
+  "#06B6D4", "#0891B2", "#0E7490", // Cyan
+
+  // Mavi ve İndigo Tonlar
+  "#3B82F6", "#2563EB", "#1D4ED8", // Blue
+  "#6366F1", "#4F46E5", "#4338CA", // Indigo
+  "#8B5CF6", "#7C3AED", "#6D28D9", // Violet
+
+  // Pembe ve Mor Tonlar
+  "#A855F7", "#9333EA", "#7E22CE", // Purple
+  "#D946EF", "#C026D3", "#A21CAF", // Fuchsia
+  "#EC4899", "#DB2777", "#BE185D", // Pink
+  "#F43F5E", "#E11D48", "#BE123C", // Rose
+
+  // Nötr ve Koyu Tonlar
+  "#64748B", "#475569", "#334155", // Slate
+  "#78716C", "#57534E", "#44403C"  // Stone
 ];
 
-type FamilyRole = "myself" | "spouse" | "child" | "mother" | "father" | "sibling" | "friend" | "other";
+const AVATAR_ICONS: AvatarIconName[] = [
+  // 👤 KİŞİLER & YÜZLER
+  "account", "account-circle", "face-man", "face-woman", "face-man-profile",
+  "human-greeting", "ninja", "pirate", "baby-face", "account-cowboy-hat",
+  "emoticon", "emoticon-happy", "emoticon-cool", "emoticon-wink", "emoticon-kiss",
+  "emoticon-excited", "emoticon-tongue", "emoticon-devil", "emoticon-poop", "emoticon-neutral",
 
-interface UserProfileData {
-  diet: DietType | null;
-  allergens: AllergenType[];
-}
+  // 🐾 HAYVANLAR (Hatalı olanlar en yakın valid ikonla değiştirildi)
+  "cat", "dog", "rabbit", "panda", "koala",
+  "penguin", "owl", "bird", "duck", "ladybug",
+  "fish", "jellyfish", "spider", "snake",
+  "tortoise", "pig", "cow", "sheep", "horse",
+  "donkey", "kangaroo", "bat", "rodent", // squirrel/rat yerine rodent
+  "paw", "bone", "teddy-bear", "zodiac-scorpio", // scorpion yerine
+  "zodiac-leo", "zodiac-cancer", "zodiac-capricorn", // diğer hayvanlar için zodiac
 
-interface FamilyMember {
-  id: string;
-  name: string;
-  role: FamilyRole;
-  color: string;
-  avatarIcon: keyof typeof Ionicons.glyphMap;
-}
+  // 🍎 YEMEK & İÇECEK
+  "food", "food-apple", "fruit-cherries", "fruit-citrus", "fruit-grapes",
+  "fruit-pineapple", "fruit-watermelon", "corn", "mushroom", "peanut",
+  "pizza", "hamburger", "taco", "food-croissant", "bread-slice",
+  "cupcake", "cake", "ice-cream", "candycane",
+  "coffee", "tea", "beer", "glass-wine", "cup",
+  "food-drumstick", "food-steak", "egg", "egg-fried", "cheese",
+  "shaker", "pot-mix", "bowl-mix", "carrot", "chili-mild",
+
+  // 🌿 DOĞA & ELEMENTLER
+  "flower", "flower-tulip", "flower-poppy", "clover", "tree",
+  "pine-tree", "palm-tree", "cactus", "sprout", "grass",
+  "weather-sunny", "weather-night", "moon-waning-crescent", "star", "star-four-points",
+  "fire", "water", "snowflake", "cloud", "image-filter-hdr", // mountain yerine terrain/hdr
+  "terrain", "earth", "waves", "island", "leaf",
+
+  // ⚽ SPOR & AKTİVİTE
+  "basketball", "soccer", "football", "tennis", "volleyball",
+  "baseball", "golf", "bowling", "billiards",
+  "ski", "snowboard", "skate", "skateboard", "bike",
+  "run", "walk", "swim", "yoga", "meditation",
+  "weight-lifter", "dumbbell", "boxing-glove", "karate", "trophy",
+  "medal", "ribbon", "target",
+
+  // 🎮 HOBİ & EĞLENCE
+  "gamepad-variant", "controller-classic", "ghost", "pac-man",
+  "dice-5", "cards-playing", "puzzle", "chess-knight", "chess-queen",
+  "music", "music-note", "guitar-acoustic", "guitar-electric", "piano",
+  "violin", "microphone-variant", "headphones", "palette",
+  "brush", "camera", "movie", "theater",
+  "balloon", "party-popper", "cake-variant",
+
+  // 👑 FANTASTIK & SEMBOLLER
+  "crown", "diamond-stone", "wizard-hat", "shield", "shield-star",
+  "sword", "axe", "lightning-bolt",
+  "heart", "heart-multiple", "cards-heart", "horseshoe",
+  "yin-yang", "peace", "infinity", "atom", "brain",
+  "rocket", "telescope", "compass", "anchor", "skull",
+
+  // 🏥 SAĞLIK
+  "heart-pulse", "hospital-box", "pill", "medical-bag", "stethoscope",
+  "bacteria", "virus", "lungs", "stomach"
+];
 
 export default function NutritionScreen() {
   const router = useRouter();
@@ -87,53 +156,46 @@ export default function NutritionScreen() {
     })
   ).current;
 
-  // --- STATE ---
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const {
+    familyMembers,
+    activeProfileId,
+    setActiveProfileId,
+    addFamilyMember: contextAddMember,
+    updateProfileData: contextUpdateData,
+    updateMemberInfo,
+    getActiveProfile,
+    getActiveData
+  } = useUser();
 
-  // Beslenme State'leri
+  // --- UI STATE (Sadece sayfa içi görsellik için kalanlar) ---
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isDietExpanded, setIsDietExpanded] = useState(false);
   const [expandedAllergens, setExpandedAllergens] = useState<string[]>([]);
 
-  // Aile ve Profil Verileri
-  const [activeProfileId, setActiveProfileId] = useState<string>("main_user");
-  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([
-    { id: "main_user", name: "Ahmet Demiroğlu", role: "myself", color: Colors.primary, avatarIcon: "person" }
-  ]);
-  const [profilesData, setProfilesData] = useState<Record<string, UserProfileData>>({
-    "main_user": { diet: null, allergens: [] }
-  });
-
-  // Modallar
+  // Modallar UI State
   const [showFamilyModal, setShowFamilyModal] = useState(false);
   const [showDietModal, setShowDietModal] = useState(false);
   const [showAllergenModal, setShowAllergenModal] = useState(false);
-  const [showAvatarModal, setShowAvatarModal] = useState(false); // Yeni Avatar Modalı
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
 
-  // Geçici State (Modal formları)
+  // Form State (Geçici)
   const [newMemberName, setNewMemberName] = useState("");
   const [newMemberRole, setNewMemberRole] = useState<FamilyRole>("child");
   const [editingAvatarId, setEditingAvatarId] = useState<string | null>(null);
 
   // --- HELPERS ---
-  const activeUser = familyMembers.find(m => m.id === activeProfileId) || familyMembers[0];
-  const activeData = profilesData[activeProfileId] || { diet: null, allergens: [] };
+  const activeUser = getActiveProfile();
+  const activeData = getActiveData();
   const selectedDiet = activeData.diet;
   const userAllergens = activeData.allergens;
 
-  const updateProfileData = (key: keyof UserProfileData, value: any) => {
-    setProfilesData(prev => ({
-      ...prev,
-      [activeProfileId]: { ...prev[activeProfileId], [key]: value }
-    }));
-  };
-
   // --- HANDLERS ---
   const handleNameChange = (text: string) => {
-    setFamilyMembers(prev => prev.map(m => m.id === "main_user" ? { ...m, name: text } : m));
+    updateMemberInfo("main_user", { name: text });
   };
 
-  const updateMemberAvatar = (id: string, color: string, icon: keyof typeof Ionicons.glyphMap) => {
-    setFamilyMembers(prev => prev.map(m => m.id === id ? { ...m, color, avatarIcon: icon } : m));
+  const updateMemberAvatar = (id: string, color: string, icon: any) => {
+    updateMemberInfo(id, { color, avatarIcon: icon });
   };
 
   const openAvatarSelector = (id: string) => {
@@ -143,28 +205,9 @@ export default function NutritionScreen() {
 
   const addFamilyMember = () => {
     if (!newMemberName.trim()) return;
+    // Context fonksiyonunu çağır (Renk/Icon mantığı Context içinde)
+    contextAddMember(newMemberName, newMemberRole);
 
-    const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
-      spouse: "heart",
-      child: "happy",
-      mother: "woman",
-      father: "man",
-      sibling: "people",
-      friend: "beer",
-      other: "person",
-      myself: "person"
-    };
-
-    const newMember: FamilyMember = {
-      id: Date.now().toString(),
-      name: newMemberName,
-      role: newMemberRole,
-      color: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)],
-      avatarIcon: icons[newMemberRole] || "person"
-    };
-
-    setProfilesData(prev => ({ ...prev, [newMember.id]: { diet: null, allergens: [] } }));
-    setFamilyMembers([...familyMembers, newMember]);
     setNewMemberName("");
     setNewMemberRole("child");
     setShowFamilyModal(false);
@@ -173,11 +216,10 @@ export default function NutritionScreen() {
   const toggleAllergenSelection = (type: AllergenType) => {
     const current = activeData.allergens;
     const updated = current.includes(type) ? current.filter(a => a !== type) : [...current, type];
-    updateProfileData("allergens", updated);
+    contextUpdateData(activeProfileId, "allergens", updated);
   };
 
   // --- RENDERERS ---
-
   const renderDietCard = () => {
     if (!selectedDiet) return (
       <View style={styles.emptyBox}>
@@ -298,34 +340,41 @@ export default function NutritionScreen() {
 
           {/* Profile Card */}
           <View style={styles.profileContainer}>
-            <TouchableOpacity
-              style={[styles.avatarBox, { backgroundColor: familyMembers.find(m => m.id === "main_user")?.color }]}
-              onPress={() => openAvatarSelector("main_user")}
-            >
-              <Ionicons name={familyMembers.find(m => m.id === "main_user")?.avatarIcon || "person"} size={24} color="#FFF" />
-              <View style={styles.premiumBadge}>
-                <Ionicons name="star" size={10} color="#FFF" />
-              </View>
-            </TouchableOpacity>
+            {(() => {
+              const mainUser = familyMembers.find(m => m.id === "main_user") || familyMembers[0];
+              return (
+                <>
+                  <TouchableOpacity
+                    style={[styles.avatarBox, { backgroundColor: mainUser?.color }]}
+                    onPress={() => openAvatarSelector(mainUser.id)}
+                  >
+                    <MaterialCommunityIcons name={(mainUser?.avatarIcon as AvatarIconName) || "account"} size={24} color="#FFF" />
+                    <View style={styles.premiumBadge}>
+                      <Ionicons name="star" size={10} color="#FFF" />
+                    </View>
+                  </TouchableOpacity>
 
-            <View style={{ flex: 1, justifyContent: 'center' }}>
-              {isEditingProfile ? (
-                <TextInput
-                  style={styles.profileInput}
-                  value={familyMembers.find(m => m.id === "main_user")?.name}
-                  onChangeText={handleNameChange}
-                  onBlur={() => setIsEditingProfile(false)}
-                  autoFocus
-                  selectionColor="#FFF"
-                />
-              ) : (
-                <TouchableOpacity onPress={() => setIsEditingProfile(true)} style={styles.nameRow}>
-                  <Text style={styles.profileName}>{familyMembers.find(m => m.id === "main_user")?.name}</Text>
-                  <Ionicons name="pencil" size={14} color="rgba(255,255,255,0.7)" />
-                </TouchableOpacity>
-              )}
-              <Text style={styles.profileRole}>{isTr ? "Premium Üye" : "Premium Member"}</Text>
-            </View>
+                  <View style={{ flex: 1, justifyContent: 'center' }}>
+                    {isEditingProfile ? (
+                      <TextInput
+                        style={styles.profileInput}
+                        value={mainUser?.name}
+                        onChangeText={handleNameChange}
+                        onBlur={() => setIsEditingProfile(false)}
+                        autoFocus
+                        selectionColor="#FFF"
+                      />
+                    ) : (
+                      <TouchableOpacity onPress={() => setIsEditingProfile(true)} style={styles.nameRow}>
+                        <Text style={styles.profileName}>{mainUser?.name}</Text>
+                        <Ionicons name="pencil" size={14} color="rgba(255,255,255,0.7)" />
+                      </TouchableOpacity>
+                    )}
+                    <Text style={styles.profileRole}>{isTr ? "Premium Üye" : "Premium Member"}</Text>
+                  </View>
+                </>
+              );
+            })()}
           </View>
         </SafeAreaView>
       </LinearGradient>
@@ -357,7 +406,7 @@ export default function NutritionScreen() {
                   onPress={() => setActiveProfileId(member.id)}
                 >
                   <View style={[styles.memberAvatar, { backgroundColor: member.color }]}>
-                    <Ionicons name={member.avatarIcon} size={20} color="#FFF" />
+                    <MaterialCommunityIcons name={member.avatarIcon as AvatarIconName} size={20} color="#FFF" />
                   </View>
                   <Text style={[styles.memberName, isActive && { color: Colors.primary }]} numberOfLines={1}>
                     {member.name}
@@ -466,7 +515,10 @@ export default function NutritionScreen() {
                 return (
                   <TouchableOpacity
                     style={[styles.optionItem, isSelected && styles.optionItemSelected]}
-                    onPress={() => { updateProfileData("diet", item); setShowDietModal(false); }}
+                    onPress={() => {
+                      contextUpdateData(activeProfileId, "diet", item);
+                      setShowDietModal(false);
+                    }}
                   >
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.optionTitle, isSelected && { color: Colors.primary }]}>{isTr ? def.nameTr : def.name}</Text>
@@ -523,51 +575,99 @@ export default function NutritionScreen() {
       <Modal visible={showAvatarModal} transparent animationType="fade" onRequestClose={() => setShowAvatarModal(false)}>
         <View style={styles.modalOverlay}>
           <Pressable style={styles.modalDismiss} onPress={() => setShowAvatarModal(false)} />
-          <View style={[styles.bottomSheet, { paddingBottom: insets.bottom + 20, height: 'auto', maxHeight: '60%' }]} {...panResponder.panHandlers}>
+
+          <View style={[styles.bottomSheet, { paddingBottom: insets.bottom + 10, height: '70%', maxHeight: '70%' }]} {...panResponder.panHandlers}>
+
             <View style={styles.bottomSheetHandle} />
-            <View style={styles.sheetHeader}>
-              <Text style={styles.sheetTitle}>{isTr ? "Profil Avatarı" : "Profile Avatar"}</Text>
+            <View style={[styles.sheetHeader, { marginBottom: 10, paddingHorizontal: 16 }]}>
+              <Text style={styles.sheetTitle}>{isTr ? "Avatar Düzenle" : "Edit Avatar"}</Text>
               <TouchableOpacity onPress={() => setShowAvatarModal(false)} style={styles.closeButton}>
                 <Ionicons name="close" size={20} color={Colors.gray[500]} />
               </TouchableOpacity>
             </View>
 
-            <View style={{ padding: 20 }}>
-              {/* Renk Seçimi */}
-              <Text style={styles.inputLabel}>{isTr ? "Renk Seç" : "Choose Color"}</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, marginBottom: 20 }}>
-                {AVATAR_COLORS.map(color => (
-                  <TouchableOpacity
-                    key={color}
-                    style={[styles.colorCircle, { backgroundColor: color }, editingAvatarId && familyMembers.find(m => m.id === editingAvatarId)?.color === color && styles.colorCircleActive]}
-                    onPress={() => {
-                      if (editingAvatarId) updateMemberAvatar(editingAvatarId, color, familyMembers.find(m => m.id === editingAvatarId)?.avatarIcon || "person");
-                    }}
-                  />
-                ))}
-              </ScrollView>
+            <View style={{ flex: 1, paddingHorizontal: 16 }}>
+              {(() => {
+                const activeMember = editingAvatarId ? familyMembers.find(m => m.id === editingAvatarId) : null;
+                const activeColor = activeMember?.color || Colors.primary;
+                const activeIcon = activeMember?.avatarIcon || "person";
 
-              {/* İkon Seçimi */}
-              <Text style={styles.inputLabel}>{isTr ? "Karakter Seç" : "Choose Character"}</Text>
-              <View style={{ height: 200 }}>
-                <FlatList
-                  data={AVATAR_ICONS}
-                  keyExtractor={(item) => item}
-                  numColumns={6}
-                  contentContainerStyle={{ gap: 12 }}
-                  columnWrapperStyle={{ gap: 12 }}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      style={[styles.iconBox, editingAvatarId && familyMembers.find(m => m.id === editingAvatarId)?.avatarIcon === item && { backgroundColor: Colors.gray[200] }]}
-                      onPress={() => {
-                        if (editingAvatarId) updateMemberAvatar(editingAvatarId, familyMembers.find(m => m.id === editingAvatarId)?.color || Colors.primary, item);
-                      }}
-                    >
-                      <Ionicons name={item} size={24} color={Colors.secondary} />
-                    </TouchableOpacity>
-                  )}
-                />
-              </View>
+                return (
+                  <>
+                    {/* Compact Preview Section */}
+                    <View style={styles.modalPreviewContainer}>
+                      <View style={[styles.previewAvatarCircle, { backgroundColor: activeColor }]}>
+                        <MaterialCommunityIcons name={activeIcon as AvatarIconName} size={30} color="#FFF" />
+                      </View>
+                      <View>
+                        <Text style={styles.previewTitleText}>
+                          {activeMember?.name || (isTr ? "Önizleme" : "Preview")}
+                        </Text>
+                        <Text style={styles.previewSubtitleText}>
+                          {isTr ? "Seçili Görünüm" : "Selected Appearance"}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Color Selector */}
+                    <Text style={[styles.inputLabel, { marginBottom: 8, fontSize: 13 }]}>{isTr ? "Renk" : "Color"}</Text>
+                    <View style={{ height: 44, marginBottom: 16 }}>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.colorListContainer}>
+                        {AVATAR_COLORS.map(color => {
+                          const isSelected = activeColor === color;
+                          return (
+                            <TouchableOpacity
+                              key={color}
+                              activeOpacity={0.8}
+                              style={[
+                                styles.colorCircle,
+                                { backgroundColor: color },
+                                isSelected && { borderWidth: 3, borderColor: Colors.gray[200] }
+                              ]}
+                              onPress={() => editingAvatarId && updateMemberAvatar(editingAvatarId, color, activeIcon)}
+                            >
+                              {isSelected && <Ionicons name="checkmark" size={16} color="white" />}
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </ScrollView>
+                    </View>
+
+                    {/* Icon Selector */}
+                    <Text style={[styles.inputLabel, { marginBottom: 8, fontSize: 13 }]}>{isTr ? "İkon" : "Icon"}</Text>
+                    <View style={{ flex: 1 }}>
+                      <FlatList
+                        data={AVATAR_ICONS}
+                        keyExtractor={(item) => item}
+                        numColumns={6}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={{ paddingBottom: 20 }}
+                        columnWrapperStyle={styles.iconGridColumnWrapper}
+                        ItemSeparatorComponent={() => <View style={{ height: 8 }} />} // Y ekseni boşluğu düzeltildi
+                        renderItem={({ item }) => {
+                          const isSelected = activeIcon === item;
+                          return (
+                            <TouchableOpacity
+                              style={[
+                                styles.iconBox,
+                                { backgroundColor: isSelected ? activeColor + '15' : Colors.gray[100] },
+                                isSelected && { borderColor: activeColor }
+                              ]}
+                              onPress={() => editingAvatarId && updateMemberAvatar(editingAvatarId, activeColor, item)}
+                            >
+                              <MaterialCommunityIcons
+                                name={item}
+                                size={22}
+                                color={isSelected ? activeColor : Colors.gray[600]}
+                              />
+                            </TouchableOpacity>
+                          );
+                        }}
+                      />
+                    </View>
+                  </>
+                );
+              })()}
             </View>
           </View>
         </View>
@@ -646,7 +746,54 @@ const styles = StyleSheet.create({
   saveButtonText: { color: '#FFF', fontWeight: '700', fontSize: 16 },
 
   // AVATAR SELECTOR STYLES
-  colorCircle: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: '#FFF' },
-  colorCircleActive: { borderColor: Colors.secondary, borderWidth: 3 },
-  iconBox: { width: 48, height: 48, borderRadius: 12, backgroundColor: "#F1F5F9", alignItems: 'center', justifyContent: 'center' },
+  modalPreviewContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    backgroundColor: Colors.gray[100],
+    padding: 12,
+    borderRadius: 12
+  },
+  previewAvatarCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12
+  },
+  previewTitleText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.gray[800]
+  },
+  previewSubtitleText: {
+    fontSize: 12,
+    color: Colors.gray[500]
+  },
+  colorListContainer: {
+    gap: 8,
+    paddingRight: 16
+  },
+  colorCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 0 // Varsayılan border yok
+  },
+  iconGridColumnWrapper: {
+    gap: 8 // X ekseni boşluğu
+  },
+  iconBox: {
+    flex: 1,
+    aspectRatio: 1,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    maxWidth: '16%', // 6 sütun için limit
+    borderWidth: 1,
+    borderColor: 'transparent'
+  },
 });

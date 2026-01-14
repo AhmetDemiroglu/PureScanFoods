@@ -16,6 +16,7 @@ import { TempStore } from "../../lib/tempStore";
 import { generateAnalysisPrompt } from "../../lib/prompt";
 import * as ImagePicker from "expo-image-picker";
 import * as ScreenOrientation from "expo-screen-orientation";
+import { useUser } from "../../context/UserContext";
 
 type ScanTab = "camera" | "barcode" | "text";
 
@@ -44,7 +45,7 @@ export default function ScanScreen() {
   const [barcodeInput, setBarcodeInput] = useState("");
   const [textInput, setTextInput] = useState("");
 
-
+  const { getActiveData } = useUser();
 
   useEffect(() => {
     if (showCamera) {
@@ -285,9 +286,17 @@ export default function ScanScreen() {
 
                                   if (photo.base64) {
                                     const currentLang = i18n.language;
-                                    const systemPrompt = generateAnalysisPrompt(currentLang, userProfile);
 
-                                    callGemini("gemini-2.5-flash-preview-09-2025:generateContent", {
+                                    const profileData = getActiveData();
+
+                                    const promptProfile = {
+                                      allergens: profileData.allergens,
+                                      dietaryPreferences: profileData.diet ? [profileData.diet] : []
+                                    };
+
+                                    const systemPrompt = generateAnalysisPrompt(currentLang, promptProfile);
+
+                                    await callGemini("gemini-2.5-flash-preview-09-2025:generateContent", {
                                       contents: [{
                                         parts: [
                                           { text: systemPrompt },
@@ -295,8 +304,8 @@ export default function ScanScreen() {
                                         ]
                                       }]
                                     })
-                                      .then((result) => {
-                                        const rawText = (result as any).candidates[0].content.parts[0].text;
+                                      .then((apiResult) => {
+                                        const rawText = (apiResult as any).candidates[0].content.parts[0].text;
                                         console.log("🔍 Ham Gemini Yanıtı:", rawText);
 
                                         const startIndex = rawText.indexOf('{');
