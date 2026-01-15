@@ -182,26 +182,47 @@
         },
         "badges": {
             "food": "Gıda Ürünü",
+            "food_desc": "Bu ürün veritabanında gıda olarak sınıflandırılmıştır.",
             "notFood": "Gıda Değil",
+            "notFood_desc": "Bu barkod bir gıda ürününe ait değildir.",
             "general": "Genel",
+            "general_desc": "Genel ürün bilgisi.",
             "eu_banned": "AB Yasaklı",
+            "eu_banned_desc": "Avrupa Birliği'nde yasaklanmış katkı maddeleri içeriyor.",
             "fda_warn": "FDA Uyarılı",
+            "fda_warn_desc": "FDA tarafından sağlık uyarısı verilmiş bileşenler içeriyor.",
             "no_additives": "Katkısız",
+            "no_additives_desc": "Herhangi bir katkı maddesi içermez, doğaldır.",
             "high_protein": "Yüksek Protein",
+            "high_protein_desc": "Günlük ihtiyacı destekleyen yüksek protein oranı.",
             "sugar_free": "Şekersiz",
+            "sugar_free_desc": "İlave veya doğal şeker içermez.",
             "whole_grain": "Tam Tahıl",
+            "whole_grain_desc": "Tam tahıllı bileşenlerden üretilmiştir.",
             "high_fiber": "Yüksek Lif",
+            "high_fiber_desc": "Sindirim sistemini destekleyen yüksek lif içeriği.",
             "low_fat": "Düşük Yağ",
+            "low_fat_desc": "Standartlara göre düşük yağ oranına sahip.",
             "low_sodium": "Az Tuzlu",
+            "low_sodium_desc": "Düşük sodyum/tuz içeriği.",
             "organic": "Organik",
+            "organic_desc": "Organik tarım sertifikalı bileşenler.",
             "high_sugar": "Yüksek Şeker",
+            "high_sugar_desc": "Yüksek miktarda şeker içerir, dikkatli tüketin.",
             "high_sodium": "Yüksek Sodyum",
+            "high_sodium_desc": "Yüksek tuz oranı, tansiyon riskine dikkat.",
             "high_fat": "Yüksek Yağ",
+            "high_fat_desc": "Yüksek yağ ve kalori içeriği.",
             "contains_allergens": "Alerjen İçerir",
+            "contains_allergens_desc": "Yaygın alerjen bileşenler tespit edildi.",
             "vegan": "Vegan",
+            "vegan_desc": "Hayvansal kaynaklı hiçbir bileşen içermez.",
             "vegetarian": "Vejetaryen",
+            "vegetarian_desc": "Et ve et ürünleri içermez.",
             "gluten_free": "Glutensiz",
-            "lactose_free": "Laktozsuz"
+            "gluten_free_desc": "Glüten hassasiyeti olanlar için uygundur.",
+            "lactose_free": "Laktozsuz",
+            "lactose_free_desc": "Laktoz içermez, süt ürünleri hassasiyetine uygun."
         },
         "scores": {
             "safety": "GÜVENLİK",
@@ -234,6 +255,19 @@
                 "lowcarb_advice_ok": "UYGUN: Porsiyon kontrolüyle tüketilebilir.",
                 "generic_diet_advice": "İçerik listesi ve besin değerlerine göre dikkatli tüketilmelidir."
             }
+        },
+        "nutriscore": {
+            "grade_label": "Besin Değeri",
+            "what_is_title": "Nutri-Score Nedir?",
+            "what_is_desc": "Nutri-Score, gıdaların besin kalitesini A'dan (en sağlıklı, koyu yeşil) E'ye (en sağlıksız, kırmızı) kadar sınıflandıran uluslararası bir etiketleme sistemidir. Bu puan; kalori, şeker, doymuş yağ ve tuz miktarına göre hesaplanır.",
+            "desc": {
+                "a": "Çok yüksek besin kalitesi. Düzenli tüketilebilir.",
+                "b": "İyi besin kalitesi.",
+                "c": "Ortalama besin kalitesi. Ölçülü tüketin.",
+                "d": "Düşük besin kalitesi. Sınırlı tüketin.",
+                "e": "Düşük besin değeri. Nadiren tüketin.",
+                "unknown": "Bu ürünün Nutri-Score değerini hesaplamak için verileri eksiktir."
+            }
         }
     },
     "common": {
@@ -246,7 +280,8 @@
         "refresh": "Yenile",
         "refreshing": "Yenileniyor...",
         "saved_to_history": "Geçmişe Kaydedildi",
-        "cancel": "Vazgeç"
+        "cancel": "Vazgeç",
+        "ok": "Tamam"
     },
     "errors": {
         "generic": "Bir hata oluştu, lütfen tekrar deneyin.",

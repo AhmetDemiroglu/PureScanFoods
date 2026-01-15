@@ -9,7 +9,18 @@ export interface AdditiveInfo {
     reasonTr: string;
     euStatus: "BANNED" | "RESTRICTED" | "ALLOWED";
     fdaStatus: "BANNED" | "WARNING" | "GRAS";
-    category: "colorant" | "preservative" | "antioxidant" | "sweetener" | "emulsifier" | "thickener" | "acidity_regulator" | "flavor_enhancer" | "raising_agent" | "glazing_agent" | "other";
+    category:
+        | "colorant"
+        | "preservative"
+        | "antioxidant"
+        | "sweetener"
+        | "emulsifier"
+        | "thickener"
+        | "acidity_regulator"
+        | "flavor_enhancer"
+        | "raising_agent"
+        | "glazing_agent"
+        | "other";
     categoryTr: string;
 }
 
@@ -207,7 +218,8 @@ export const ADDITIVE_DATABASE: Record<string, AdditiveInfo> = {
         nameTr: "Karmoisin (Azorubin)",
         risk: "CAUTION",
         reason: "Carmoisine is a red synthetic dye banned in the USA, Japan, and several other countries. It's associated with allergic reactions, particularly in people sensitive to aspirin, and can trigger asthma attacks. Studies have also linked it to hyperactivity in children.",
-        reasonTr: "Karmoisin, ABD, Japonya ve diğer birçok ülkede yasaklanmış kırmızı sentetik bir boyadır. Özellikle aspirine duyarlı kişilerde alerjik reaksiyonlarla ilişkilendirilir ve astım ataklarını tetikleyebilir. Çalışmalar ayrıca çocuklarda hiperaktivite ile ilişkilendirmiştir.",
+        reasonTr:
+            "Karmoisin, ABD, Japonya ve diğer birçok ülkede yasaklanmış kırmızı sentetik bir boyadır. Özellikle aspirine duyarlı kişilerde alerjik reaksiyonlarla ilişkilendirilir ve astım ataklarını tetikleyebilir. Çalışmalar ayrıca çocuklarda hiperaktivite ile ilişkilendirmiştir.",
         euStatus: "RESTRICTED",
         fdaStatus: "BANNED",
         category: "colorant",
@@ -245,7 +257,8 @@ export const ADDITIVE_DATABASE: Record<string, AdditiveInfo> = {
         nameTr: "Parlak Mavi FCF",
         risk: "CAUTION",
         reason: "Brilliant Blue is a synthetic dye that can cause allergic reactions in sensitive individuals, including hives, asthma, and hay fever. Some studies suggest it may be able to cross the blood-brain barrier. It's commonly found in candies, beverages, and ice cream.",
-        reasonTr: "Parlak Mavi, hassas bireylerde kurdeşen, astım ve saman nezlesi dahil alerjik reaksiyonlara neden olabilen sentetik bir boyadır. Bazı çalışmalar kan-beyin bariyerini geçebileceğini göstermektedir. Yaygın olarak şekerlemelerde, içeceklerde ve dondurmada bulunur.",
+        reasonTr:
+            "Parlak Mavi, hassas bireylerde kurdeşen, astım ve saman nezlesi dahil alerjik reaksiyonlara neden olabilen sentetik bir boyadır. Bazı çalışmalar kan-beyin bariyerini geçebileceğini göstermektedir. Yaygın olarak şekerlemelerde, içeceklerde ve dondurmada bulunur.",
         euStatus: "ALLOWED",
         fdaStatus: "GRAS",
         category: "colorant",
@@ -481,7 +494,8 @@ export const ADDITIVE_DATABASE: Record<string, AdditiveInfo> = {
         nameTr: "Pancar Kırmızısı (Betanin)",
         risk: "SAFE",
         reason: "Beetroot Red is a natural pigment extracted from beets. It provides a vibrant red-purple color and contains betalains, which have antioxidant and anti-inflammatory properties. It's completely safe and may even offer health benefits. Common in ice cream, yogurt, and candies.",
-        reasonTr: "Pancar Kırmızısı, pancardan elde edilen doğal bir pigmenttir. Canlı kırmızı-mor renk sağlar ve antioksidan ve anti-inflamatuar özelliklere sahip betalainler içerir. Tamamen güvenlidir ve hatta sağlık yararları bile sunabilir. Dondurma, yoğurt ve şekerlemelerde yaygındır.",
+        reasonTr:
+            "Pancar Kırmızısı, pancardan elde edilen doğal bir pigmenttir. Canlı kırmızı-mor renk sağlar ve antioksidan ve anti-inflamatuar özelliklere sahip betalainler içerir. Tamamen güvenlidir ve hatta sağlık yararları bile sunabilir. Dondurma, yoğurt ve şekerlemelerde yaygındır.",
         euStatus: "ALLOWED",
         fdaStatus: "GRAS",
         category: "colorant",
@@ -532,7 +546,8 @@ export const ADDITIVE_DATABASE: Record<string, AdditiveInfo> = {
         nameTr: "Karbondioksit",
         risk: "SAFE",
         reason: "Carbon Dioxide is the gas that makes beverages fizzy. It's a natural component of the air we exhale and is completely harmless in food applications. It's used to carbonate drinks, preserve food by creating an oxygen-free environment, and as a propellant in whipped cream cans.",
-        reasonTr: "Karbondioksit, içecekleri gazlı yapan gazdır. Soluduğumuz havanın doğal bir bileşenidir ve gıda uygulamalarında tamamen zararsızdır. İçecekleri gazlandırmak, oksijensiz ortam oluşturarak gıdaları korumak ve krem şanti kutularında itici gaz olarak kullanılır.",
+        reasonTr:
+            "Karbondioksit, içecekleri gazlı yapan gazdır. Soluduğumuz havanın doğal bir bileşenidir ve gıda uygulamalarında tamamen zararsızdır. İçecekleri gazlandırmak, oksijensiz ortam oluşturarak gıdaları korumak ve krem şanti kutularında itici gaz olarak kullanılır.",
         euStatus: "ALLOWED",
         fdaStatus: "GRAS",
         category: "other",
@@ -544,7 +559,8 @@ export const ADDITIVE_DATABASE: Record<string, AdditiveInfo> = {
         nameTr: "Malik Asit",
         risk: "SAFE",
         reason: "Malic Acid is the natural acid that gives apples their tart taste. It's found in many fruits and is produced naturally in our bodies during metabolism. As a food additive, it provides a sour flavor and helps preserve freshness. It's completely safe and natural.",
-        reasonTr: "Malik Asit, elmalara ekşi tadını veren doğal asittir. Birçok meyvede bulunur ve metabolizma sırasında vücudumuzda doğal olarak üretilir. Gıda katkı maddesi olarak ekşi lezzet sağlar ve tazeliği korumaya yardımcı olur. Tamamen güvenli ve doğaldır.",
+        reasonTr:
+            "Malik Asit, elmalara ekşi tadını veren doğal asittir. Birçok meyvede bulunur ve metabolizma sırasında vücudumuzda doğal olarak üretilir. Gıda katkı maddesi olarak ekşi lezzet sağlar ve tazeliği korumaya yardımcı olur. Tamamen güvenli ve doğaldır.",
         euStatus: "ALLOWED",
         fdaStatus: "GRAS",
         category: "acidity_regulator",
@@ -582,7 +598,8 @@ export const ADDITIVE_DATABASE: Record<string, AdditiveInfo> = {
         nameTr: "Tokoferoller (E Vitamini)",
         risk: "SAFE",
         reason: "Tocopherols are the natural forms of vitamin E, an essential fat-soluble antioxidant. They protect cell membranes from damage and support immune function. As a food additive, they prevent fats from going rancid. Found naturally in nuts, seeds, and vegetable oils.",
-        reasonTr: "Tokoferoller, temel yağda çözünür bir antioksidan olan E vitamininin doğal formlarıdır. Hücre zarlarını hasardan korur ve bağışıklık fonksiyonunu destekler. Gıda katkı maddesi olarak yağların acımasını önler. Doğal olarak kuruyemişlerde, tohumlarda ve bitkisel yağlarda bulunur.",
+        reasonTr:
+            "Tokoferoller, temel yağda çözünür bir antioksidan olan E vitamininin doğal formlarıdır. Hücre zarlarını hasardan korur ve bağışıklık fonksiyonunu destekler. Gıda katkı maddesi olarak yağların acımasını önler. Doğal olarak kuruyemişlerde, tohumlarda ve bitkisel yağlarda bulunur.",
         euStatus: "ALLOWED",
         fdaStatus: "GRAS",
         category: "antioxidant",
@@ -633,7 +650,8 @@ export const ADDITIVE_DATABASE: Record<string, AdditiveInfo> = {
         nameTr: "Potasyum Sitrat",
         risk: "SAFE",
         reason: "Potassium Citrate provides both citrate (for acidity regulation) and potassium (an essential mineral). It's used in beverages and food products and is also a common dietary supplement. It can help prevent kidney stones and provides important electrolytes.",
-        reasonTr: "Potasyum Sitrat, hem sitrat (asitlik düzenlemesi için) hem de potasyum (temel bir mineral) sağlar. İçeceklerde ve gıda ürünlerinde kullanılır ve ayrıca yaygın bir diyet takviyesidir. Böbrek taşlarını önlemeye yardımcı olabilir ve önemli elektrolitler sağlar.",
+        reasonTr:
+            "Potasyum Sitrat, hem sitrat (asitlik düzenlemesi için) hem de potasyum (temel bir mineral) sağlar. İçeceklerde ve gıda ürünlerinde kullanılır ve ayrıca yaygın bir diyet takviyesidir. Böbrek taşlarını önlemeye yardımcı olabilir ve önemli elektrolitler sağlar.",
         euStatus: "ALLOWED",
         fdaStatus: "GRAS",
         category: "acidity_regulator",
@@ -658,7 +676,8 @@ export const ADDITIVE_DATABASE: Record<string, AdditiveInfo> = {
         nameTr: "Tartarik Asit",
         risk: "SAFE",
         reason: "Tartaric Acid occurs naturally in grapes and is a byproduct of winemaking. It provides a distinctive tart taste and is essential in baking powder. It has antioxidant properties and is completely safe. It's one of the oldest known food acids, used for centuries.",
-        reasonTr: "Tartarik Asit, doğal olarak üzümlerde bulunur ve şarap yapımının bir yan ürünüdür. Belirgin ekşi tat sağlar ve kabartma tozunda gereklidir. Antioksidan özelliklere sahiptir ve tamamen güvenlidir. Yüzyıllardır kullanılan en eski bilinen gıda asitlerinden biridir.",
+        reasonTr:
+            "Tartarik Asit, doğal olarak üzümlerde bulunur ve şarap yapımının bir yan ürünüdür. Belirgin ekşi tat sağlar ve kabartma tozunda gereklidir. Antioksidan özelliklere sahiptir ve tamamen güvenlidir. Yüzyıllardır kullanılan en eski bilinen gıda asitlerinden biridir.",
         euStatus: "ALLOWED",
         fdaStatus: "GRAS",
         category: "acidity_regulator",
@@ -670,7 +689,8 @@ export const ADDITIVE_DATABASE: Record<string, AdditiveInfo> = {
         nameTr: "Sodyum Tartrat",
         risk: "SAFE",
         reason: "Sodium Tartrate is the sodium salt of tartaric acid. It's used as an emulsifier and stabilizer in food products. It helps maintain texture and consistency. Like tartaric acid, it's derived from natural grape processing and is completely safe.",
-        reasonTr: "Sodyum Tartrat, tartarik asidin sodyum tuzudur. Gıda ürünlerinde emülgatör ve stabilizatör olarak kullanılır. Doku ve kıvamı korumaya yardımcı olur. Tartarik asit gibi, doğal üzüm işlemesinden elde edilir ve tamamen güvenlidir.",
+        reasonTr:
+            "Sodyum Tartrat, tartarik asidin sodyum tuzudur. Gıda ürünlerinde emülgatör ve stabilizatör olarak kullanılır. Doku ve kıvamı korumaya yardımcı olur. Tartarik asit gibi, doğal üzüm işlemesinden elde edilir ve tamamen güvenlidir.",
         euStatus: "ALLOWED",
         fdaStatus: "GRAS",
         category: "acidity_regulator",
@@ -695,7 +715,8 @@ export const ADDITIVE_DATABASE: Record<string, AdditiveInfo> = {
         nameTr: "Biberiye Özütü",
         risk: "SAFE",
         reason: "Rosemary Extract is a natural antioxidant derived from the rosemary herb. It's highly effective at preventing fats from going rancid and extending shelf life. It contains beneficial compounds like rosmarinic acid and carnosic acid. A natural alternative to synthetic antioxidants.",
-        reasonTr: "Biberiye Özütü, biberiye bitkisinden elde edilen doğal bir antioksidandır. Yağların acımasını önlemede ve raf ömrünü uzatmada oldukça etkilidir. Rosmarinik asit ve karnosik asit gibi faydalı bileşikler içerir. Sentetik antioksidanlara doğal bir alternatiftir.",
+        reasonTr:
+            "Biberiye Özütü, biberiye bitkisinden elde edilen doğal bir antioksidandır. Yağların acımasını önlemede ve raf ömrünü uzatmada oldukça etkilidir. Rosmarinik asit ve karnosik asit gibi faydalı bileşikler içerir. Sentetik antioksidanlara doğal bir alternatiftir.",
         euStatus: "ALLOWED",
         fdaStatus: "GRAS",
         category: "antioxidant",
@@ -707,7 +728,8 @@ export const ADDITIVE_DATABASE: Record<string, AdditiveInfo> = {
         nameTr: "Aljinik Asit",
         risk: "SAFE",
         reason: "Alginic Acid is extracted from brown seaweed. It's a natural thickener and gelling agent used in ice cream, desserts, and sauces. It's also used medically in heartburn remedies where it forms a protective barrier. High in fiber and completely safe.",
-        reasonTr: "Aljinik Asit, kahverengi deniz yosunundan elde edilir. Dondurma, tatlılar ve soslarda kullanılan doğal bir kıvam arttırıcı ve jelleştirici ajandır. Ayrıca koruyucu bariyer oluşturduğu mide yanması ilaçlarında tıbbi olarak kullanılır. Lif açısından zengin ve tamamen güvenlidir.",
+        reasonTr:
+            "Aljinik Asit, kahverengi deniz yosunundan elde edilir. Dondurma, tatlılar ve soslarda kullanılan doğal bir kıvam arttırıcı ve jelleştirici ajandır. Ayrıca koruyucu bariyer oluşturduğu mide yanması ilaçlarında tıbbi olarak kullanılır. Lif açısından zengin ve tamamen güvenlidir.",
         euStatus: "ALLOWED",
         fdaStatus: "GRAS",
         category: "thickener",
@@ -719,7 +741,8 @@ export const ADDITIVE_DATABASE: Record<string, AdditiveInfo> = {
         nameTr: "Sodyum Aljinat",
         risk: "SAFE",
         reason: "Sodium Alginate is derived from seaweed and is famous for its use in molecular gastronomy to create 'caviar pearls' and other innovative textures. It's also used in traditional food production as a thickener. It's a source of dietary fiber and completely safe.",
-        reasonTr: "Sodyum Aljinat, deniz yosunundan elde edilir ve moleküler gastronomide 'havyar incileri' ve diğer yenilikçi dokular oluşturmak için kullanımıyla ünlüdür. Ayrıca geleneksel gıda üretiminde kıvam arttırıcı olarak kullanılır. Diyet lifi kaynağıdır ve tamamen güvenlidir.",
+        reasonTr:
+            "Sodyum Aljinat, deniz yosunundan elde edilir ve moleküler gastronomide 'havyar incileri' ve diğer yenilikçi dokular oluşturmak için kullanımıyla ünlüdür. Ayrıca geleneksel gıda üretiminde kıvam arttırıcı olarak kullanılır. Diyet lifi kaynağıdır ve tamamen güvenlidir.",
         euStatus: "ALLOWED",
         fdaStatus: "GRAS",
         category: "thickener",
@@ -744,7 +767,8 @@ export const ADDITIVE_DATABASE: Record<string, AdditiveInfo> = {
         nameTr: "Keçiboynuzu Gamı (Harnup Gamı)",
         risk: "SAFE",
         reason: "Locust Bean Gum is extracted from carob tree seeds. It's a natural thickener that creates smooth, creamy textures in ice cream and dairy products. It's high in fiber and may help regulate blood sugar. Used for thousands of years in Mediterranean cuisine.",
-        reasonTr: "Keçiboynuzu Gamı, keçiboynuzu ağacı tohumlarından elde edilir. Dondurma ve süt ürünlerinde pürüzsüz, kremsi dokular oluşturan doğal bir kıvam arttırıcıdır. Lif açısından zengindir ve kan şekerini düzenlemeye yardımcı olabilir. Akdeniz mutfağında binlerce yıldır kullanılmaktadır.",
+        reasonTr:
+            "Keçiboynuzu Gamı, keçiboynuzu ağacı tohumlarından elde edilir. Dondurma ve süt ürünlerinde pürüzsüz, kremsi dokular oluşturan doğal bir kıvam arttırıcıdır. Lif açısından zengindir ve kan şekerini düzenlemeye yardımcı olabilir. Akdeniz mutfağında binlerce yıldır kullanılmaktadır.",
         euStatus: "ALLOWED",
         fdaStatus: "GRAS",
         category: "thickener",
@@ -756,7 +780,8 @@ export const ADDITIVE_DATABASE: Record<string, AdditiveInfo> = {
         nameTr: "Guar Gamı",
         risk: "SAFE",
         reason: "Guar Gum is derived from guar beans and is one of the most effective natural thickeners. It can absorb many times its weight in water. It's a source of soluble fiber that may help lower cholesterol and blood sugar levels. Widely used in gluten-free baking.",
-        reasonTr: "Guar Gamı, guar fasulyesinden elde edilir ve en etkili doğal kıvam arttırıcılardan biridir. Ağırlığının birçok katı suyu emebilir. Kolesterol ve kan şekeri seviyelerini düşürmeye yardımcı olabilecek çözünür lif kaynağıdır. Glutensiz fırıncılıkta yaygın olarak kullanılır.",
+        reasonTr:
+            "Guar Gamı, guar fasulyesinden elde edilir ve en etkili doğal kıvam arttırıcılardan biridir. Ağırlığının birçok katı suyu emebilir. Kolesterol ve kan şekeri seviyelerini düşürmeye yardımcı olabilecek çözünür lif kaynağıdır. Glutensiz fırıncılıkta yaygın olarak kullanılır.",
         euStatus: "ALLOWED",
         fdaStatus: "GRAS",
         category: "thickener",
@@ -781,7 +806,8 @@ export const ADDITIVE_DATABASE: Record<string, AdditiveInfo> = {
         nameTr: "Ksantan Gamı",
         risk: "SAFE",
         reason: "Xanthan Gum is produced through fermentation of sugars. It's an incredibly effective thickener used in everything from salad dressings to gluten-free bread. It provides structure to baked goods without gluten. It's well-studied and considered very safe at typical consumption levels.",
-        reasonTr: "Ksantan Gamı, şekerlerin fermantasyonu yoluyla üretilir. Salata soslarından glutensiz ekmeğe kadar her şeyde kullanılan inanılmaz etkili bir kıvam arttırıcıdır. Glutensiz unlu mamullere yapı sağlar. İyi araştırılmıştır ve tipik tüketim seviyelerinde çok güvenli kabul edilir.",
+        reasonTr:
+            "Ksantan Gamı, şekerlerin fermantasyonu yoluyla üretilir. Salata soslarından glutensiz ekmeğe kadar her şeyde kullanılan inanılmaz etkili bir kıvam arttırıcıdır. Glutensiz unlu mamullere yapı sağlar. İyi araştırılmıştır ve tipik tüketim seviyelerinde çok güvenli kabul edilir.",
         euStatus: "ALLOWED",
         fdaStatus: "GRAS",
         category: "thickener",
@@ -806,7 +832,8 @@ export const ADDITIVE_DATABASE: Record<string, AdditiveInfo> = {
         nameTr: "Selüloz",
         risk: "SAFE",
         reason: "Cellulose is the main structural component of plant cell walls. It's indigestible fiber that aids digestion and helps you feel full. As a food additive, it prevents caking and adds texture. It's found naturally in all vegetables and fruits. Completely safe and beneficial.",
-        reasonTr: "Selüloz, bitki hücre duvarlarının ana yapısal bileşenidir. Sindirimi kolaylaştıran ve tokluk hissi veren sindirilemez liftir. Gıda katkı maddesi olarak topaklanmayı önler ve doku katar. Doğal olarak tüm sebze ve meyvelerde bulunur. Tamamen güvenli ve faydalıdır.",
+        reasonTr:
+            "Selüloz, bitki hücre duvarlarının ana yapısal bileşenidir. Sindirimi kolaylaştıran ve tokluk hissi veren sindirilemez liftir. Gıda katkı maddesi olarak topaklanmayı önler ve doku katar. Doğal olarak tüm sebze ve meyvelerde bulunur. Tamamen güvenli ve faydalıdır.",
         euStatus: "ALLOWED",
         fdaStatus: "GRAS",
         category: "thickener",
@@ -831,7 +858,8 @@ export const ADDITIVE_DATABASE: Record<string, AdditiveInfo> = {
         nameTr: "Potasyum Karbonat",
         risk: "SAFE",
         reason: "Potassium Carbonate is a traditional leavening agent used especially in Asian cooking for noodles and mooncakes. It helps create unique textures in baked goods. It provides potassium, an essential mineral. It's been used safely in food for centuries.",
-        reasonTr: "Potasyum Karbonat, özellikle Asya mutfağında erişte ve ay keki için kullanılan geleneksel bir kabartma ajanıdır. Unlu mamullerde benzersiz dokular oluşturmaya yardımcı olur. Temel bir mineral olan potasyum sağlar. Yüzyıllardır gıdalarda güvenle kullanılmaktadır.",
+        reasonTr:
+            "Potasyum Karbonat, özellikle Asya mutfağında erişte ve ay keki için kullanılan geleneksel bir kabartma ajanıdır. Unlu mamullerde benzersiz dokular oluşturmaya yardımcı olur. Temel bir mineral olan potasyum sağlar. Yüzyıllardır gıdalarda güvenle kullanılmaktadır.",
         euStatus: "ALLOWED",
         fdaStatus: "GRAS",
         category: "raising_agent",
@@ -843,7 +871,8 @@ export const ADDITIVE_DATABASE: Record<string, AdditiveInfo> = {
         nameTr: "Amonyum Karbonat",
         risk: "SAFE",
         reason: "Ammonium Carbonate is a traditional leavening agent also known as 'baker's ammonia.' It's been used since the 13th century and produces very crisp textures in cookies and crackers. The ammonia completely evaporates during baking, leaving no residue.",
-        reasonTr: "Amonyum Karbonat, 'fırıncı amonyağı' olarak da bilinen geleneksel bir kabartma ajanıdır. 13. yüzyıldan beri kullanılmaktadır ve kurabiye ve krakerlerde çok kıtır dokular üretir. Amonyak pişirme sırasında tamamen buharlaşır ve kalıntı bırakmaz.",
+        reasonTr:
+            "Amonyum Karbonat, 'fırıncı amonyağı' olarak da bilinen geleneksel bir kabartma ajanıdır. 13. yüzyıldan beri kullanılmaktadır ve kurabiye ve krakerlerde çok kıtır dokular üretir. Amonyak pişirme sırasında tamamen buharlaşır ve kalıntı bırakmaz.",
         euStatus: "ALLOWED",
         fdaStatus: "GRAS",
         category: "raising_agent",
@@ -855,7 +884,8 @@ export const ADDITIVE_DATABASE: Record<string, AdditiveInfo> = {
         nameTr: "Kalsiyum Klorür",
         risk: "SAFE",
         reason: "Calcium Chloride is used to maintain firmness in canned vegetables and fruits. It's also essential in cheese making and helps tofu set properly. It provides calcium, an important mineral. It's a natural compound found in seawater and mineral deposits.",
-        reasonTr: "Kalsiyum Klorür, konserve sebze ve meyvelerde sertliği korumak için kullanılır. Ayrıca peynir yapımında gereklidir ve tofunun düzgün katılaşmasına yardımcı olur. Önemli bir mineral olan kalsiyum sağlar. Deniz suyunda ve mineral yataklarında bulunan doğal bir bileşiktir.",
+        reasonTr:
+            "Kalsiyum Klorür, konserve sebze ve meyvelerde sertliği korumak için kullanılır. Ayrıca peynir yapımında gereklidir ve tofunun düzgün katılaşmasına yardımcı olur. Önemli bir mineral olan kalsiyum sağlar. Deniz suyunda ve mineral yataklarında bulunan doğal bir bileşiktir.",
         euStatus: "ALLOWED",
         fdaStatus: "GRAS",
         category: "other",
@@ -867,7 +897,8 @@ export const ADDITIVE_DATABASE: Record<string, AdditiveInfo> = {
         nameTr: "Kalsiyum Sülfat (Alçı)",
         risk: "SAFE",
         reason: "Calcium Sulfate is a natural mineral used for thousands of years in tofu production. It's also used as a flour treatment and dough conditioner. It provides calcium and is completely inert in the body. It's the same mineral used to make plaster of Paris.",
-        reasonTr: "Kalsiyum Sülfat, binlerce yıldır tofu üretiminde kullanılan doğal bir mineraldir. Ayrıca un işleme ve hamur düzenleyici olarak kullanılır. Kalsiyum sağlar ve vücutta tamamen inerttir. Alçı yapımında kullanılan aynı mineraldir.",
+        reasonTr:
+            "Kalsiyum Sülfat, binlerce yıldır tofu üretiminde kullanılan doğal bir mineraldir. Ayrıca un işleme ve hamur düzenleyici olarak kullanılır. Kalsiyum sağlar ve vücutta tamamen inerttir. Alçı yapımında kullanılan aynı mineraldir.",
         euStatus: "ALLOWED",
         fdaStatus: "GRAS",
         category: "other",
@@ -879,7 +910,8 @@ export const ADDITIVE_DATABASE: Record<string, AdditiveInfo> = {
         nameTr: "Karnauba Mumu",
         risk: "SAFE",
         reason: "Carnauba Wax is a natural wax from Brazilian palm leaves. It's the hardest natural wax and is used to give a shiny coating to candies, fruits, and pills. It passes through the body undigested and is completely safe. Also used in car polish and cosmetics.",
-        reasonTr: "Karnauba Mumu, Brezilya palmiye yapraklarından elde edilen doğal bir mumdur. En sert doğal mumdur ve şekerlemelere, meyvelere ve hapları parlak kaplama vermek için kullanılır. Vücuttan sindirilmeden geçer ve tamamen güvenlidir. Ayrıca araba cilası ve kozmetikte kullanılır.",
+        reasonTr:
+            "Karnauba Mumu, Brezilya palmiye yapraklarından elde edilen doğal bir mumdur. En sert doğal mumdur ve şekerlemelere, meyvelere ve hapları parlak kaplama vermek için kullanılır. Vücuttan sindirilmeden geçer ve tamamen güvenlidir. Ayrıca araba cilası ve kozmetikte kullanılır.",
         euStatus: "ALLOWED",
         fdaStatus: "GRAS",
         category: "glazing_agent",
@@ -891,7 +923,8 @@ export const ADDITIVE_DATABASE: Record<string, AdditiveInfo> = {
         nameTr: "Balmumu",
         risk: "SAFE",
         reason: "Beeswax is a natural wax produced by honey bees. It's been used for thousands of years in food, cosmetics, and candles. It provides a protective coating and shiny appearance to candies and fruits. Note: Not suitable for strict vegans as it's an animal product.",
-        reasonTr: "Balmumu, bal arıları tarafından üretilen doğal bir mumdur. Binlerce yıldır gıda, kozmetik ve mumlarda kullanılmaktadır. Şekerleme ve meyvelere koruyucu kaplama ve parlak görünüm sağlar. Not: Hayvansal ürün olduğu için katı veganlar için uygun değildir.",
+        reasonTr:
+            "Balmumu, bal arıları tarafından üretilen doğal bir mumdur. Binlerce yıldır gıda, kozmetik ve mumlarda kullanılmaktadır. Şekerleme ve meyvelere koruyucu kaplama ve parlak görünüm sağlar. Not: Hayvansal ürün olduğu için katı veganlar için uygun değildir.",
         euStatus: "ALLOWED",
         fdaStatus: "GRAS",
         category: "glazing_agent",
@@ -922,54 +955,209 @@ export const NOVA_GROUPS: Record<NovaGroup, NovaInfo> = {
         group: 1,
         label: "Unprocessed or Minimally Processed",
         labelTr: "İşlenmemiş veya Az İşlenmiş",
-        description: "Fresh, whole foods that have been altered only by removal of inedible parts, drying, crushing, grinding, filtering, roasting, boiling, pasteurization, refrigeration, freezing, or fermentation. No added salt, sugar, oils, or other substances.",
-        descriptionTr: "Yalnızca yenmeyen kısımların çıkarılması, kurutma, ezme, öğütme, filtreleme, kavurma, haşlama, pastörizasyon, soğutma, dondurma veya fermantasyon ile değiştirilmiş taze, bütün gıdalar. Tuz, şeker, yağ veya diğer maddeler eklenmemiştir.",
+        description:
+            "Fresh, whole foods that have been altered only by removal of inedible parts, drying, crushing, grinding, filtering, roasting, boiling, pasteurization, refrigeration, freezing, or fermentation. No added salt, sugar, oils, or other substances.",
+        descriptionTr:
+            "Yalnızca yenmeyen kısımların çıkarılması, kurutma, ezme, öğütme, filtreleme, kavurma, haşlama, pastörizasyon, soğutma, dondurma veya fermantasyon ile değiştirilmiş taze, bütün gıdalar. Tuz, şeker, yağ veya diğer maddeler eklenmemiştir.",
         color: "#22C55E",
         icon: "leaf",
         examples: ["Fresh fruits and vegetables", "Eggs", "Fresh meat and fish", "Milk", "Plain nuts and seeds", "Legumes", "Fresh herbs", "Water"],
         examplesTr: ["Taze meyve ve sebzeler", "Yumurta", "Taze et ve balık", "Süt", "Sade kuruyemiş ve tohumlar", "Baklagiller", "Taze otlar", "Su"],
-        healthTips: ["These foods should form the basis of your diet", "Rich in natural nutrients and fiber", "No artificial additives", "Support overall health and disease prevention"],
-        healthTipsTr: ["Bu gıdalar diyetinizin temelini oluşturmalıdır", "Doğal besin maddeleri ve lif açısından zengin", "Yapay katkı maddesi yok", "Genel sağlığı ve hastalık önlemeyi destekler"],
+        healthTips: [
+            "These foods should form the basis of your diet",
+            "Rich in natural nutrients and fiber",
+            "No artificial additives",
+            "Support overall health and disease prevention",
+        ],
+        healthTipsTr: [
+            "Bu gıdalar diyetinizin temelini oluşturmalıdır",
+            "Doğal besin maddeleri ve lif açısından zengin",
+            "Yapay katkı maddesi yok",
+            "Genel sağlığı ve hastalık önlemeyi destekler",
+        ],
     },
     2: {
         group: 2,
         label: "Processed Culinary Ingredients",
         labelTr: "İşlenmiş Mutfak Malzemeleri",
-        description: "Substances obtained from Group 1 foods or from nature by processes like pressing, refining, grinding, or milling. Used in home cooking to prepare, season, and cook Group 1 foods. Rarely consumed alone.",
-        descriptionTr: "Presleme, rafine etme, öğütme veya değirmencilik gibi işlemlerle Grup 1 gıdalarından veya doğadan elde edilen maddeler. Grup 1 gıdaları hazırlamak, tatlandırmak ve pişirmek için ev yemeklerinde kullanılır. Nadiren tek başına tüketilir.",
+        description:
+            "Substances obtained from Group 1 foods or from nature by processes like pressing, refining, grinding, or milling. Used in home cooking to prepare, season, and cook Group 1 foods. Rarely consumed alone.",
+        descriptionTr:
+            "Presleme, rafine etme, öğütme veya değirmencilik gibi işlemlerle Grup 1 gıdalarından veya doğadan elde edilen maddeler. Grup 1 gıdaları hazırlamak, tatlandırmak ve pişirmek için ev yemeklerinde kullanılır. Nadiren tek başına tüketilir.",
         color: "#84CC16",
         icon: "nutrition",
         examples: ["Olive oil and other vegetable oils", "Butter", "Sugar and honey", "Salt", "Flour", "Pasta (plain)", "Vinegar", "Cream"],
         examplesTr: ["Zeytinyağı ve diğer bitkisel yağlar", "Tereyağı", "Şeker ve bal", "Tuz", "Un", "Makarna (sade)", "Sirke", "Krema"],
-        healthTips: ["Use in moderation to enhance Group 1 foods", "Choose high-quality versions when possible", "Extra virgin olive oil over refined oils", "These are cooking tools, not main foods"],
-        healthTipsTr: ["Grup 1 gıdaları geliştirmek için ölçülü kullanın", "Mümkün olduğunda yüksek kaliteli versiyonları tercih edin", "Rafine yağlar yerine sızma zeytinyağı", "Bunlar ana gıdalar değil, pişirme araçlarıdır"],
+        healthTips: [
+            "Use in moderation to enhance Group 1 foods",
+            "Choose high-quality versions when possible",
+            "Extra virgin olive oil over refined oils",
+            "These are cooking tools, not main foods",
+        ],
+        healthTipsTr: [
+            "Grup 1 gıdaları geliştirmek için ölçülü kullanın",
+            "Mümkün olduğunda yüksek kaliteli versiyonları tercih edin",
+            "Rafine yağlar yerine sızma zeytinyağı",
+            "Bunlar ana gıdalar değil, pişirme araçlarıdır",
+        ],
     },
     3: {
         group: 3,
         label: "Processed Foods",
         labelTr: "İşlenmiş Gıdalar",
-        description: "Products made by adding Group 2 ingredients to Group 1 foods using preservation methods like canning, bottling, or non-alcoholic fermentation. Usually made with few ingredients and recognizable as modified versions of the original foods.",
-        descriptionTr: "Konserveleme, şişeleme veya alkolsüz fermantasyon gibi koruma yöntemleri kullanılarak Grup 1 gıdalarına Grup 2 malzemeleri eklenerek yapılan ürünler. Genellikle az malzeme ile yapılır ve orijinal gıdaların değiştirilmiş versiyonları olarak tanınabilir.",
+        description:
+            "Products made by adding Group 2 ingredients to Group 1 foods using preservation methods like canning, bottling, or non-alcoholic fermentation. Usually made with few ingredients and recognizable as modified versions of the original foods.",
+        descriptionTr:
+            "Konserveleme, şişeleme veya alkolsüz fermantasyon gibi koruma yöntemleri kullanılarak Grup 1 gıdalarına Grup 2 malzemeleri eklenerek yapılan ürünler. Genellikle az malzeme ile yapılır ve orijinal gıdaların değiştirilmiş versiyonları olarak tanınabilir.",
         color: "#EAB308",
         icon: "cube",
-        examples: ["Canned vegetables and legumes", "Canned fish", "Cheese", "Freshly made bread", "Salted or cured meats", "Fruits in syrup", "Pickles"],
-        examplesTr: ["Konserve sebzeler ve baklagiller", "Konserve balık", "Peynir", "Taze yapılmış ekmek", "Tuzlanmış veya kürlenmiş etler", "Şuruplu meyveler", "Turşular"],
-        healthTips: ["Can be part of a healthy diet in moderation", "Watch sodium content in canned goods", "Check labels for added sugars", "Choose versions with fewer additives"],
-        healthTipsTr: ["Ölçülü tüketildiğinde sağlıklı diyetin parçası olabilir", "Konservelerde sodyum içeriğine dikkat edin", "Eklenen şekerler için etiketleri kontrol edin", "Daha az katkı maddesi içeren versiyonları tercih edin"],
+        examples: [
+            "Canned vegetables and legumes",
+            "Canned fish",
+            "Cheese",
+            "Freshly made bread",
+            "Salted or cured meats",
+            "Fruits in syrup",
+            "Pickles",
+        ],
+        examplesTr: [
+            "Konserve sebzeler ve baklagiller",
+            "Konserve balık",
+            "Peynir",
+            "Taze yapılmış ekmek",
+            "Tuzlanmış veya kürlenmiş etler",
+            "Şuruplu meyveler",
+            "Turşular",
+        ],
+        healthTips: [
+            "Can be part of a healthy diet in moderation",
+            "Watch sodium content in canned goods",
+            "Check labels for added sugars",
+            "Choose versions with fewer additives",
+        ],
+        healthTipsTr: [
+            "Ölçülü tüketildiğinde sağlıklı diyetin parçası olabilir",
+            "Konservelerde sodyum içeriğine dikkat edin",
+            "Eklenen şekerler için etiketleri kontrol edin",
+            "Daha az katkı maddesi içeren versiyonları tercih edin",
+        ],
     },
     4: {
         group: 4,
         label: "Ultra-Processed Foods",
         labelTr: "Aşırı İşlenmiş Gıdalar",
-        description: "Industrial formulations made mostly or entirely from substances derived from foods and additives, with little or no intact Group 1 foods. Often contain ingredients not used in home cooking like high-fructose corn syrup, hydrogenated oils, protein isolates, and many additives.",
+        description:
+            "Industrial formulations made mostly or entirely from substances derived from foods and additives, with little or no intact Group 1 foods. Often contain ingredients not used in home cooking like high-fructose corn syrup, hydrogenated oils, protein isolates, and many additives.",
         descriptionTr:
             "Çoğunlukla veya tamamen gıdalardan elde edilen maddelerden ve katkı maddelerinden yapılan, çok az veya hiç bozulmamış Grup 1 gıda içermeyen endüstriyel formülasyonlar. Genellikle yüksek fruktozlu mısır şurubu, hidrojenize yağlar, protein izolatları ve birçok katkı maddesi gibi ev yemeklerinde kullanılmayan içerikler içerir.",
         color: "#DC2626",
         icon: "warning",
-        examples: ["Soft drinks and energy drinks", "Packaged snacks (chips, cookies)", "Instant noodles", "Processed meats (hot dogs, nuggets)", "Ice cream (most brands)", "Breakfast cereals", "Fast food", "Margarine"],
-        examplesTr: ["Meşrubatlar ve enerji içecekleri", "Paketli atıştırmalıklar (cips, kurabiye)", "Hazır erişte", "İşlenmiş etler (sosisli, nugget)", "Dondurma (çoğu marka)", "Kahvaltılık gevrekler", "Fast food", "Margarin"],
-        healthTips: ["Limit consumption as much as possible", "Associated with obesity, diabetes, and heart disease", "Often high in sugar, salt, and unhealthy fats", "Designed to be hyper-palatable and addictive", "Replace with Group 1-3 alternatives when possible"],
-        healthTipsTr: ["Tüketimi mümkün olduğunca sınırlayın", "Obezite, diyabet ve kalp hastalığı ile ilişkili", "Genellikle şeker, tuz ve sağlıksız yağlar açısından yüksek", "Aşırı lezzetli ve bağımlılık yapıcı olacak şekilde tasarlanmış", "Mümkün olduğunda Grup 1-3 alternatifleriyle değiştirin"],
+        examples: [
+            "Soft drinks and energy drinks",
+            "Packaged snacks (chips, cookies)",
+            "Instant noodles",
+            "Processed meats (hot dogs, nuggets)",
+            "Ice cream (most brands)",
+            "Breakfast cereals",
+            "Fast food",
+            "Margarine",
+        ],
+        examplesTr: [
+            "Meşrubatlar ve enerji içecekleri",
+            "Paketli atıştırmalıklar (cips, kurabiye)",
+            "Hazır erişte",
+            "İşlenmiş etler (sosisli, nugget)",
+            "Dondurma (çoğu marka)",
+            "Kahvaltılık gevrekler",
+            "Fast food",
+            "Margarin",
+        ],
+        healthTips: [
+            "Limit consumption as much as possible",
+            "Associated with obesity, diabetes, and heart disease",
+            "Often high in sugar, salt, and unhealthy fats",
+            "Designed to be hyper-palatable and addictive",
+            "Replace with Group 1-3 alternatives when possible",
+        ],
+        healthTipsTr: [
+            "Tüketimi mümkün olduğunca sınırlayın",
+            "Obezite, diyabet ve kalp hastalığı ile ilişkili",
+            "Genellikle şeker, tuz ve sağlıksız yağlar açısından yüksek",
+            "Aşırı lezzetli ve bağımlılık yapıcı olacak şekilde tasarlanmış",
+            "Mümkün olduğunda Grup 1-3 alternatifleriyle değiştirin",
+        ],
+    },
+};
+
+// Nutri-Score Verileri
+
+export type NutriScore = "A" | "B" | "C" | "D" | "E";
+
+export interface NutriScoreInfo {
+    score: NutriScore;
+    label: string;
+    labelTr: string;
+    description: string;
+    descriptionTr: string;
+    color: string;
+    examples: string[];
+    examplesTr: string[];
+}
+
+export const NUTRI_SCORES: Record<NutriScore, NutriScoreInfo> = {
+    A: {
+        score: "A",
+        label: "Excellent Nutritional Quality",
+        labelTr: "Çok İyi Besin Değeri",
+        description:
+            "Foods with the highest nutritional value. Low in sugar, salt, and saturated fat. Rich in fiber, protein, fruits, and vegetables.",
+        descriptionTr:
+            "En yüksek besin değerine sahip gıdalar. Şeker, tuz ve doymuş yağ oranı düşüktür. Lif, protein, meyve ve sebze açısından zengindir.",
+        color: "#00813D",
+        examples: ["Water", "Fresh fruits", "Vegetables", "Legumes", "Whole grains"],
+        examplesTr: ["Su", "Taze meyveler", "Sebzeler", "Baklagiller", "Tam tahıllar"],
+    },
+    B: {
+        score: "B",
+        label: "Good Nutritional Quality",
+        labelTr: "İyi Besin Değeri",
+        description: "Healthy foods that form a balanced diet. Slightly higher in calories or fat than Group A but still very beneficial.",
+        descriptionTr:
+            "Dengeli bir diyet oluşturan sağlıklı gıdalar. A grubuna göre kalori veya yağ oranı biraz daha yüksektir ancak yine de çok faydalıdır.",
+        color: "#85BB2F",
+        examples: ["Olive oil", "Nuts", "Yogurt", "Milk", "Eggs"],
+        examplesTr: ["Zeytinyağı", "Kuruyemişler", "Yoğurt", "Süt", "Yumurta"],
+    },
+    C: {
+        score: "C",
+        label: "Average Nutritional Quality",
+        labelTr: "Ortalama Besin Değeri",
+        description:
+            "Foods that should be consumed in moderation. Balanced mix of nutrients but may contain moderate amounts of salt, sugar, or fat.",
+        descriptionTr: "Ölçülü tüketilmesi gereken gıdalar. Dengeli besin karışımı sunar ancak orta miktarda tuz, şeker veya yağ içerebilir.",
+        color: "#FECB02",
+        examples: ["Canned fish", "Cheese", "Flavored yogurt", "Instant oatmeal"],
+        examplesTr: ["Konserve balık", "Peynir", "Aromalı yoğurt", "Hazır yulaf ezmesi"],
+    },
+    D: {
+        score: "D",
+        label: "Low Nutritional Quality",
+        labelTr: "Düşük Besin Değeri",
+        description: "Foods with lower nutritional density. Often processed and higher in sugar, salt, or saturated fats.",
+        descriptionTr: "Besin yoğunluğu daha düşük gıdalar. Genellikle işlenmiştir ve şeker, tuz veya doymuş yağ oranı yüksektir.",
+        color: "#EE8100",
+        examples: ["Cream desserts", "Salty snacks", "Jam", "Butter"],
+        examplesTr: ["Kremalı tatlılar", "Tuzlu atıştırmalıklar", "Reçel", "Tereyağı"],
+    },
+    E: {
+        score: "E",
+        label: "Poor Nutritional Quality",
+        labelTr: "Kötü Besin Değeri",
+        description: "Foods high in calories, sugar, salt, or saturated fat with little nutritional benefit. Should be consumed sparingly.",
+        descriptionTr: "Kalori, şeker, tuz veya doymuş yağ oranı yüksek, besin değeri düşük gıdalar. Nadiren tüketilmelidir.",
+        color: "#E63E11",
+        examples: ["Sugary drinks", "Candy", "Cookies", "Chocolate bars", "Fried foods"],
+        examplesTr: ["Şekerli içecekler", "Şekerleme", "Kurabiyeler", "Çikolata barları", "Kızartmalar"],
     },
 };
 
@@ -994,11 +1182,17 @@ export function getAdditivesByCategory(category: AdditiveInfo["category"]): Addi
 
 export function searchAdditives(query: string): AdditiveInfo[] {
     const q = query.toLowerCase();
-    return Object.values(ADDITIVE_DATABASE).filter((a) => a.code.toLowerCase().includes(q) || a.name.toLowerCase().includes(q) || a.nameTr.toLowerCase().includes(q));
+    return Object.values(ADDITIVE_DATABASE).filter(
+        (a) => a.code.toLowerCase().includes(q) || a.name.toLowerCase().includes(q) || a.nameTr.toLowerCase().includes(q)
+    );
 }
 
 export function getNovaInfo(group: NovaGroup): NovaInfo {
     return NOVA_GROUPS[group];
+}
+
+export function getNutriScoreInfo(score: NutriScore): NutriScoreInfo {
+    return NUTRI_SCORES[score];
 }
 
 export function getAllCategories(): { key: AdditiveInfo["category"]; label: string; labelTr: string }[] {

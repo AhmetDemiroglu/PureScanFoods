@@ -84,7 +84,7 @@ export default function ScanScreen() {
         }]
       });
 
-      processGeminiResult(apiResult, productData.image || null);
+      processGeminiResult(apiResult, productData.image || null, productData);
 
     } catch (error) {
       console.error("Barcode Scan Error:", error);
@@ -123,7 +123,7 @@ export default function ScanScreen() {
         contents: [{ parts: [{ text: systemPrompt }] }]
       });
 
-      processGeminiResult(apiResult, productData.image || null);
+      processGeminiResult(apiResult, productData.image || null, productData);
 
     } catch (error) {
       console.error("Camera Barcode Error:", error);
@@ -157,7 +157,7 @@ export default function ScanScreen() {
         }]
       });
 
-      processGeminiResult(apiResult, null);
+      processGeminiResult(apiResult, null, undefined);
 
     } catch (error) {
       console.error("Text Analyze Error:", error);
@@ -166,7 +166,7 @@ export default function ScanScreen() {
     }
   };
 
-  const processGeminiResult = (apiResult: any, imageUri?: string | null) => {
+  const processGeminiResult = (apiResult: any, imageUri?: string | null, offData?: any) => {
     try {
       const rawText = (apiResult as any).candidates[0].content.parts[0].text;
       const startIndex = rawText.indexOf('{');
@@ -177,8 +177,22 @@ export default function ScanScreen() {
       const cleanJson = rawText.substring(startIndex, endIndex + 1);
       const parsedData = JSON.parse(cleanJson);
 
-      TempStore.setResult(parsedData, imageUri || "");
+      if (offData) {
+        if (parsedData.product) {
+          parsedData.product.nutriscore_grade = offData.nutriscore_grade;
+          parsedData.product.nutriscore_score = offData.nutriscore_score;
+          parsedData.product.nutrient_levels = offData.nutrient_levels;
 
+          if (!parsedData.product.name || parsedData.product.name === "Bilinmeyen Ürün") {
+            parsedData.product.name = offData.productName;
+          }
+          if (!parsedData.product.brand || parsedData.product.brand === "Belirsiz Marka") {
+            parsedData.product.brand = offData.brand;
+          }
+        }
+      }
+
+      TempStore.setResult(parsedData, imageUri || "");
       router.push("/product-result");
 
       setTimeout(() => setIsScanning(false), 500);
@@ -600,7 +614,7 @@ export default function ScanScreen() {
                                 ]
                               }]
                             });
-                            processGeminiResult(apiResult, photo.uri);
+                            processGeminiResult(apiResult, photo.uri, undefined);
                           }
                         } catch (e) {
                           console.error("❌ Hata:", e);

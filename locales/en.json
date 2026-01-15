@@ -177,26 +177,47 @@
         },
         "badges": {
             "food": "Food Product",
+            "food_desc": "This item is classified as a food product.",
             "notFood": "Not Food",
+            "notFood_desc": "This barcode does not belong to a food product.",
             "general": "General",
+            "general_desc": "General product information.",
             "eu_banned": "EU Banned",
+            "eu_banned_desc": "Contains additives banned in the European Union.",
             "fda_warn": "FDA Warning",
+            "fda_warn_desc": "Contains ingredients with FDA health warnings.",
             "no_additives": "No Additives",
+            "no_additives_desc": "Contains no additives, completely natural.",
             "high_protein": "High Protein",
+            "high_protein_desc": "Contains a high amount of protein.",
             "sugar_free": "Sugar Free",
+            "sugar_free_desc": "Contains no added or natural sugar.",
             "whole_grain": "Whole Grain",
+            "whole_grain_desc": "Made from whole grain ingredients.",
             "high_fiber": "High Fiber",
+            "high_fiber_desc": "High fiber content supports digestion.",
             "low_fat": "Low Fat",
+            "low_fat_desc": "Low fat content according to standards.",
             "low_sodium": "Low Sodium",
+            "low_sodium_desc": "Low sodium/salt content.",
             "organic": "Organic",
+            "organic_desc": "Certified organic ingredients.",
             "high_sugar": "High Sugar",
+            "high_sugar_desc": "High sugar content, consume moderately.",
             "high_sodium": "High Sodium",
+            "high_sodium_desc": "High salt content, watch for blood pressure risks.",
             "high_fat": "High Fat",
+            "high_fat_desc": "High fat and calorie content.",
             "contains_allergens": "Contains Allergens",
+            "contains_allergens_desc": "Common allergens detected.",
             "vegan": "Vegan",
+            "vegan_desc": "Contains no animal-derived ingredients.",
             "vegetarian": "Vegetarian",
+            "vegetarian_desc": "Contains no meat or meat products.",
             "gluten_free": "Gluten Free",
-            "lactose_free": "Lactose Free"
+            "gluten_free_desc": "Suitable for those with gluten sensitivity.",
+            "lactose_free": "Lactose Free",
+            "lactose_free_desc": "Lactose-free, suitable for dairy sensitivity."
         },
         "scores": {
             "safety": "SAFETY",
@@ -229,6 +250,19 @@
                 "lowcarb_advice_ok": "SUITABLE: Can be consumed with portion control.",
                 "generic_diet_advice": "Should be consumed with caution based on ingredients and nutrition facts."
             }
+        },
+        "nutriscore": {
+            "grade_label": "Nutritional Value",
+            "what_is_title": "What is Nutri-Score?",
+            "what_is_desc": "Nutri-Score is an independent labeling system that classifies foods from A (healthiest) to E (least healthy). It is calculated based on calories, sugar, saturated fat, and salt content.",
+            "desc": {
+                "a": "High nutritional quality. Good for regular consumption.",
+                "b": "Good nutritional quality.",
+                "c": "Average nutritional quality. Consume in moderation.",
+                "d": "Low nutritional quality. Limit consumption.",
+                "e": "Poor nutritional quality. Consume sparingly.",
+                "unknown": "Data is missing to calculate Nutri-Score for this product."
+            }
         }
     },
     "common": {
@@ -241,7 +275,8 @@
         "refresh": "Yenile",
         "refreshing": "Yenileniyor...",
         "saved_to_history": "Geçmişe Kaydedildi",
-        "cancel": "Cancel"
+        "cancel": "Cancel",
+        "ok": "OK"
     },
     "nutrition": {
         "subtitle": "Manage your personal health preferences",

@@ -22,6 +22,7 @@ import { uploadImage } from "../lib/storageHelper";
 import { useAuth } from "../context/AuthContext";
 import { incrementScanCount } from "../lib/firestore";
 import { useLocalSearchParams } from "expo-router";
+import { NutriScoreGraphic } from "../components/ui/NutriScoreAssets";
 
 const { width } = Dimensions.get("window");
 const IMAGE_HEIGHT = 320;
@@ -82,6 +83,8 @@ export default function ProductResultScreen() {
     const { familyMembers, profilesData } = useUser();
     const { user, deviceId, refreshLimits, userProfile } = useAuth();
 
+    const [showNutriInfo, setShowNutriInfo] = useState(false);
+
     const hasSaved = useRef(false);
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
@@ -135,6 +138,43 @@ export default function ProductResultScreen() {
         })
     ).current;
 
+    useEffect(() => {
+        if (showNutriInfo) {
+            panY.setValue(0);
+        }
+    }, [showNutriInfo]);
+
+    const closeNutriWithAnimation = () => {
+        Animated.timing(panY, {
+            toValue: screenHeight,
+            duration: 250,
+            useNativeDriver: true,
+        }).start(() => setShowNutriInfo(false));
+    };
+
+    const nutriPanResponder = useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 5,
+            onPanResponderMove: (_, gestureState) => {
+                if (gestureState.dy > 0) {
+                    panY.setValue(gestureState.dy);
+                }
+            },
+            onPanResponderRelease: (_, gestureState) => {
+                if (gestureState.dy > 100 || gestureState.vy > 0.6) {
+                    closeNutriWithAnimation();
+                } else {
+                    Animated.spring(panY, {
+                        toValue: 0,
+                        bounciness: 4,
+                        useNativeDriver: true,
+                    }).start();
+                }
+            },
+        })
+    ).current;
+
     if (!data || !currentData) {
         return (
             <View style={styles.errorContainer}>
@@ -149,7 +189,7 @@ export default function ProductResultScreen() {
 
     useEffect(() => {
         if (params.viewMode !== 'history') return;
-        if (data?.details) return; // Tam veri var, analiz gereksiz
+        if (data?.details) return;
 
         const productRaw = data?.product || data;
         if (!productRaw) return;
@@ -200,8 +240,6 @@ export default function ProductResultScreen() {
         hasSaved.current = true;
 
         const saveScan = async () => {
-            console.log("🚀 Starting Scan Process...");
-
             try {
                 await incrementScanCount(user.uid, deviceId);
                 refreshLimits();
@@ -519,6 +557,36 @@ export default function ProductResultScreen() {
                         />
                     </View>
 
+                    {/* --- NUTRI-SCORE KARTI (Eğer Veri Varsa) --- */}
+                    {data.product?.nutriscore_grade && (
+                        <View style={styles.nutriScoreContainer}>
+                            <View style={styles.nutriScoreHeader}>
+                                <Text style={styles.nutriScoreTitle}>NUTRI-SCORE</Text>
+                                <TouchableOpacity onPress={() => setShowNutriInfo(true)} style={{ padding: 4 }}>
+                                    <Ionicons name="information-circle-outline" size={20} color={Colors.secondary} />
+                                </TouchableOpacity>
+                            </View>
+
+                            <View style={styles.nutriScoreContent}>
+                                <View style={{ width: 160, justifyContent: 'center' }}>
+                                    {/* unknown gelirse grafik bileşeni bunu handle etmeli veya default gri dönmeli */}
+                                    <NutriScoreGraphic grade={data.product.nutriscore_grade} />
+                                </View>
+
+                                <View style={styles.nutriScoreTextContainer}>
+                                    <Text style={styles.nutriScoreGradeTitle}>
+                                        {t("results.nutriscore.grade_label")}: <Text style={{ fontWeight: '900', color: Colors.secondary }}>
+                                            {data.product.nutriscore_grade === 'unknown' ? '?' : data.product.nutriscore_grade.toUpperCase()}
+                                        </Text>
+                                    </Text>
+                                    <Text style={styles.nutriScoreDesc}>
+                                        {t(`results.nutriscore.desc.${data.product.nutriscore_grade}`)}
+                                    </Text>
+                                </View>
+                            </View>
+                        </View>
+                    )}
+
                     {/* --- BÖLÜM 1: KİŞİSEL UYUM ANALİZİ --- */}
                     <View style={[styles.verdictBox, {
                         backgroundColor: scoreStyles.bg,
@@ -563,11 +631,7 @@ export default function ProductResultScreen() {
                                 <View key={idx} style={{ flexDirection: 'row', gap: 6, marginBottom: 4 }}>
                                     <Text style={{ fontSize: 12, color: '#B91C1C' }}>•</Text>
                                     <Text style={{ fontSize: 12, color: '#7F1D1D', flex: 1 }}>
-                                        {t(`results.badges.${badge.toLowerCase()}_desc`, {
-                                            defaultValue: badge === 'EU_BANNED' ? "Avrupa Birliği'nde yasaklanmış katkı maddeleri içeriyor." :
-                                                badge === 'FDA_WARN' ? "FDA tarafından sağlık uyarısı verilmiş bileşenler içeriyor." :
-                                                    "Alerjen uyarısı."
-                                        })}
+                                        {t(`results.badges.${badge.toLowerCase()}_desc`)}
                                     </Text>
                                 </View>
                             ))}
@@ -696,7 +760,7 @@ export default function ProductResultScreen() {
                                         // Eğer hiçbir bilgi yoksa render etme
                                         if (!dietDef && userAllergens.length === 0) return null;
 
-                                        const isTr = t("common.lang", { defaultValue: "en" }) === "tr" || true; // i18n instance'ına göre ayarlanmalı, varsayılan true bıraktım
+                                        const isTr = t("common.lang", { defaultValue: "en" }) === "tr" || true;
 
                                         return (
                                             <View style={styles.profileSummaryBox}>
@@ -763,6 +827,44 @@ export default function ProductResultScreen() {
                     </Animated.View>
                 </View>
             </Modal >
+
+            {/* --- NUTRI INFO MODAL --- */}
+            <Modal
+                visible={showNutriInfo}
+                transparent
+                animationType="fade"
+                onRequestClose={closeNutriWithAnimation}
+            >
+                <View style={styles.modalOverlay}>
+                    <Pressable style={styles.modalDismiss} onPress={closeNutriWithAnimation} />
+
+                    <Animated.View
+                        style={[
+                            styles.bottomSheet,
+                            { height: 'auto' },
+                            { paddingBottom: insets.bottom > 0 ? insets.bottom + 20 : 30 },
+                            { transform: [{ translateY: panY }] }
+                        ]}
+                    >
+                        <View
+                            style={styles.bottomSheetHandleContainer}
+                            {...nutriPanResponder.panHandlers}
+                        >
+                            <View style={styles.bottomSheetHandle} />
+                        </View>
+
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                            <Ionicons name="information-circle" size={32} color={Colors.primary} />
+                            <Text style={styles.modalTitle}>{t("results.nutriscore.what_is_title")}</Text>
+                        </View>
+
+                        <Text style={[styles.modalSubtitle, { fontWeight: '400', lineHeight: 22, color: Colors.gray[600] }]}>
+                            {t("results.nutriscore.what_is_desc")}
+                        </Text>
+
+                    </Animated.View>
+                </View>
+            </Modal>
         </View >
     );
 }
@@ -799,7 +901,7 @@ const styles = StyleSheet.create({
     },
     disclaimerBox: {
         marginHorizontal: 20,
-        marginTop: 24,
+        marginTop: 20,
         padding: 16,
         backgroundColor: Colors.gray[100],
         borderRadius: 12,
@@ -931,7 +1033,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'flex-start',
         gap: 12,
-        marginTop: 24,
+        marginTop: 12,
         padding: 16,
         borderRadius: 16,
         borderWidth: 1,
@@ -1214,7 +1316,6 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         borderWidth: 1,
     },
-    // styles objesinin sonuna ekle:
 
     profileSummaryBox: {
         marginBottom: 16,
@@ -1250,4 +1351,98 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '600',
     },
+    nutriScoreContainer: {
+        marginTop: 20,
+        backgroundColor: '#FFF',
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: "#E2E8F0",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.03,
+        shadowRadius: 8,
+        elevation: 2,
+    },
+    nutriScoreHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    nutriScoreTitle: {
+        fontSize: 12,
+        fontWeight: '800',
+        color: "#94A3B8",
+        letterSpacing: 1,
+    },
+    nutriScoreContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        gap: 16,
+    },
+    nutriScoreTextContainer: {
+        flex: 1,
+    },
+    nutriScoreGradeTitle: {
+        fontSize: 14,
+        color: "#0F172A",
+        fontWeight: '600',
+        marginBottom: 2,
+    },
+    nutriScoreDesc: {
+        fontSize: 12,
+        color: Colors.gray[500],
+        lineHeight: 16,
+    },
+    modalButtonPrimary: {
+        backgroundColor: "#F97316",
+        paddingVertical: 14,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    modalButtonTextPrimary: {
+        color: '#FFF',
+        fontWeight: '600',
+        fontSize: 16,
+    }
+});
+const localStyles = StyleSheet.create({
+    nsContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#E2E8F0',
+        borderRadius: 8,
+        padding: 2,
+        height: 50,
+        width: 160,
+    },
+    nsBox: {
+        flex: 1,
+        height: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 4,
+        marginHorizontal: 1,
+        opacity: 0.3,
+    },
+    nsActiveBox: {
+        opacity: 1,
+        transform: [{ scale: 1.15 }],
+        zIndex: 10,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 3,
+        elevation: 5,
+        borderWidth: 2,
+        borderColor: '#FFF',
+    },
+    nsText: {
+        color: '#FFF',
+        fontSize: 14,
+        fontWeight: '700',
+    }
 });
