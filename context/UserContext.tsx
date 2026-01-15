@@ -10,20 +10,23 @@ import {
 import { Alert } from 'react-native';
 import { DietType } from '../lib/diets';
 import { AllergenType } from '../lib/allergens';
+import { LifeStageType } from '../lib/lifestages';
 import { updateUserPreferences } from '../lib/firestore';
 
 // --- TİPLER ---
 export type FamilyRole = "spouse" | "child" | "mother" | "father" | "sibling" | "friend" | "other" | "self";
 
-export interface FamilyMember extends Omit<FirestoreMember, 'diet' | 'allergens'> {
+export interface FamilyMember extends Omit<FirestoreMember, 'diet' | 'allergens' | 'lifeStage'> {
     diet: DietType | null;
     allergens: AllergenType[];
+    lifeStage: LifeStageType | null;
 }
 
 export interface ProfileData {
     diet: DietType | null;
     allergens: AllergenType[];
     dietaryPreferences: string[];
+    lifeStage: LifeStageType | null;
 }
 
 export interface UserContextType {
@@ -67,6 +70,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         profilesData[m.id] = {
             diet: m.diet,
             allergens: m.allergens || [],
+            lifeStage: m.lifeStage || null,
             dietaryPreferences: []
         };
     });
@@ -83,12 +87,13 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
             // A) Ana Kullanıcıyı (Kendisi) Oluştur
             const mainUser: FamilyMember = {
                 id: 'main_user',
-                name: userProfile?.displayName || userProfile?.email?.split('@')[0] || "Ben",
+                name: userProfile?.email?.split('@')[0] || "Ben",
                 role: 'self',
-                avatarIcon: userProfile?.avatarIcon || "account",
-                color: userProfile?.color || AVATAR_COLORS[0],
+                avatarIcon: "account",
+                color: AVATAR_COLORS[0],
                 diet: (userProfile?.dietaryPreferences?.[0] as DietType) || null,
                 allergens: (userProfile?.allergens as AllergenType[]) || [],
+                lifeStage: 'ADULT' as LifeStageType,
                 createdAt: userProfile?.createdAt
             };
 
@@ -97,7 +102,8 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
             const subMembers: FamilyMember[] = subMembersDocs.map(m => ({
                 ...m,
                 diet: (m.diet as DietType) || null,
-                allergens: (m.allergens as AllergenType[]) || []
+                allergens: (m.allergens as AllergenType[]) || [],
+                lifeStage: (m.lifeStage as LifeStageType) || null
             }));
 
             // C) Birleştir
@@ -128,7 +134,8 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                 avatarIcon: "account",
                 color: randomColor,
                 diet: null,
-                allergens: []
+                allergens: [],
+                lifeStage: null
             };
 
             await addFamilyMemberToDB(user.uid, newMemberData);
@@ -202,6 +209,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         return {
             diet: profile?.diet || null,
             allergens: profile?.allergens || [],
+            lifeStage: profile?.lifeStage || null,
             dietaryPreferences: []
         };
     };

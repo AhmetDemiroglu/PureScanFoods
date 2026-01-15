@@ -1,90 +1,109 @@
 import { LifeStageType } from "./lifestages";
 import { SeverityLevel } from "./analysisEngine";
 
-/**
- * Yaş grubuna göre ingredient kısıtlamaları
- * Kaynak: WHO, AAP, T.C. Sağlık Bakanlığı Bebek Beslenmesi Rehberi
- */
-
 interface LifeStageRule {
     keyword: string;
     severity: SeverityLevel;
     messageKey: string;
 }
 
+function expandRules(keywords: string[], severity: SeverityLevel, messageKey: string): LifeStageRule[] {
+    return keywords.map((keyword) => ({ keyword, severity, messageKey }));
+}
+
+const HONEY_KEYWORDS = ["honey", "bal"];
+const SALT_KEYWORDS = ["salt", "sodium", "tuz"];
+const SUGAR_KEYWORDS = ["sugar", "sucrose", "glucose", "fructose", "dextrose", "corn syrup", "cane sugar"];
+const CAFFEINE_KEYWORDS = ["caffeine", "coffee", "espresso", "matcha", "guarana", "energy drink"];
+const WHOLE_NUT_KEYWORDS = ["whole almond", "whole hazelnut", "whole walnut", "whole cashew", "whole pistachio", "whole peanut"];
+const NUT_BUTTER_KEYWORDS = ["peanut butter", "peanut paste", "almond butter", "hazelnut spread", "nut butter"];
+const RAW_EGG_KEYWORDS = ["raw egg", "undercooked egg", "soft boiled egg"];
+const EGG_WHITE_KEYWORDS = ["egg white", "albumin", "albumen", "meringue"];
+const RAW_FISH_KEYWORDS = ["raw fish", "sushi", "sashimi", "ceviche", "raw salmon", "raw tuna"];
+const SHELLFISH_KEYWORDS = ["shrimp", "prawn", "crab", "lobster", "oyster", "mussel", "clam", "scallop"];
+const CHOCOLATE_KEYWORDS = ["chocolate", "cocoa", "cacao"];
+const PROCESSED_MEAT_KEYWORDS = ["sausage", "hot dog", "bacon", "salami", "pepperoni", "ham", "bologna", "deli meat", "cured meat", "smoked meat"];
+const ARTIFICIAL_SWEETENER_KEYWORDS = [
+    "aspartame",
+    "sucralose",
+    "saccharin",
+    "acesulfame",
+    "neotame",
+    "advantame",
+    "cyclamate",
+    "e950",
+    "e951",
+    "e952",
+    "e954",
+    "e955",
+    "e961",
+    "e962",
+];
+const UNPASTEURIZED_KEYWORDS = ["unpasteurized", "raw milk", "raw cheese"];
+const SOFT_CHEESE_KEYWORDS = ["brie", "camembert", "feta", "blue cheese", "gorgonzola", "roquefort"];
+const HIGH_MERCURY_FISH = ["shark", "swordfish", "king mackerel", "tilefish", "bigeye tuna", "marlin"];
+const ALCOHOL_KEYWORDS = ["alcohol", "wine", "beer", "vodka", "rum", "whiskey", "liqueur", "ethanol"];
+const CHOKING_HAZARD_KEYWORDS = ["whole nut", "popcorn", "hard candy", "whole grape", "cherry tomato", "raw carrot"];
+const LIVER_KEYWORDS = ["liver", "pate", "liverwurst"];
+
 export const LIFESTAGE_RULES: Record<LifeStageType, LifeStageRule[]> = {
-    // 0-6 AY: Sadece anne sütü/mama - neredeyse her şey yasak
+    // 0-6 AY: Neredeyse sadece anne sütü/mama
     INFANT_0_6: [
-        { keyword: "honey", severity: "forbidden", messageKey: "infant_honey" },
-        { keyword: "salt", severity: "forbidden", messageKey: "infant_salt" },
-        { keyword: "sugar", severity: "forbidden", messageKey: "infant_sugar" },
-        { keyword: "peanut", severity: "forbidden", messageKey: "infant_peanut" },
-        { keyword: "nut", severity: "forbidden", messageKey: "infant_nut" },
-        { keyword: "whole milk", severity: "forbidden", messageKey: "infant_whole_milk" },
-        { keyword: "cow milk", severity: "forbidden", messageKey: "infant_cow_milk" },
-        { keyword: "egg white", severity: "forbidden", messageKey: "infant_egg_white" },
-        { keyword: "shellfish", severity: "forbidden", messageKey: "infant_shellfish" },
-        { keyword: "caffeine", severity: "forbidden", messageKey: "infant_caffeine" },
-        { keyword: "coffee", severity: "forbidden", messageKey: "infant_caffeine" },
-        { keyword: "tea", severity: "forbidden", messageKey: "infant_caffeine" },
-        { keyword: "chocolate", severity: "forbidden", messageKey: "infant_chocolate" },
-        { keyword: "raw", severity: "forbidden", messageKey: "infant_raw" },
+        ...expandRules(HONEY_KEYWORDS, "forbidden", "infant_honey"),
+        ...expandRules(SALT_KEYWORDS, "forbidden", "infant_salt"),
+        ...expandRules(SUGAR_KEYWORDS, "forbidden", "infant_sugar"),
+        ...expandRules(WHOLE_NUT_KEYWORDS, "forbidden", "infant_nut"),
+        ...expandRules(NUT_BUTTER_KEYWORDS, "forbidden", "infant_nut"),
+        ...expandRules(["cow milk", "whole milk", "milk powder"], "forbidden", "infant_cow_milk"),
+        ...expandRules(EGG_WHITE_KEYWORDS, "forbidden", "infant_egg_white"),
+        ...expandRules(SHELLFISH_KEYWORDS, "forbidden", "infant_shellfish"),
+        ...expandRules(CAFFEINE_KEYWORDS, "forbidden", "infant_caffeine"),
+        ...expandRules(CHOCOLATE_KEYWORDS, "forbidden", "infant_chocolate"),
+        ...expandRules(RAW_FISH_KEYWORDS, "forbidden", "infant_raw"),
+        ...expandRules(RAW_EGG_KEYWORDS, "forbidden", "infant_raw"),
     ],
 
-    // 6-12 AY: Ek gıdaya geçiş - bazı kısıtlamalar devam
+    // 6-12 AY: Ek gıdaya geçiş
     INFANT_6_12: [
-        { keyword: "honey", severity: "forbidden", messageKey: "infant_honey" },
-        { keyword: "salt", severity: "restricted", messageKey: "baby_salt" },
-        { keyword: "sugar", severity: "restricted", messageKey: "baby_sugar" },
-        { keyword: "whole nut", severity: "forbidden", messageKey: "baby_whole_nut" },
-        { keyword: "peanut butter", severity: "caution", messageKey: "baby_peanut_intro" },
-        { keyword: "whole milk", severity: "restricted", messageKey: "baby_whole_milk" },
-        { keyword: "cow milk", severity: "restricted", messageKey: "baby_cow_milk" },
-        { keyword: "caffeine", severity: "forbidden", messageKey: "infant_caffeine" },
-        { keyword: "coffee", severity: "forbidden", messageKey: "infant_caffeine" },
-        { keyword: "chocolate", severity: "restricted", messageKey: "baby_chocolate" },
-        { keyword: "raw egg", severity: "forbidden", messageKey: "baby_raw_egg" },
-        { keyword: "raw fish", severity: "forbidden", messageKey: "baby_raw_fish" },
-        { keyword: "sushi", severity: "forbidden", messageKey: "baby_raw_fish" },
-        { keyword: "high sodium", severity: "restricted", messageKey: "baby_sodium" },
-        { keyword: "processed meat", severity: "restricted", messageKey: "baby_processed" },
-        { keyword: "sausage", severity: "restricted", messageKey: "baby_processed" },
-        { keyword: "hot dog", severity: "restricted", messageKey: "baby_processed" },
+        ...expandRules(HONEY_KEYWORDS, "forbidden", "infant_honey"),
+        ...expandRules(SALT_KEYWORDS, "restricted", "baby_salt"),
+        ...expandRules(SUGAR_KEYWORDS, "restricted", "baby_sugar"),
+        ...expandRules(WHOLE_NUT_KEYWORDS, "forbidden", "baby_whole_nut"),
+        ...expandRules(NUT_BUTTER_KEYWORDS, "caution", "baby_peanut_intro"),
+        ...expandRules(["cow milk", "whole milk"], "restricted", "baby_cow_milk"),
+        ...expandRules(CAFFEINE_KEYWORDS, "forbidden", "infant_caffeine"),
+        ...expandRules(CHOCOLATE_KEYWORDS, "restricted", "baby_chocolate"),
+        ...expandRules(RAW_EGG_KEYWORDS, "forbidden", "baby_raw_egg"),
+        ...expandRules(RAW_FISH_KEYWORDS, "forbidden", "baby_raw_fish"),
+        ...expandRules(PROCESSED_MEAT_KEYWORDS, "restricted", "baby_processed"),
+        ...expandRules(ARTIFICIAL_SWEETENER_KEYWORDS, "restricted", "baby_sweetener"),
     ],
 
     // 1-3 YAŞ: Çoğu şey serbest ama dikkat gerekli
     TODDLER_1_3: [
-        { keyword: "honey", severity: "monitor", messageKey: "toddler_honey_ok" },
-        { keyword: "whole nut", severity: "restricted", messageKey: "toddler_choking" },
-        { keyword: "popcorn", severity: "restricted", messageKey: "toddler_choking" },
-        { keyword: "hard candy", severity: "restricted", messageKey: "toddler_choking" },
-        { keyword: "raw fish", severity: "caution", messageKey: "toddler_raw_fish" },
-        { keyword: "sushi", severity: "caution", messageKey: "toddler_raw_fish" },
-        { keyword: "caffeine", severity: "restricted", messageKey: "child_caffeine" },
-        { keyword: "coffee", severity: "restricted", messageKey: "child_caffeine" },
-        { keyword: "energy drink", severity: "forbidden", messageKey: "child_energy_drink" },
-        { keyword: "high sodium", severity: "caution", messageKey: "toddler_sodium" },
-        { keyword: "artificial sweetener", severity: "caution", messageKey: "toddler_sweetener" },
-        { keyword: "aspartame", severity: "caution", messageKey: "toddler_sweetener" },
-        { keyword: "sucralose", severity: "caution", messageKey: "toddler_sweetener" },
+        ...expandRules(CHOKING_HAZARD_KEYWORDS, "restricted", "toddler_choking"),
+        ...expandRules(RAW_FISH_KEYWORDS, "caution", "toddler_raw_fish"),
+        ...expandRules(CAFFEINE_KEYWORDS, "restricted", "child_caffeine"),
+        ...expandRules(["energy drink"], "forbidden", "child_energy_drink"),
+        ...expandRules(SALT_KEYWORDS, "caution", "toddler_sodium"),
+        ...expandRules(ARTIFICIAL_SWEETENER_KEYWORDS, "caution", "toddler_sweetener"),
+        ...expandRules(ALCOHOL_KEYWORDS, "forbidden", "child_alcohol"),
     ],
 
     // 3-12 YAŞ: Genel çocuk beslenmesi
     CHILD_3_12: [
-        { keyword: "caffeine", severity: "restricted", messageKey: "child_caffeine" },
-        { keyword: "coffee", severity: "restricted", messageKey: "child_caffeine" },
-        { keyword: "energy drink", severity: "forbidden", messageKey: "child_energy_drink" },
-        { keyword: "alcohol", severity: "forbidden", messageKey: "child_alcohol" },
-        { keyword: "raw fish", severity: "caution", messageKey: "child_raw_fish" },
-        { keyword: "high sodium", severity: "caution", messageKey: "child_sodium" },
-        { keyword: "artificial sweetener", severity: "limit", messageKey: "child_sweetener" },
+        ...expandRules(CAFFEINE_KEYWORDS, "restricted", "child_caffeine"),
+        ...expandRules(["energy drink"], "forbidden", "child_energy_drink"),
+        ...expandRules(ALCOHOL_KEYWORDS, "forbidden", "child_alcohol"),
+        ...expandRules(RAW_FISH_KEYWORDS, "caution", "child_raw_fish"),
+        ...expandRules(ARTIFICIAL_SWEETENER_KEYWORDS, "limit", "child_sweetener"),
     ],
 
     // 12-18 YAŞ: Ergen
     TEEN: [
-        { keyword: "energy drink", severity: "restricted", messageKey: "teen_energy_drink" },
-        { keyword: "alcohol", severity: "forbidden", messageKey: "teen_alcohol" },
-        { keyword: "caffeine", severity: "limit", messageKey: "teen_caffeine" },
+        ...expandRules(["energy drink"], "restricted", "teen_energy_drink"),
+        ...expandRules(ALCOHOL_KEYWORDS, "forbidden", "teen_alcohol"),
+        ...expandRules(CAFFEINE_KEYWORDS, "limit", "teen_caffeine"),
     ],
 
     // YETİŞKİN: Varsayılan, kısıtlama yok
@@ -92,40 +111,31 @@ export const LIFESTAGE_RULES: Record<LifeStageType, LifeStageRule[]> = {
 
     // 65+ YAŞ: Yaşlı beslenme
     ELDERLY: [
-        { keyword: "high sodium", severity: "caution", messageKey: "elderly_sodium" },
-        { keyword: "raw egg", severity: "caution", messageKey: "elderly_raw" },
-        { keyword: "raw fish", severity: "caution", messageKey: "elderly_raw" },
-        { keyword: "unpasteurized", severity: "restricted", messageKey: "elderly_unpasteurized" },
+        ...expandRules(SALT_KEYWORDS, "caution", "elderly_sodium"),
+        ...expandRules(RAW_EGG_KEYWORDS, "caution", "elderly_raw"),
+        ...expandRules(RAW_FISH_KEYWORDS, "caution", "elderly_raw"),
+        ...expandRules(UNPASTEURIZED_KEYWORDS, "restricted", "elderly_unpasteurized"),
     ],
 
     // HAMİLE
     PREGNANT: [
-        { keyword: "alcohol", severity: "forbidden", messageKey: "pregnant_alcohol" },
-        { keyword: "raw fish", severity: "forbidden", messageKey: "pregnant_raw_fish" },
-        { keyword: "sushi", severity: "forbidden", messageKey: "pregnant_raw_fish" },
-        { keyword: "raw egg", severity: "forbidden", messageKey: "pregnant_raw_egg" },
-        { keyword: "unpasteurized", severity: "forbidden", messageKey: "pregnant_unpasteurized" },
-        { keyword: "raw milk", severity: "forbidden", messageKey: "pregnant_unpasteurized" },
-        { keyword: "soft cheese", severity: "restricted", messageKey: "pregnant_soft_cheese" },
-        { keyword: "brie", severity: "restricted", messageKey: "pregnant_soft_cheese" },
-        { keyword: "camembert", severity: "restricted", messageKey: "pregnant_soft_cheese" },
-        { keyword: "high mercury", severity: "forbidden", messageKey: "pregnant_mercury" },
-        { keyword: "shark", severity: "forbidden", messageKey: "pregnant_mercury" },
-        { keyword: "swordfish", severity: "forbidden", messageKey: "pregnant_mercury" },
-        { keyword: "king mackerel", severity: "forbidden", messageKey: "pregnant_mercury" },
-        { keyword: "tuna", severity: "caution", messageKey: "pregnant_tuna" },
-        { keyword: "caffeine", severity: "limit", messageKey: "pregnant_caffeine" },
-        { keyword: "liver", severity: "restricted", messageKey: "pregnant_liver" },
-        { keyword: "deli meat", severity: "caution", messageKey: "pregnant_deli" },
+        ...expandRules(ALCOHOL_KEYWORDS, "forbidden", "pregnant_alcohol"),
+        ...expandRules(RAW_FISH_KEYWORDS, "forbidden", "pregnant_raw_fish"),
+        ...expandRules(RAW_EGG_KEYWORDS, "forbidden", "pregnant_raw_egg"),
+        ...expandRules(UNPASTEURIZED_KEYWORDS, "forbidden", "pregnant_unpasteurized"),
+        ...expandRules(SOFT_CHEESE_KEYWORDS, "restricted", "pregnant_soft_cheese"),
+        ...expandRules(HIGH_MERCURY_FISH, "forbidden", "pregnant_mercury"),
+        ...expandRules(["tuna"], "caution", "pregnant_tuna"),
+        ...expandRules(CAFFEINE_KEYWORDS, "limit", "pregnant_caffeine"),
+        ...expandRules(LIVER_KEYWORDS, "restricted", "pregnant_liver"),
+        ...expandRules(PROCESSED_MEAT_KEYWORDS, "caution", "pregnant_deli"),
     ],
 
     // EMZİREN
     BREASTFEEDING: [
-        { keyword: "alcohol", severity: "restricted", messageKey: "breastfeeding_alcohol" },
-        { keyword: "caffeine", severity: "limit", messageKey: "breastfeeding_caffeine" },
-        { keyword: "high mercury", severity: "restricted", messageKey: "breastfeeding_mercury" },
-        { keyword: "shark", severity: "restricted", messageKey: "breastfeeding_mercury" },
-        { keyword: "swordfish", severity: "restricted", messageKey: "breastfeeding_mercury" },
+        ...expandRules(ALCOHOL_KEYWORDS, "restricted", "breastfeeding_alcohol"),
+        ...expandRules(CAFFEINE_KEYWORDS, "limit", "breastfeeding_caffeine"),
+        ...expandRules(HIGH_MERCURY_FISH, "restricted", "breastfeeding_mercury"),
     ],
 };
 

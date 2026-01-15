@@ -1,5 +1,20 @@
 import { db } from "./firebase";
-import { doc, setDoc, getDoc, updateDoc, serverTimestamp, increment, collection, addDoc, getDocs, query, orderBy, limit, deleteDoc, startAfter } from "firebase/firestore";
+import {
+    doc,
+    setDoc,
+    getDoc,
+    updateDoc,
+    serverTimestamp,
+    increment,
+    collection,
+    addDoc,
+    getDocs,
+    query,
+    orderBy,
+    limit,
+    deleteDoc,
+    startAfter,
+} from "firebase/firestore";
 
 export interface UserProfile {
     uid: string;
@@ -28,6 +43,7 @@ export interface FamilyMember {
     diet: string | null;
     allergens: string[];
     createdAt: any;
+    lifeStage: string | null;
 }
 
 export interface ScanResult {

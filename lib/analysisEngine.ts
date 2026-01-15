@@ -1,6 +1,8 @@
 import { DietType, getDietDefinition } from "./diets";
 import { AllergenType } from "./allergens";
+import { LifeStageType } from "./lifestages";
 import { DIET_FORBIDDEN_KEYWORDS, ALLERGEN_KEYWORDS, AMBIGUOUS_KEYWORDS } from "./matchingRules";
+import { getLifeStageRules } from "./lifestageRules";
 
 export type CompatibilityStatus = "safe" | "risk" | "avoid" | "uncertain";
 
@@ -57,8 +59,12 @@ const STRICT_EXCEPTIONS: Record<string, string[]> = {
     wheat: ["buckwheat", "buck wheat"],
     oat: ["coating", "oatrim"],
 };
-export function analyzeEngine(ingredients: IngredientInput[], userProfile: { diet: DietType | null; allergens: AllergenType[] }, safetyScore: number = 50, t: (key: string, options?: any) => string): CompatibilityReport {
-    // 1. Profil Yoksa
+export function analyzeEngine(
+    ingredients: IngredientInput[],
+    userProfile: { diet: DietType | null; allergens: AllergenType[]; lifeStage?: LifeStageType | null },
+    safetyScore: number = 50,
+    t: (key: string, options?: any) => string
+): CompatibilityReport {
     if (!userProfile.diet && userProfile.allergens.length === 0) {
         return {
             score: safetyScore,
@@ -211,14 +217,40 @@ export function analyzeEngine(ingredients: IngredientInput[], userProfile: { die
         });
     }
 
-    // 4. Sonuç Hesaplama
+    if (userProfile.lifeStage && userProfile.lifeStage !== "ADULT") {
+        const lifeStageRules = getLifeStageRules(userProfile.lifeStage);
+
+        lifeStageRules.forEach((rule) => {
+            techIngredients.forEach((ingTech, index) => {
+                if (processedIndices.has(index)) return;
+
+                if (matchesKeyword(ingTech, rule.keyword)) {
+                    findings.push({
+                        keyword: ingredients[index].display_name,
+                        source: userProfile.lifeStage!,
+                        type: "lifestage",
+                        severity: rule.severity,
+                        message: t(`results.analysis.findings.${rule.messageKey}`, {
+                            keyword: ingredients[index].display_name,
+                            lifeStage: userProfile.lifeStage,
+                        }),
+                    });
+
+                    score = Math.max(0, score + SEVERITY_IMPACT[rule.severity]);
+                    processedIndices.add(index);
+                }
+            });
+        });
+    }
+
+    // 1. Sonuç Hesaplama
     if (score < 0) score = 0;
 
     let status: CompatibilityStatus = "safe";
     if (score <= 30) status = "avoid";
     else if (score < 80) status = "risk";
 
-    // 5. ÖZET METNİ (DÜZELTİLDİ)
+    // 2. ÖZET METNİ (DÜZELTİLDİ)
     let summary = t("results.analysis.findings.safe_summary");
 
     const highRisk = findings.filter((f) => f.severity === "forbidden" || f.severity === "restricted");
@@ -227,7 +259,9 @@ export function analyzeEngine(ingredients: IngredientInput[], userProfile: { die
     if (highRisk.length > 0) {
         summary = t("results.analysis.findings.high_risk_summary", { source: highRisk[0].source });
     } else if (mediumRisk.length > 0) {
-        const hasGlutenAmbiguity = mediumRisk.some((f) => f.keyword.toLowerCase().includes("maltodextrin") || f.keyword.toLowerCase().includes("maltodekstrin"));
+        const hasGlutenAmbiguity = mediumRisk.some(
+            (f) => f.keyword.toLowerCase().includes("maltodextrin") || f.keyword.toLowerCase().includes("maltodekstrin")
+        );
 
         if (hasGlutenAmbiguity && userProfile.allergens.includes("GLUTEN")) {
             summary = t("results.analysis.findings.gluten_ambiguous");

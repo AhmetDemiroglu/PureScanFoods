@@ -116,68 +116,61 @@ export default function ProductResultScreen() {
     }
 
     useEffect(() => {
-        const processScan = async () => {
-            if (params.viewMode === 'history') {
-                const productRaw = data?.product || data;
+        if (params.viewMode !== 'history') return;
+        if (data?.details) return; // Tam veri var, analiz gereksiz
 
-                if (data?.details) {
-                    return;
-                }
+        const productRaw = data?.product || data;
+        if (!productRaw) return;
 
-                if (productRaw) {
-                    try {
-                        const ingredientsInput: IngredientInput[] = (productRaw.ingredients || []).map((ing: any) => ({
-                            display_name: ing.text || ing.display_name || ing.id || "Bilinmeyen",
-                            technical_name: ing.technical_name || ing.id || ing.text || "unknown",
-                            isAllergen: ing.isAllergen || false,
-                            riskLevel: ing.riskLevel || "unknown"
-                        }));
+        try {
+            const ingredientsInput: IngredientInput[] = (productRaw.ingredients || []).map((ing: any) => ({
+                display_name: ing.text || ing.display_name || ing.id || "Bilinmeyen",
+                technical_name: ing.technical_name || ing.id || ing.text || "unknown",
+                isAllergen: ing.isAllergen || false,
+                riskLevel: ing.riskLevel || "unknown"
+            }));
 
-                        const profileForEngine = userProfile ? {
-                            diet: (userProfile.dietaryPreferences?.length > 0) ? userProfile.dietaryPreferences[0] : null,
-                            allergens: userProfile.allergens || []
-                        } : { diet: null, allergens: [] };
+            const profileForEngine = userProfile ? {
+                diet: (userProfile.dietaryPreferences?.length > 0) ? userProfile.dietaryPreferences[0] : null,
+                allergens: userProfile.allergens || []
+            } : { diet: null, allergens: [] };
 
-                        const report = analyzeEngine(
-                            ingredientsInput,
-                            profileForEngine as any,
-                            data?.scores?.safety?.value || 50,
-                            t
-                        );
+            const report = analyzeEngine(
+                ingredientsInput,
+                profileForEngine as any,
+                data?.scores?.safety?.value || 50,
+                t
+            );
 
-                        setCurrentData((prev: any) => ({
-                            ...prev,
-                            scores: {
-                                ...prev.scores,
-                                compatibility: {
-                                    value: report.score,
-                                    verdict: report.title,
-                                    summary: report.summary,
-                                    details: report.findings
-                                }
-                            },
-                            badges: prev.badges || []
-                        }));
-
-                        console.log("✅ Analiz tamamlandı. Puan:", report.score);
-
-                    } catch (err) {
-                        console.error("Analiz hatası:", err);
+            setCurrentData((prev: any) => ({
+                ...prev,
+                scores: {
+                    ...prev.scores,
+                    compatibility: {
+                        value: report.score,
+                        verdict: report.title,
+                        summary: report.summary,
+                        details: report.findings
                     }
-                }
-                return;
-            }
+                },
+                badges: prev.badges || []
+            }));
 
-            if (!user || !data || hasSaved.current) {
-                console.log("🚫 Scan process skipped (User missing, Data missing, or Already Saved)");
-                return;
-            }
+        } catch (err) {
+            console.error("Analiz hatası:", err);
+        }
+    }, [params.viewMode, userProfile]);
 
-            hasSaved.current = true;
+    useEffect(() => {
+        if (params.viewMode === 'history') return;
+        if (!user || !data || hasSaved.current) return;
+
+        hasSaved.current = true;
+
+        const saveScan = async () => {
             console.log("🚀 Starting Scan Process...");
 
             try {
-                console.log(`⏳ Incrementing scan count...`);
                 await incrementScanCount(user.uid, deviceId);
                 refreshLimits();
 
@@ -191,7 +184,6 @@ export default function ProductResultScreen() {
                     }
                 }
 
-                console.log("⏳ Saving to Firestore...");
                 await saveScanResultToDB(user.uid, {
                     productName: data.product?.product_name || data.product?.name || t("results.unknownProduct"),
                     brand: data.product?.brands || data.product?.brand || t("results.unknownBrand"),
@@ -207,15 +199,16 @@ export default function ProductResultScreen() {
                         keto_analysis: data.keto_analysis
                     })
                 });
-                console.log("🎉 Scan saved successfully!");
 
+                console.log("🎉 Scan saved successfully!");
             } catch (error) {
                 console.error("❌ CRITICAL SCAN ERROR:", error);
+                hasSaved.current = false;
             }
         };
 
-        processScan();
-    }, [user, userProfile, params.viewMode]);
+        saveScan();
+    }, [user, data, params.viewMode]);
 
     const handleRescan = () => {
         TempStore.clear();
