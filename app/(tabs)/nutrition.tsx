@@ -37,6 +37,7 @@ import {
 } from "../../lib/allergens";
 import { useUser, FamilyRole } from "../../context/UserContext";
 import * as Haptics from "expo-haptics";
+import { useAuth } from "../../context/AuthContext";
 
 const getSafeIcon = (iconName: string): any => iconName === "person" ? "account" : iconName;
 
@@ -140,6 +141,8 @@ const AVATAR_ICON_CATEGORIES: Record<string, { labelTr: string; labelEn: string;
 const AVATAR_ICONS = Object.values(AVATAR_ICON_CATEGORIES).flatMap(cat => cat.icons);
 
 export default function NutritionScreen() {
+  const { userProfile, user } = useAuth();
+  const isPremium = userProfile?.subscriptionStatus === "premium" || false;
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const isTr = i18n.language === "tr";
@@ -203,6 +206,24 @@ export default function NutritionScreen() {
   } = useUser();
 
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+
+  const mainUserRef = familyMembers.find(m => m.id === "main_user");
+
+  React.useEffect(() => {
+    if (user?.displayName && mainUserRef && user?.email) {
+      const currentName = mainUserRef.name || "";
+      const emailPrefix = user.email.split('@')[0];
+
+      const isInvalid =
+        !currentName.trim() ||
+        currentName === emailPrefix ||
+        currentName.includes('@');
+
+      if (isInvalid) {
+        updateMemberInfo("main_user", { name: user.displayName });
+      }
+    }
+  }, [user?.displayName, mainUserRef?.name, user?.email]);
 
   const [tempName, setTempName] = useState("");
   const [tempRole, setTempRole] = useState<FamilyRole>("child");
@@ -489,9 +510,13 @@ export default function NutritionScreen() {
                     onPress={() => openAvatarSelector(mainUser.id)}
                   >
                     <MaterialCommunityIcons name={(mainUser?.avatarIcon as AvatarIconName) || "account"} size={24} color="#FFF" />
-                    <View style={styles.premiumBadge}>
-                      <Ionicons name="star" size={10} color="#FFF" />
-                    </View>
+
+                    {/* Sadece Premium ise yıldız göster */}
+                    {isPremium && (
+                      <View style={styles.premiumBadge}>
+                        <Ionicons name="star" size={10} color="#FFF" />
+                      </View>
+                    )}
                   </TouchableOpacity>
 
                   <View style={{ flex: 1, justifyContent: 'center' }}>
@@ -510,7 +535,10 @@ export default function NutritionScreen() {
                         <Ionicons name="pencil" size={14} color="rgba(255,255,255,0.7)" />
                       </TouchableOpacity>
                     )}
-                    <Text style={styles.profileRole}>{isTr ? "Premium Üye" : "Premium Member"}</Text>
+                    {/* Üyelik Metni */}
+                    <Text style={styles.profileRole}>
+                      {isPremium ? t("nutrition.premium_member") : t("nutrition.standard_member")}
+                    </Text>
                   </View>
                 </>
               );

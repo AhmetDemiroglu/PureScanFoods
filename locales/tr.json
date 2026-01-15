@@ -293,6 +293,8 @@
         "edit": "Düzenle",
         "noDiet": "Henüz bir diyet seçilmedi.",
         "noAllergen": "Kayıtlı alerjen yok.",
+        "premium_member": "Premium Üye",
+        "standard_member": "Standart Üye",
         "strict": "Sıkı Kural",
         "modalDiet": "Diyet Seçimi",
         "modalAllergen": "Alerjenleri Yönet",

@@ -286,6 +286,8 @@
         "allergenTitle": "My Allergens",
         "change": "Change",
         "edit": "Edit",
+        "premium_member": "Premium Member",
+        "standard_member": "Standard Member",
         "noDiet": "No diet selected yet.",
         "noAllergen": "No allergens recorded.",
         "strict": "Strict",

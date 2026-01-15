@@ -87,7 +87,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
             // A) Ana Kullanıcıyı (Kendisi) Oluştur
             const mainUser: FamilyMember = {
                 id: 'main_user',
-                name: userProfile?.email?.split('@')[0] || "Ben",
+                name: userProfile?.displayName || user?.displayName || userProfile?.email?.split('@')[0] || "Ben",
                 role: 'self',
                 avatarIcon: userProfile?.avatarIcon || "account",
                 color: userProfile?.color || AVATAR_COLORS[0],
