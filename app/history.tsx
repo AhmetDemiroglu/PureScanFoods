@@ -248,13 +248,11 @@ export default function HistorySidebar({ visible, onClose }: HistorySidebarProps
       >
         {/* Image Section */}
         <View style={styles.cardImageWrap}>
-          {item.imageUrl ? (
-            <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
-          ) : (
-            <View style={styles.cardImagePlaceholder}>
-              <Ionicons name="cube-outline" size={28} color={Colors.gray[300]} />
-            </View>
-          )}
+          <Image
+            source={item.imageUrl ? { uri: item.imageUrl } : require('../assets/placeholder.png')}
+            style={styles.cardImage}
+            resizeMode="cover"
+          />
 
           {/* Score Badge - Overlay */}
           <View style={[styles.scoreBadge, { backgroundColor: scoreColor }]}>

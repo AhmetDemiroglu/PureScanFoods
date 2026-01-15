@@ -1,11 +1,21 @@
-import React, { createContext, useContext, useEffect, useState, useRef } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { auth } from "../lib/firebase";
-import { onAuthStateChanged, signInAnonymously, User } from "firebase/auth";
-import { initializeUser, getUserProfile, checkDeviceLimit, getUserStats, UserProfile, UsageStats } from "../lib/firestore";
+import {
+    onAuthStateChanged,
+    signInAnonymously,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    signOut,
+    User,
+    GoogleAuthProvider,
+    signInWithCredential
+} from "firebase/auth";
+import { initializeUser, getUserProfile, checkDeviceLimit, getUserStats, UserProfile, UsageStats } from "../lib/firestore"
 import * as Application from "expo-application";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import * as Crypto from "expo-crypto";
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 interface AuthContextType {
     user: User | null;
@@ -15,32 +25,32 @@ interface AuthContextType {
     deviceId: string | null;
     refreshLimits: () => Promise<void>;
     isPremium: boolean;
+    login: (email: string, pass: string) => Promise<void>;
+    register: (email: string, pass: string) => Promise<void>;
+    loginWithGoogle: () => Promise<void>;
+    logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export const useAuth = () => useContext(AuthContext);
 
-// --- DEVICE ID LOGIC (KALICI ID) ---
+// --- DEVICE ID LOGIC ---
 async function getPersistentDeviceId() {
     try {
-        // 1. Önce SecureStore'a bak (En kalıcı yöntem)
         let storedId = await SecureStore.getItemAsync("purescan_device_id");
 
         if (!storedId) {
-            // 2. Yoksa donanım ID'sini almayı dene
             if (Platform.OS === 'android') {
                 storedId = Application.getAndroidId();
             } else if (Platform.OS === 'ios') {
                 storedId = await Application.getIosIdForVendorAsync();
             }
 
-            // 3. Hala yoksa UUID oluştur
             if (!storedId) {
                 storedId = Crypto.randomUUID();
             }
 
-            // 4. SecureStore'a kaydet ki silinip yüklenince değişmesin (iOS keychain)
             await SecureStore.setItemAsync("purescan_device_id", storedId);
         }
 
@@ -63,7 +73,64 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         weekStartDate: new Date().toISOString(),
     });
 
-    // Limitleri Yenileme Fonksiyonu
+    useEffect(() => {
+        GoogleSignin.configure({
+            webClientId: "333478186372-mvrgjh408gp3jrpojqtc2kogmf3ha403.apps.googleusercontent.com",
+        });
+    }, []);
+
+    // --- AUTH ACTIONS ---
+    const login = async (email: string, pass: string) => {
+        setLoading(true);
+        try {
+            await signInWithEmailAndPassword(auth, email, pass);
+        } catch (error: any) {
+            setLoading(false);
+            throw error;
+        }
+    };
+
+    const register = async (email: string, pass: string) => {
+        setLoading(true);
+        try {
+            await createUserWithEmailAndPassword(auth, email, pass);
+        } catch (error: any) {
+            setLoading(false);
+            throw error;
+        }
+    };
+
+    const loginWithGoogle = async () => {
+        setLoading(true);
+        try {
+            await GoogleSignin.hasPlayServices();
+            const userInfo = await GoogleSignin.signIn();
+            const idToken = userInfo.data?.idToken; // v11+ syntax
+
+            if (!idToken) throw new Error("Google Token alınamadı");
+
+            const credential = GoogleAuthProvider.credential(idToken);
+            await signInWithCredential(auth, credential);
+            // Listener gerisini halleder
+        } catch (error: any) {
+            setLoading(false);
+            console.error("Google Sign-In Error:", error);
+            throw error;
+        }
+    };
+
+    const logout = async () => {
+        setLoading(true);
+        try {
+            await signOut(auth);
+            setUser(null);
+            setUserProfile(null);
+        } catch (error: any) {
+            console.error("Logout error:", error);
+            setLoading(false);
+        }
+    };
+
     const refreshLimits = async (currentUid?: string, currentDeviceId?: string) => {
         const targetDeviceId = currentDeviceId || deviceId;
         const targetUid = currentUid || user?.uid;
@@ -125,11 +192,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         let mounted = true;
 
         const initAuth = async () => {
-            // 1. Cihaz ID'sini al
             const id = await getPersistentDeviceId();
             if (mounted) setDeviceId(id);
 
-            // 2. Auth Listener
             const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
                 if (!mounted) return;
 
@@ -137,12 +202,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     console.log("✅ User Authenticated:", currentUser.uid, "IsAnon:", currentUser.isAnonymous);
                     setUser(currentUser);
 
-                    // DB Kaydı ve Profil Çekme
                     await initializeUser(currentUser);
                     const profile = await getUserProfile(currentUser.uid);
                     if (mounted) setUserProfile(profile);
 
-                    // Limitleri Kontrol Et
                     await refreshLimits(currentUser.uid, id);
 
                     if (mounted) setLoading(false);
@@ -174,6 +237,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         deviceId,
         refreshLimits,
         isPremium: userProfile?.subscriptionStatus === "premium",
+        login,
+        register,
+        loginWithGoogle,
+        logout,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

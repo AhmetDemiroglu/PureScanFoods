@@ -16,7 +16,7 @@ import {
   UIManager,
   PanResponder,
   Animated,
-  Dimensions
+  Dimensions,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -161,15 +161,18 @@ export default function NutritionScreen() {
 
   const panResponder = React.useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 5,
+      onStartShouldSetPanResponder: () => true, // Sadece header'da olacağı için true yapabiliriz
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        // Sadece aşağı doğru belirgin hareket varsa
+        return gestureState.dy > 5;
+      },
       onPanResponderMove: (_, gestureState) => {
         if (gestureState.dy > 0) {
           panY.setValue(gestureState.dy);
         }
       },
       onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dy > 120 || gestureState.vy > 0.7) {
+        if (gestureState.dy > 120 || gestureState.vy > 0.6) {
           closeWithAnimation(() => {
             setShowFamilyModal(false);
             setShowDietModal(false);
@@ -598,16 +601,17 @@ export default function NutritionScreen() {
               { paddingBottom: insets.bottom + 20 },
               { transform: [{ translateY: panY }] }
             ]}
-            {...panResponder.panHandlers}
           >
-            <View style={styles.bottomSheetHandle} />
-            <View style={styles.sheetHeader}>
-              <Text style={styles.sheetTitle}>
-                {editingMemberId ? t("nutrition.family.edit") : t("nutrition.family.add")}
-              </Text>
-              <TouchableOpacity onPress={() => setShowFamilyModal(false)} style={styles.closeButton}>
-                <Ionicons name="close" size={20} color={Colors.gray[500]} />
-              </TouchableOpacity>
+            <View {...panResponder.panHandlers} style={{ paddingBottom: 10 }}>
+              <View style={styles.bottomSheetHandle} />
+              <View style={styles.sheetHeader}>
+                <Text style={styles.sheetTitle}>
+                  {editingMemberId ? t("nutrition.family.edit") : t("nutrition.family.add")}
+                </Text>
+                <TouchableOpacity onPress={() => setShowFamilyModal(false)} style={styles.closeButton}>
+                  <Ionicons name="close" size={20} color={Colors.gray[500]} />
+                </TouchableOpacity>
+              </View>
             </View>
             <View style={{ padding: 20 }}>
               {!!editingMemberId && (
@@ -628,6 +632,7 @@ export default function NutritionScreen() {
                 value={tempName}
                 onChangeText={setTempName}
                 placeholder="İsim"
+                placeholderTextColor={Colors.gray[500]}
               />
               <Text style={styles.inputLabel}>{t("nutrition.family.selectRole")}</Text>
               <View style={styles.roleContainer}>

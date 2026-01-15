@@ -22,7 +22,8 @@
                 "foregroundImage": "./assets/adaptive-icon.png",
                 "backgroundColor": "#FF6F00"
             },
-            "package": "com.purescan.foods"
+            "package": "com.purescan.foods",
+            "googleServicesFile": "./google-services.json"
         },
         "plugins": [
             "expo-font",

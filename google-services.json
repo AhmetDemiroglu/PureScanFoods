@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "333478186372",
+    "project_id": "purescan-foods",
+    "storage_bucket": "purescan-foods.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:333478186372:android:b2ec666fb0a0b2360fa1d1",
+        "android_client_info": {
+          "package_name": "com.purescan.foods"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "333478186372-66t5uub0sgark2ufq5ik8k0o44l1234f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.purescan.foods",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "333478186372-mvrgjh408gp3jrpojqtc2kogmf3ha403.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCbYkVRfJ2BmtKPQW3-XnoYs5I2ZO_5kpE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "333478186372-mvrgjh408gp3jrpojqtc2kogmf3ha403.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

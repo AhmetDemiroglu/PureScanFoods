@@ -20,6 +20,8 @@ import * as ScreenOrientation from "expo-screen-orientation";
 import { useUser } from "../../context/UserContext";
 import { useLocalSearchParams } from "expo-router";
 import HistorySidebar from '../history';
+import { Alert } from "react-native";
+import LimitWarningModal from "../../components/ui/LimitWarningModal";
 
 type ScanTab = "camera" | "barcode" | "text";
 
@@ -28,7 +30,7 @@ const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 export default function ScanScreen() {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<ScanTab>("barcode");
-  const { userProfile } = useAuth();
+  const { userProfile, usageStats, isPremium } = useAuth();
   const [flashOn, setFlashOn] = useState(false);
 
   const { width, height } = useWindowDimensions();
@@ -47,12 +49,23 @@ export default function ScanScreen() {
   const [textInput, setTextInput] = useState("");
   const [isHistoryOpen, setHistoryOpen] = useState(false);
   const [showNotFoundModal, setShowNotFoundModal] = useState(false);
+  const [showLimitModal, setShowLimitModal] = useState(false);
 
   const params = useLocalSearchParams();
 
   const { getActiveData } = useUser();
 
+  const checkLimit = () => {
+    if (!isPremium && usageStats.scanCount >= usageStats.scanLimit) {
+      setShowLimitModal(true);
+      return false;
+    }
+    return true;
+  };
+
   const handleBarcodeSearch = async () => {
+    if (!checkLimit()) return; // EKLENDİ
+
     if (!barcodeInput || barcodeInput.length < 3) {
       alert(t("scan.enterValidBarcode"));
       return;
@@ -133,6 +146,8 @@ export default function ScanScreen() {
   };
 
   const handleTextAnalyze = async () => {
+    if (!checkLimit()) return;
+
     if (!textInput || textInput.length < 10) {
       alert(t("scan.textTooShort", { defaultValue: "Lütfen analiz için yeterli içerik girin." }));
       return;
@@ -205,6 +220,8 @@ export default function ScanScreen() {
   };
 
   const handleGalleryPick = async () => {
+    if (!checkLimit()) return;
+
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -246,8 +263,10 @@ export default function ScanScreen() {
 
   useEffect(() => {
     if (params.autoStart === "true") {
-      setShowCamera(true);
-      setActiveTab("camera");
+      if (checkLimit()) {
+        setShowCamera(true);
+        setActiveTab("camera");
+      }
     }
   }, [params.autoStart]);
 
@@ -336,6 +355,8 @@ export default function ScanScreen() {
                   <Pressable
                     style={styles.mainButtonWrapper}
                     onPress={() => {
+                      if (!checkLimit()) return;
+
                       if (!permission?.granted) {
                         requestPermission();
                       } else {
@@ -377,6 +398,8 @@ export default function ScanScreen() {
                   <Pressable
                     style={styles.mainButtonWrapper}
                     onPress={() => {
+                      if (!checkLimit()) return;
+
                       if (!permission?.granted) {
                         requestPermission();
                       } else {
@@ -701,6 +724,15 @@ export default function ScanScreen() {
       <HistorySidebar
         visible={isHistoryOpen}
         onClose={() => setHistoryOpen(false)}
+      />
+      <LimitWarningModal
+        visible={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        onGoPremium={() => {
+          setShowLimitModal(false);
+          console.log("Navigating to Paywall...");
+        }}
+        resetDate={new Date(usageStats.weekStartDate).toLocaleDateString()}
       />
     </SafeAreaView >
   );

@@ -483,11 +483,11 @@ export default function ProductResultScreen() {
             >
 
                 <View style={styles.imageContainer}>
-                    {imageUri ? (
-                        <Image source={{ uri: imageUri }} style={styles.productImage} resizeMode="cover" />
-                    ) : (
-                        <View style={[styles.productImage, { backgroundColor: Colors.gray[200] }]} />
-                    )}
+                    <Image
+                        source={imageUri ? { uri: imageUri } : require('../assets/placeholder.png')}
+                        style={styles.productImage}
+                        resizeMode="cover"
+                    />
 
                     <LinearGradient
                         colors={['rgba(0,0,0,0.4)', 'transparent', 'rgba(0,0,0,0.1)']}
@@ -623,7 +623,7 @@ export default function ProductResultScreen() {
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                                 <Ionicons name="megaphone" size={18} color="#B91C1C" />
                                 <Text style={{ fontSize: 12, fontWeight: '800', color: '#B91C1C', textTransform: 'uppercase' }}>
-                                    {t("results.critical_warnings", "KRİTİK UYARILAR")}
+                                    {t("results.critical_warnings")}
                                 </Text>
                             </View>
 
@@ -1311,7 +1311,6 @@ const styles = StyleSheet.create({
     },
     warningBox: {
         marginTop: 0,
-        marginBottom: 24,
         padding: 16,
         borderRadius: 16,
         borderWidth: 1,
