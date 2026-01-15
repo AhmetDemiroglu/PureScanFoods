@@ -22,9 +22,8 @@ interface LimitWarningModalProps {
     resetDate?: string;
 }
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
-// --- ALT BİLEŞENLER ---
 const FeatureRow = ({ label, subLabel, freeVal, proCheck, delay }: { label: string, subLabel: string, freeVal: string | boolean, proCheck: boolean, delay: number }) => {
     return (
         <Animated.View
@@ -41,8 +40,8 @@ const FeatureRow = ({ label, subLabel, freeVal, proCheck, delay }: { label: stri
                     />
                 </View>
                 <View style={{ flex: 1 }}>
-                    <Text style={styles.rowLabel}>{label}</Text>
-                    <Text style={styles.rowSubLabel} numberOfLines={2}>{subLabel}</Text>
+                    <Text style={styles.rowLabel}>{label || ""}</Text>
+                    <Text style={styles.rowSubLabel} numberOfLines={2}>{subLabel || ""}</Text>
                 </View>
             </View>
 
@@ -70,6 +69,8 @@ const FeatureRow = ({ label, subLabel, freeVal, proCheck, delay }: { label: stri
 
 export default function LimitWarningModal({ visible, onClose, onGoPremium }: LimitWarningModalProps) {
     const { t } = useTranslation();
+
+    // Animasyonlar
     const scale = useSharedValue(0.9);
     const opacity = useSharedValue(0);
     const buttonPulse = useSharedValue(1);
@@ -113,13 +114,13 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium }: Lim
                         <Ionicons name="close" size={20} color={Colors.gray[500]} />
                     </Pressable>
 
-                    {/* 2. HEADER (Pro Tanıtım) */}
+                    {/* 2. HEADER */}
                     <View style={styles.header}>
                         <Text style={styles.title}>{t('limits.pro_title')}</Text>
                         <Text style={styles.subtitle}>{t('limits.pro_subtitle')}</Text>
                     </View>
 
-                    {/* 1. YENİ: LIMIT DURUM KARTI (Geri Bildirim) */}
+                    {/* 1. LIMIT DURUM KARTI */}
                     <View style={styles.limitStatusCard}>
                         <View style={styles.limitIconBox}>
                             <MaterialCommunityIcons name="lock" size={24} color="#EF4444" />
@@ -127,7 +128,6 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium }: Lim
                         <View style={styles.limitInfo}>
                             <Text style={styles.limitTitle}>{t('limits.limit_reached_title')}</Text>
                             <Text style={styles.limitDesc}>{t('limits.limit_reached_desc')}</Text>
-                            {/* Dolu Bar */}
                             <View style={styles.limitBarBg}>
                                 <View style={styles.limitBarFill} />
                             </View>
@@ -136,12 +136,12 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium }: Lim
 
                     {/* 3. TABLO BAŞLIKLARI */}
                     <View style={styles.tableHeader}>
-                        <View style={{ flex: 1.5 }} /> {/* Sol taraf payı arttı */}
+                        <View style={{ flex: 1.5 }} />
                         <Text style={styles.colTitle}>{t('limits.col_free')}</Text>
                         <Text style={[styles.colTitle, styles.colPro]}>{t('limits.col_pro')}</Text>
                     </View>
 
-                    {/* 4. GÜNCELLENMİŞ LİSTE */}
+                    {/* 4. LİSTE */}
                     <View style={styles.listContainer}>
                         <FeatureRow
                             label={t('limits.feat_scan')}
@@ -182,7 +182,8 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium }: Lim
                                 end={{ x: 1, y: 0 }}
                                 style={styles.gradientBtn}
                             >
-                                <Text style={styles.premiumBtnText}>{t('limits.go_pro')} ➔</Text>
+                                <Text style={styles.premiumBtnText}>{t('limits.go_pro')}</Text>
+                                <Ionicons name="arrow-forward" size={20} color="white" />
                             </LinearGradient>
                         </Pressable>
                     </Animated.View>
@@ -202,7 +203,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: 'rgba(15, 23, 42, 0.7)', // Koyu Slate overlay
+        backgroundColor: 'rgba(15, 23, 42, 0.7)',
     },
     backdrop: {
         ...StyleSheet.absoluteFillObject,
@@ -210,7 +211,7 @@ const styles = StyleSheet.create({
     container: {
         width: width * 0.9,
         maxWidth: 400,
-        backgroundColor: '#F8FAFC', // Çok açık gri/beyaz
+        backgroundColor: '#F8FAFC',
         borderRadius: 32,
         padding: 24,
         alignItems: 'center',
@@ -235,22 +236,8 @@ const styles = StyleSheet.create({
     },
     header: {
         alignItems: 'center',
-        marginBottom: 0,
+        marginBottom: 24,
         marginTop: 8,
-    },
-    logoBox: {
-        width: 64,
-        height: 64,
-        borderRadius: 24,
-        backgroundColor: '#F59E0B',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 16,
-        shadowColor: '#F59E0B',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.4,
-        shadowRadius: 12,
-        elevation: 8,
     },
     title: {
         fontSize: 24,
@@ -288,7 +275,9 @@ const styles = StyleSheet.create({
     },
     row: {
         flexDirection: 'row',
+        alignItems: 'center',
         backgroundColor: 'white',
+        paddingVertical: 14,
         paddingHorizontal: 16,
         borderRadius: 16,
         shadowColor: '#000',
@@ -296,8 +285,12 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.03,
         shadowRadius: 4,
         elevation: 1,
-        paddingVertical: 12,
-        alignItems: 'flex-start',
+    },
+    rowLeft: {
+        flex: 1.5,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
     },
     iconBox: {
         width: 32,
@@ -313,6 +306,12 @@ const styles = StyleSheet.create({
         color: Colors.secondary,
         marginBottom: 2,
     },
+    rowSubLabel: {
+        fontSize: 10,
+        color: Colors.gray[500],
+        lineHeight: 14,
+        paddingRight: 8,
+    },
     rowRight: {
         flexDirection: 'row',
     },
@@ -320,6 +319,12 @@ const styles = StyleSheet.create({
         width: 60,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    limitText: {
+        fontSize: 10,
+        fontWeight: '700',
+        color: Colors.gray[600],
+        textAlign: 'center',
     },
     checkCircle: {
         width: 24,
@@ -347,7 +352,10 @@ const styles = StyleSheet.create({
     },
     gradientBtn: {
         paddingVertical: 18,
+        flexDirection: 'row',
+        justifyContent: 'center',
         alignItems: 'center',
+        gap: 8,
         borderRadius: 20,
     },
     premiumBtnText: {
@@ -366,6 +374,7 @@ const styles = StyleSheet.create({
         color: Colors.gray[400],
         letterSpacing: 0.5,
     },
+    // LIMIT CARD
     limitStatusCard: {
         width: '100%',
         flexDirection: 'row',
@@ -376,7 +385,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#FECACA',
         marginBottom: 20,
-        marginTop: 20,
         gap: 12,
     },
     limitIconBox: {
@@ -416,24 +424,5 @@ const styles = StyleSheet.create({
         height: '100%',
         backgroundColor: '#EF4444',
         borderRadius: 3,
-    },
-
-    rowSubLabel: {
-        fontSize: 10,
-        color: Colors.gray[500],
-        lineHeight: 14,
-        paddingRight: 8,
-    },
-    rowLeft: {
-        flex: 1.5,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-    },
-    limitText: {
-        fontSize: 10,
-        fontWeight: '700',
-        color: Colors.gray[600],
-        textAlign: 'center',
     },
 });

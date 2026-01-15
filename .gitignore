@@ -6,3 +6,4 @@ logo
 expo-env.d.ts
 # @end expo-cli
 .env
+google-services.json
