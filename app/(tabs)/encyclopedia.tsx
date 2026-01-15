@@ -26,7 +26,10 @@ import {
     type AdditiveInfo,
     type AdditiveRisk,
     type NovaGroup,
+    NUTRI_SCORES,
+    type NutriScore
 } from "../../constants/additives";
+import { NutriScoreGraphic } from "../../components/ui/NutriScoreAssets";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -34,7 +37,7 @@ if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental
 
 const { width } = Dimensions.get("window");
 
-type TabType = "additives" | "nova";
+type TabType = "additives" | "nova" | "nutriscore";
 type RiskFilter = "ALL" | AdditiveRisk;
 
 const RISK_CONFIG: Record<AdditiveRisk, { color: string; bg: string; icon: keyof typeof Ionicons.glyphMap }> = {
@@ -246,6 +249,44 @@ export default function AdditivesLibraryScreen() {
         );
     };
 
+    const renderNutriScoreCard = (score: NutriScore) => {
+        const info = NUTRI_SCORES[score];
+
+        return (
+            <View key={score} style={[styles.novaCard, { borderLeftColor: info.color }]}>
+                {/* Header: Graphic + Title */}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                    <View style={{ flex: 1, marginRight: 12 }}>
+                        <Text style={[styles.novaTitle, { fontSize: 18, color: info.color, marginBottom: 4 }]}>
+                            {isTr ? info.labelTr : info.label}
+                        </Text>
+                        <Text style={styles.novaDescription}>
+                            {isTr ? info.descriptionTr : info.description}
+                        </Text>
+                    </View>
+                    <View style={{ transform: [{ scale: 0.8 }], transformOrigin: 'top right' }}>
+                        <NutriScoreGraphic grade={score} />
+                    </View>
+                </View>
+
+                {/* Examples */}
+                <View style={styles.novaSection}>
+                    <Text style={styles.novaSectionTitle}>
+                        <Ionicons name="basket" size={14} color={Colors.gray[600]} />
+                        {"  "}{isTr ? "Örnek Gıdalar" : "Common Examples"}
+                    </Text>
+                    <View style={styles.examplesContainer}>
+                        {(isTr ? info.examplesTr : info.examples).map((example, idx) => (
+                            <View key={idx} style={styles.exampleTag}>
+                                <Text style={styles.exampleText}>{example}</Text>
+                            </View>
+                        ))}
+                    </View>
+                </View>
+            </View>
+        );
+    };
+
     return (
         <View style={styles.container}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
@@ -298,6 +339,19 @@ export default function AdditivesLibraryScreen() {
                             />
                             <Text style={[styles.tabText, activeTab === "nova" && styles.tabTextActive]}>
                                 {isTr ? "NOVA Rehberi" : "NOVA Guide"}
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.tab, activeTab === "nutriscore" && styles.tabActive]}
+                            onPress={() => setActiveTab("nutriscore")}
+                        >
+                            <Ionicons
+                                name="stats-chart"
+                                size={18}
+                                color={activeTab === "nutriscore" ? Colors.primary : "#FFF"}
+                            />
+                            <Text style={[styles.tabText, activeTab === "nutriscore" && styles.tabTextActive]}>
+                                Nutri-Score
                             </Text>
                         </TouchableOpacity>
                     </View>
@@ -406,6 +460,29 @@ export default function AdditivesLibraryScreen() {
 
                         {/* NOVA Cards */}
                         {([1, 2, 3, 4] as NovaGroup[]).map(renderNovaCard)}
+                    </>
+                )}
+
+                {/* NUTRI-SCORE TAB */}
+                {activeTab === "nutriscore" && (
+                    <>
+                        {/* Info Box */}
+                        <View style={styles.novaInfoBox}>
+                            <Ionicons name="information-circle" size={24} color={Colors.primary} />
+                            <View style={styles.novaInfoContent}>
+                                <Text style={styles.novaInfoTitle}>
+                                    {isTr ? "Nutri-Score Nedir?" : "What is Nutri-Score?"}
+                                </Text>
+                                <Text style={styles.novaInfoText}>
+                                    {isTr
+                                        ? "Nutri-Score, gıdaların besin değerini A'dan (en sağlıklı) E'ye (en az sağlıklı) kadar sıralayan 5 renkli bir etiketleme sistemidir."
+                                        : "Nutri-Score is a 5-color nutrition label that ranks foods from A (best) to E (poorest) nutritional quality."}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Cards */}
+                        {(['A', 'B', 'C', 'D', 'E'] as NutriScore[]).map(renderNutriScoreCard)}
                     </>
                 )}
 
