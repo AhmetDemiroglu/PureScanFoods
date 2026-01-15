@@ -118,11 +118,9 @@ export default function ProductResultScreen() {
     useEffect(() => {
         const processScan = async () => {
             if (params.viewMode === 'history') {
-                console.log("📜 History Mode: Analiz yeniden çalıştırılıyor...");
                 const productRaw = data?.product || data;
 
                 if (data?.details) {
-                    console.log("✅ History: Tam veri mevcut, analiz atlanıyor.");
                     return;
                 }
 
@@ -152,7 +150,9 @@ export default function ProductResultScreen() {
                             scores: {
                                 ...prev.scores,
                                 compatibility: {
+                                    value: report.score,
                                     verdict: report.title,
+                                    summary: report.summary,
                                     details: report.findings
                                 }
                             },
@@ -224,15 +224,11 @@ export default function ProductResultScreen() {
 
     const renderDietScoreCard = () => {
         const SUPPORTED_DIETS = ['KETO', 'LOW_CARB', 'ATKINS', 'DUKAN'];
+        const mainUserDiet = profilesData['main_user']?.diet;
 
-        const activeDietMember = familyMembers.find(m => {
-            const diet = profilesData[m.id]?.diet;
-            return diet && SUPPORTED_DIETS.includes(diet);
-        });
+        if (!mainUserDiet || !SUPPORTED_DIETS.includes(mainUserDiet)) return null;
 
-        if (!activeDietMember) return null;
-
-        const userDiet = profilesData[activeDietMember.id].diet;
+        const userDiet = mainUserDiet;
         const ketoData = data?.keto_analysis as KetoAnalysis | undefined;
         const nutritionData = data?.nutrition_facts as NutritionFacts | undefined;
 
@@ -405,16 +401,9 @@ export default function ProductResultScreen() {
     const displayScore = ownerAnalysis ? ownerAnalysis.report.score : (scores.compatibility?.value || 0);
     const scoreStyles = getScoreStyles(displayScore);
 
-    let displayVerdict = "";
-    let displaySummary = "";
+    const displayVerdict = ownerAnalysis?.report.title || t("analysis.status.safe");
+    const displaySummary = ownerAnalysis?.report.summary || t("analysis.findings.safe_summary");
 
-    if (ownerAnalysis && ownerAnalysis.report.status !== 'safe') {
-        displayVerdict = ownerAnalysis.report.title;
-        displaySummary = ownerAnalysis.report.summary;
-    } else {
-        displayVerdict = scores.compatibility?.verdict || t("analysis.status.safe");
-        displaySummary = ownerAnalysis?.report.summary || t("analysis.findings.safe_summary");
-    }
     const handleMemberPress = (item: { member: any, report: CompatibilityReport }) => {
         setSelectedMemberReport(item);
         setShowDetailModal(true);
