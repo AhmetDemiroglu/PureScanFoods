@@ -7,6 +7,8 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Colors } from "../constants/colors";
 import { Ionicons } from "@expo/vector-icons";
+import { getDietDefinition } from "../lib/diets";
+import { getAllergenDefinition, AllergenType } from "../lib/allergens";
 import ScoreRing from "../components/ui/ScoreRing";
 import { LinearGradient } from "expo-linear-gradient";
 import { TempStore } from "../lib/tempStore";
@@ -684,6 +686,49 @@ export default function ProductResultScreen() {
                                     contentContainerStyle={{ paddingBottom: 20 }}
                                     showsVerticalScrollIndicator={true}
                                 >
+                                    {(() => {
+                                        const memberId = selectedMemberReport.member.id;
+                                        const profile = profilesData[memberId];
+                                        const userDiet = profile?.diet;
+                                        const userAllergens = profile?.allergens || [];
+                                        const dietDef = userDiet ? getDietDefinition(userDiet) : null;
+
+                                        // Eğer hiçbir bilgi yoksa render etme
+                                        if (!dietDef && userAllergens.length === 0) return null;
+
+                                        const isTr = t("common.lang", { defaultValue: "en" }) === "tr" || true; // i18n instance'ına göre ayarlanmalı, varsayılan true bıraktım
+
+                                        return (
+                                            <View style={styles.profileSummaryBox}>
+                                                <Text style={styles.profileSummaryTitle}>{t("nutrition.profileSettings", "Profil Tercihleri")}</Text>
+                                                <View style={styles.tagsContainer}>
+                                                    {/* Diyet Bilgisi */}
+                                                    {dietDef && (
+                                                        <View style={[styles.infoChip, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
+                                                            <Ionicons name="restaurant" size={14} color="#2563EB" />
+                                                            <Text style={[styles.infoChipText, { color: '#1E40AF' }]}>
+                                                                {isTr ? dietDef.nameTr : dietDef.name}
+                                                            </Text>
+                                                        </View>
+                                                    )}
+
+                                                    {/* Alerjen Bilgileri */}
+                                                    {userAllergens.map((alg: string) => {
+                                                        const algDef = getAllergenDefinition(alg as AllergenType);
+                                                        if (!algDef) return null;
+                                                        return (
+                                                            <View key={alg} style={[styles.infoChip, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
+                                                                <Ionicons name="hand-left" size={14} color="#DC2626" />
+                                                                <Text style={[styles.infoChipText, { color: '#991B1B' }]}>
+                                                                    {isTr ? algDef.nameTr : algDef.name}
+                                                                </Text>
+                                                            </View>
+                                                        );
+                                                    })}
+                                                </View>
+                                            </View>
+                                        );
+                                    })()}
                                     {selectedMemberReport.report.findings.length === 0 ? (
                                         <View style={styles.emptyStateBox}>
                                             <Ionicons name="checkmark-circle" size={32} color={Colors.success} />
@@ -1168,5 +1213,41 @@ const styles = StyleSheet.create({
         padding: 16,
         borderRadius: 16,
         borderWidth: 1,
+    },
+    // styles objesinin sonuna ekle:
+
+    profileSummaryBox: {
+        marginBottom: 16,
+        padding: 12,
+        backgroundColor: '#F8FAFC',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    profileSummaryTitle: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#64748B',
+        marginBottom: 8,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    tagsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    infoChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 6,
+        paddingHorizontal: 10,
+        borderRadius: 8,
+        borderWidth: 1,
+        gap: 6,
+    },
+    infoChipText: {
+        fontSize: 12,
+        fontWeight: '600',
     },
 });
