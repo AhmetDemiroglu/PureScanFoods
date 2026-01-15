@@ -14,7 +14,9 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
-  PanResponder
+  PanResponder,
+  Animated,
+  Dimensions
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -143,17 +145,43 @@ export default function NutritionScreen() {
   const isTr = i18n.language === "tr";
   const insets = useSafeAreaInsets();
 
-  // --- PAN RESPONDER ---
+  // --- ANIMATED PAN RESPONDER ---
+  const panY = React.useRef(new Animated.Value(0)).current;
+  const screenHeight = Dimensions.get('window').height;
+
+  const closeWithAnimation = (callback: () => void) => {
+    Animated.timing(panY, {
+      toValue: screenHeight,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => {
+      callback();
+    });
+  };
+
   const panResponder = React.useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 5, // Sadece aşağı hareket
+      onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 5,
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          panY.setValue(gestureState.dy);
+        }
+      },
       onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dy > 50) {
-          setShowFamilyModal(false);
-          setShowDietModal(false);
-          setShowAllergenModal(false);
-          setShowAvatarModal(false);
+        if (gestureState.dy > 120 || gestureState.vy > 0.7) {
+          closeWithAnimation(() => {
+            setShowFamilyModal(false);
+            setShowDietModal(false);
+            setShowAllergenModal(false);
+            setShowAvatarModal(false);
+          });
+        } else {
+          Animated.spring(panY, {
+            toValue: 0,
+            bounciness: 4,
+            useNativeDriver: true,
+          }).start();
         }
       },
     })
@@ -196,6 +224,12 @@ export default function NutritionScreen() {
   const [newMemberName, setNewMemberName] = useState("");
   const [newMemberRole, setNewMemberRole] = useState<FamilyRole>("child");
   const [editingAvatarId, setEditingAvatarId] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (showFamilyModal || showDietModal || showAllergenModal || showAvatarModal) {
+      panY.setValue(0);
+    }
+  }, [showFamilyModal, showDietModal, showAllergenModal, showAvatarModal]);
 
   // --- HELPERS ---
   const activeData = getActiveData();
@@ -558,7 +592,14 @@ export default function NutritionScreen() {
       <Modal visible={showFamilyModal} transparent animationType="fade" onRequestClose={() => setShowFamilyModal(false)}>
         <View style={styles.modalOverlay}>
           <Pressable style={styles.modalDismiss} onPress={() => setShowFamilyModal(false)} />
-          <View style={[styles.bottomSheet, { paddingBottom: insets.bottom + 20 }]} {...panResponder.panHandlers}>
+          <Animated.View
+            style={[
+              styles.bottomSheet,
+              { paddingBottom: insets.bottom + 20 },
+              { transform: [{ translateY: panY }] }
+            ]}
+            {...panResponder.panHandlers}
+          >
             <View style={styles.bottomSheetHandle} />
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>
@@ -569,17 +610,16 @@ export default function NutritionScreen() {
               </TouchableOpacity>
             </View>
             <View style={{ padding: 20 }}>
-              { // AVATAR ÖNİZLEME (Tıklanabilir)
-                !!editingMemberId && (
-                  <TouchableOpacity style={{ alignSelf: 'center', marginBottom: 20 }} onPress={openAvatarSelectorForEdit}>
-                    <View style={[styles.memberAvatar, { width: 80, height: 80, borderRadius: 40, backgroundColor: tempColor }]}>
-                      <MaterialCommunityIcons name={getSafeIcon(tempIcon) as any} size={40} color="#FFF" />
-                      <View style={styles.editBadge}>
-                        <Ionicons name="pencil" size={14} color="#FFF" />
-                      </View>
+              {!!editingMemberId && (
+                <TouchableOpacity style={{ alignSelf: 'center', marginBottom: 20 }} onPress={openAvatarSelectorForEdit}>
+                  <View style={[styles.memberAvatar, { width: 80, height: 80, borderRadius: 40, backgroundColor: tempColor }]}>
+                    <MaterialCommunityIcons name={getSafeIcon(tempIcon) as any} size={40} color="#FFF" />
+                    <View style={styles.editBadge}>
+                      <Ionicons name="pencil" size={14} color="#FFF" />
                     </View>
-                  </TouchableOpacity>
-                )
+                  </View>
+                </TouchableOpacity>
+              )
               }
 
               <Text style={styles.inputLabel}>{t("nutrition.family.inputName")}</Text>
@@ -643,15 +683,23 @@ export default function NutritionScreen() {
 
               </View>
             </View>
-          </View>
+          </Animated.View>
         </View>
-      </Modal>
+      </Modal >
 
       {/* 2. DIET MODAL */}
-      <Modal visible={showDietModal} transparent animationType="fade" onRequestClose={() => setShowDietModal(false)}>
+      < Modal visible={showDietModal} transparent animationType="fade" onRequestClose={() => setShowDietModal(false)
+      }>
         <View style={styles.modalOverlay}>
           <Pressable style={styles.modalDismiss} onPress={() => setShowDietModal(false)} />
-          <View style={[styles.bottomSheet, { paddingBottom: insets.bottom + 20 }]} {...panResponder.panHandlers}>
+          <Animated.View
+            style={[
+              styles.bottomSheet,
+              { paddingBottom: insets.bottom + 20 },
+              { transform: [{ translateY: panY }] }
+            ]}
+            {...panResponder.panHandlers}
+          >
             <View style={styles.bottomSheetHandle} />
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>{t("nutrition.modalDiet")}</Text>
@@ -684,15 +732,23 @@ export default function NutritionScreen() {
                 );
               }}
             />
-          </View>
+          </Animated.View>
         </View>
-      </Modal>
+      </Modal >
 
       {/* 3. ALLERGEN MODAL */}
-      <Modal visible={showAllergenModal} transparent animationType="fade" onRequestClose={() => setShowAllergenModal(false)}>
+      < Modal visible={showAllergenModal} transparent animationType="fade" onRequestClose={() => setShowAllergenModal(false)
+      }>
         <View style={styles.modalOverlay}>
           <Pressable style={styles.modalDismiss} onPress={() => setShowAllergenModal(false)} />
-          <View style={[styles.bottomSheet, { paddingBottom: insets.bottom + 20 }]} {...panResponder.panHandlers}>
+          <Animated.View
+            style={[
+              styles.bottomSheet,
+              { paddingBottom: insets.bottom + 20 },
+              { transform: [{ translateY: panY }] }
+            ]}
+            {...panResponder.panHandlers}
+          >
             <View style={styles.bottomSheetHandle} />
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>{t("nutrition.modalAllergen")}</Text>
@@ -722,16 +778,24 @@ export default function NutritionScreen() {
                 );
               }}
             />
-          </View>
+          </Animated.View>
         </View>
-      </Modal>
+      </Modal >
 
       {/* 4. AVATAR BUILDER MODAL (NEW) */}
-      <Modal visible={showAvatarModal} transparent animationType="fade" onRequestClose={() => setShowAvatarModal(false)}>
+      < Modal visible={showAvatarModal} transparent animationType="fade" onRequestClose={() => setShowAvatarModal(false)
+      }>
         <View style={styles.modalOverlay}>
           <Pressable style={styles.modalDismiss} onPress={() => setShowAvatarModal(false)} />
 
-          <View style={[styles.avatarSheet, { paddingBottom: insets.bottom + 12 }]} {...panResponder.panHandlers}>
+          <Animated.View
+            style={[
+              styles.avatarSheet,
+              { paddingBottom: insets.bottom + 12 },
+              { transform: [{ translateY: panY }] }
+            ]}
+            {...panResponder.panHandlers}
+          >
             {/* Handle */}
             <View style={styles.avatarSheetHandle} />
 
@@ -894,11 +958,11 @@ export default function NutritionScreen() {
                 </>
               );
             })()}
-          </View>
+          </Animated.View>
         </View>
-      </Modal>
+      </Modal >
 
-    </View>
+    </View >
   );
 }
 

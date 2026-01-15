@@ -21,21 +21,24 @@
             "barcode": "Barkod",
             "text": "Metin"
         },
+        "placeholders": {
+            "barcode": "Örn: 869052..."
+        },
         "actions": {
-            "scanIngredients": "İçeriği Tara",
-            "scanBarcode": "Barkodu Tara",
-            "analyzeText": "Analiz Et",
-            "fromGallery": "Galeriden Seç",
-            "or": "VEYA",
             "enterBarcode": "Barkod No Girin",
             "enterText": "İçerik listesini buraya yapıştırın...",
-            "search": "Ara"
+            "search": "Ara",
+            "scanIngredients": "İçeriği Tara",
+            "scanBarcode": "Barkod Tara",
+            "analyzeText": "Analiz Et",
+            "fromGallery": "Galeriden Seç",
+            "or": "VEYA"
         },
         "permissions": {
             "request": "Kamera İzni Ver"
         },
         "disclaimer": {
-            "off": "Veriler OpenFoodFacts tarafından sağlanmaktadır."
+            "off": "Barkod taraması OpenFoodFacts veritabanını kullanır."
         }
     },
     "tabs": {
@@ -242,7 +245,14 @@
         },
         "refresh": "Yenile",
         "refreshing": "Yenileniyor...",
-        "saved_to_history": "Geçmişe Kaydedildi"
+        "saved_to_history": "Geçmişe Kaydedildi",
+        "cancel": "Vazgeç"
+    },
+    "errors": {
+        "generic": "Bir hata oluştu, lütfen tekrar deneyin.",
+        "barcodeProcessing": "Barkod işlenirken hata oluştu.",
+        "imageLoad": "Görsel yüklenirken hata oluştu.",
+        "analysisFailed": "Analiz verisi işlenemedi."
     },
     "nutrition": {
         "subtitle": "Kişisel sağlık tercihlerinizi yönetin",
@@ -284,6 +294,12 @@
         "rotationLockHint": "Dönmüyorsa: Ayarlar > Ekran döndürme kilidini kapatın",
         "frameTitle": "İçerik Listesini Çerçeveleyin",
         "frameSubtitlePortrait": "Uzun içerik listeleri için telefonu yatay tutun",
-        "frameSubtitleLandscape": "İçerik listesini tarama alanına yerleştirin"
+        "frameSubtitleLandscape": "İçerik listesini tarama alanına yerleştirin",
+        "enterValidBarcode": "Lütfen geçerli bir barkod girin.",
+        "productNotFound": "Ürün veritabanında bulunamadı.",
+        "textTooShort": "Lütfen analiz için yeterli içerik girin.",
+        "alignBarcode": "Barkodu hizalayın...",
+        "notFoundTitle": "Ürün Bulunamadı",
+        "notFoundDesc": "Bu ürün veritabanımızda yok ama üzülme! İçeriği kamerayla tarayarak anında analiz yapabilirsin."
     }
 }

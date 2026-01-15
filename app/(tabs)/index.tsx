@@ -13,7 +13,8 @@ import Hero from "../../components/ui/Hero";
 import { callGemini } from "../../lib/api";
 import ProcessingView from "../../components/ui/ProcessingView";
 import { TempStore } from "../../lib/tempStore";
-import { generateAnalysisPrompt } from "../../lib/prompt";
+import { generateAnalysisPrompt, generateBarcodeDataPrompt } from "../../lib/prompt";
+import { getIngredientsByBarcode } from "../../lib/openFoodFacts";
 import * as ImagePicker from "expo-image-picker";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { useUser } from "../../context/UserContext";
@@ -26,7 +27,7 @@ const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 export default function ScanScreen() {
   const { t, i18n } = useTranslation();
-  const [activeTab, setActiveTab] = useState<ScanTab>("camera");
+  const [activeTab, setActiveTab] = useState<ScanTab>("barcode");
   const { userProfile } = useAuth();
   const [flashOn, setFlashOn] = useState(false);
 
@@ -45,10 +46,189 @@ export default function ScanScreen() {
   const [barcodeInput, setBarcodeInput] = useState("");
   const [textInput, setTextInput] = useState("");
   const [isHistoryOpen, setHistoryOpen] = useState(false);
+  const [showNotFoundModal, setShowNotFoundModal] = useState(false);
 
   const params = useLocalSearchParams();
 
   const { getActiveData } = useUser();
+
+  const handleBarcodeSearch = async () => {
+    if (!barcodeInput || barcodeInput.length < 3) {
+      alert(t("scan.enterValidBarcode"));
+      return;
+    }
+
+    setIsScanning(true);
+    try {
+      const productData = await getIngredientsByBarcode(barcodeInput);
+
+      if (!productData.found) {
+        setShowNotFoundModal(true);
+        setIsScanning(false);
+        return;
+      }
+
+      const currentLang = i18n.language;
+      const profileData = getActiveData();
+
+      const promptProfile = {
+        allergens: profileData.allergens,
+        dietaryPreferences: profileData.diet ? [profileData.diet] : []
+      };
+
+      const systemPrompt = generateBarcodeDataPrompt(currentLang, promptProfile, productData);
+
+      const apiResult = await callGemini("gemini-2.5-flash-preview-09-2025:generateContent", {
+        contents: [{
+          parts: [{ text: systemPrompt }]
+        }]
+      });
+
+      processGeminiResult(apiResult, productData.image || null);
+
+    } catch (error) {
+      console.error("Barcode Scan Error:", error);
+      alert(t("errors.generic", { defaultValue: "Bir hata oluştu, lütfen tekrar deneyin." }));
+      setIsScanning(false);
+    }
+  };
+
+  const handleCameraBarcodeScanned = async ({ type, data }: { type: string; data: string }) => {
+    if (activeTab !== "barcode" || !showCamera || isScanning) return;
+
+    setShowCamera(false);
+    setBarcodeInput(data);
+    setIsScanning(true);
+
+    try {
+      const productData = await getIngredientsByBarcode(data);
+
+      if (!productData.found) {
+        setShowNotFoundModal(true);
+        setIsScanning(false);
+        return;
+      }
+
+      const currentLang = i18n.language;
+      const profileData = getActiveData();
+
+      const promptProfile = {
+        allergens: profileData.allergens,
+        dietaryPreferences: profileData.diet ? [profileData.diet] : []
+      };
+
+      const systemPrompt = generateBarcodeDataPrompt(currentLang, promptProfile, productData);
+
+      const apiResult = await callGemini("gemini-2.5-flash-preview-09-2025:generateContent", {
+        contents: [{ parts: [{ text: systemPrompt }] }]
+      });
+
+      processGeminiResult(apiResult, productData.image || null);
+
+    } catch (error) {
+      console.error("Camera Barcode Error:", error);
+      alert(t("errors.barcodeProcessing"));
+      setIsScanning(false);
+    }
+  };
+
+  const handleTextAnalyze = async () => {
+    if (!textInput || textInput.length < 10) {
+      alert(t("scan.textTooShort", { defaultValue: "Lütfen analiz için yeterli içerik girin." }));
+      return;
+    }
+
+    setIsScanning(true);
+    try {
+      const currentLang = i18n.language;
+      const profileData = getActiveData();
+
+      const promptProfile = {
+        allergens: profileData.allergens,
+        dietaryPreferences: profileData.diet ? [profileData.diet] : []
+      };
+
+      const basePrompt = generateAnalysisPrompt(currentLang, promptProfile);
+      const combinedPrompt = `${basePrompt}\n\nAnalyze this ingredient list text:\n"${textInput}"`;
+
+      const apiResult = await callGemini("gemini-2.5-flash-preview-09-2025:generateContent", {
+        contents: [{
+          parts: [{ text: combinedPrompt }]
+        }]
+      });
+
+      processGeminiResult(apiResult, null);
+
+    } catch (error) {
+      console.error("Text Analyze Error:", error);
+      alert(t("errors.generic", { defaultValue: "Bir hata oluştu." }));
+      setIsScanning(false);
+    }
+  };
+
+  const processGeminiResult = (apiResult: any, imageUri?: string | null) => {
+    try {
+      const rawText = (apiResult as any).candidates[0].content.parts[0].text;
+      const startIndex = rawText.indexOf('{');
+      const endIndex = rawText.lastIndexOf('}');
+
+      if (startIndex === -1 || endIndex === -1) throw new Error("JSON bulunamadı");
+
+      const cleanJson = rawText.substring(startIndex, endIndex + 1);
+      const parsedData = JSON.parse(cleanJson);
+
+      TempStore.setResult(parsedData, imageUri || "");
+
+      router.push("/product-result");
+
+      setTimeout(() => setIsScanning(false), 500);
+
+    } catch (e) {
+      console.error("Parsing Error:", e);
+      alert(t("errors.analysisFailed"));
+      setIsScanning(false);
+    }
+  };
+
+  const handleGalleryPick = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        base64: true,
+        quality: 0.3,
+      });
+
+      if (!result.canceled && result.assets[0].base64) {
+        setIsScanning(true);
+        setShowCamera(false); // Modal açıksa kapat
+
+        const currentLang = i18n.language;
+        const profileData = getActiveData();
+
+        const promptProfile = {
+          allergens: profileData.allergens,
+          dietaryPreferences: profileData.diet ? [profileData.diet] : []
+        };
+
+        const systemPrompt = generateAnalysisPrompt(currentLang, promptProfile);
+
+        const apiResult = await callGemini("gemini-2.5-flash-preview-09-2025:generateContent", {
+          contents: [{
+            parts: [
+              { text: systemPrompt },
+              { inlineData: { mimeType: "image/jpeg", data: result.assets[0].base64 } }
+            ]
+          }]
+        });
+
+        processGeminiResult(apiResult, result.assets[0].uri);
+      }
+    } catch (err) {
+      console.error("Galeri Hatası:", err);
+      alert(t("errors.imageLoad"));
+      setIsScanning(false);
+    }
+  };
 
   useEffect(() => {
     if (params.autoStart === "true") {
@@ -135,10 +315,10 @@ export default function ScanScreen() {
             {/* DİNAMİK İÇERİK ALANI */}
             <View style={styles.dynamicContent}>
 
-              {/* DURUM 1: KAMERA MODU */}
+              {/* DURUM 1: KAMERA MODU (Düzeltilmiş) */}
               {activeTab === "camera" && (
                 <>
-                  {/* 1. Ana Sayfa Butonu  */}
+                  {/* 1. Ana Sayfa Büyük Tara Butonu */}
                   <Pressable
                     style={styles.mainButtonWrapper}
                     onPress={() => {
@@ -157,262 +337,19 @@ export default function ScanScreen() {
                     >
                       <Ionicons name="scan" size={32} color={Colors.white} />
                       <Text style={styles.mainButtonText}>
-                        {permission?.granted ? t("home.actions.scanIngredients") : t("permissions.request", { defaultValue: "Kamera İzni Ver" })}</Text>
+                        {permission?.granted ? t("home.actions.scanIngredients") : t("permissions.request", { defaultValue: "Kamera İzni Ver" })}
+                      </Text>
                     </LinearGradient>
                   </Pressable>
 
-                  {/* 2. Kamera Modalı */}
-                  <Modal
-                    visible={showCamera}
-                    animationType="slide"
-                    supportedOrientations={["portrait", "landscape"]}
-                    onRequestClose={() => setShowCamera(false)}
-                  >
-                    <View style={styles.cameraContainer}>
-                      {/* Kamera */}
-                      <CameraView
-                        style={StyleSheet.absoluteFill}
-                        facing="back"
-                        ref={cameraRef}
-                        enableTorch={flashOn}
-                      />
-                      {/* Üst Gradient Overlay */}
-                      <LinearGradient
-                        colors={["rgba(0,0,0,0.7)", "transparent"]}
-                        style={styles.topOverlay}
-                      />
-
-                      {/* Alt Gradient Overlay */}
-                      <LinearGradient
-                        colors={["transparent", "rgba(0,0,0,0.8)"]}
-                        style={styles.bottomOverlay}
-                      />
-
-                      {/* Header */}
-                      <SafeAreaView style={styles.cameraHeaderNew}>
-                        <TouchableOpacity style={styles.closeButtonNew} onPress={() => setShowCamera(false)}>
-                          <Ionicons name="close" size={24} color={Colors.white} />
-                        </TouchableOpacity>
-                        <View style={styles.headerTitle}>
-                          <Ionicons name="scan" size={20} color={Colors.primary} />
-                          <Text style={styles.headerTitleText}>PureScan Foods</Text>
-                        </View>
-                        <View style={{ width: 40 }} />
-                      </SafeAreaView>
-
-                      {/* Tarama Çerçevesi */}
-                      <View style={[
-                        styles.scanFrameContainer,
-                        {
-                          width: isLandscape ? width * 0.75 : width * 0.85,
-                          height: isLandscape ? 220 : 180,
-                          marginLeft: isLandscape ? -(width * 0.75) / 2 : -(width * 0.85) / 2,
-                          marginTop: isLandscape ? -110 : -90,
-                        }
-                      ]}>
-
-                        {/* Köşe İşaretleri */}
-                        <View style={[styles.corner, styles.cornerTL]} />
-                        <View style={[styles.corner, styles.cornerTR]} />
-                        <View style={[styles.corner, styles.cornerBL]} />
-                        <View style={[styles.corner, styles.cornerBR]} />
-
-                        {/* Animasyonlu Scan Line */}
-                        <Animated.View
-                          style={[
-                            styles.scanLine,
-                            {
-                              transform: [{
-                                translateY: scanLineAnim.interpolate({
-                                  inputRange: [0, 1],
-                                  outputRange: [0, isLandscape ? 200 : 160],
-                                }),
-                              }],
-                            },
-                          ]}
-                        />
-
-                        {/* Merkez İkonu */}
-                        <View style={styles.centerIcon}>
-                          <Ionicons name="leaf-outline" size={32} color="rgba(255,255,255,0.3)" />
-                        </View>
-                      </View>
-
-                      {/* Yönlendirme Metni */}
-                      <View style={styles.guidanceContainer}>
-                        {!isLandscape && (
-                          <View style={styles.rotateWarning}>
-                            <Ionicons name="phone-landscape-outline" size={20} color={Colors.primary} />
-                            <Text style={styles.rotateWarningText}>
-                              {t("scan.rotateHint")} {"\n"}
-                              <Text style={styles.rotateWarningSubtext}>
-                                {t("scan.rotationLockHint")}
-                              </Text>
-                            </Text>
-                          </View>
-                        )}
-                        <Text style={styles.guidanceTitle}>
-                          {t("scan.frameTitle")}
-                        </Text>
-                        <Text style={styles.guidanceSubtitle}>
-                          {isLandscape ? t("scan.frameSubtitleLandscape") : t("scan.frameSubtitlePortrait")}
-                        </Text>
-                      </View>
-
-                      {/* Alt Kontroller */}
-                      <View style={styles.cameraControls}>
-                        {/* Flash Toggle */}
-                        <TouchableOpacity
-                          style={[styles.controlButton, flashOn && styles.controlButtonActive]}
-                          onPress={() => setFlashOn(!flashOn)}
-                        >
-                          <Ionicons
-                            name={flashOn ? "flash" : "flash-off-outline"}
-                            size={24}
-                            color={flashOn ? Colors.primary : Colors.white}
-                          />
-                        </TouchableOpacity>
-
-                        {/* Ana Çekim Butonu */}
-                        <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-                          <Pressable
-                            style={styles.captureButtonNew}
-                            onPress={async () => {
-                              if (cameraRef.current) {
-                                try {
-                                  const photo = await cameraRef.current.takePictureAsync({
-                                    base64: true,
-                                    quality: 0.3,
-                                    skipProcessing: true,
-                                    shutterSound: false
-                                  });
-
-                                  setIsScanning(true);
-                                  setShowCamera(false);
-
-                                  if (photo.base64) {
-                                    const currentLang = i18n.language;
-
-                                    const profileData = getActiveData();
-
-                                    const promptProfile = {
-                                      allergens: profileData.allergens,
-                                      dietaryPreferences: profileData.diet ? [profileData.diet] : []
-                                    };
-
-                                    const systemPrompt = generateAnalysisPrompt(currentLang, promptProfile);
-
-                                    await callGemini("gemini-2.5-flash-preview-09-2025:generateContent", {
-                                      contents: [{
-                                        parts: [
-                                          { text: systemPrompt },
-                                          { inlineData: { mimeType: "image/jpeg", data: photo.base64 } }
-                                        ]
-                                      }]
-                                    })
-                                      .then((apiResult) => {
-                                        const rawText = (apiResult as any).candidates[0].content.parts[0].text;
-                                        console.log("🔍 Ham Gemini Yanıtı:", rawText);
-
-                                        const startIndex = rawText.indexOf('{');
-                                        const endIndex = rawText.lastIndexOf('}');
-
-                                        if (startIndex === -1 || endIndex === -1) {
-                                          throw new Error("Yanıtta JSON bulunamadı.");
-                                        }
-
-                                        const cleanJson = rawText.substring(startIndex, endIndex + 1);
-                                        const parsedData = JSON.parse(cleanJson);
-
-                                        console.log("✅ AI Response:", parsedData);
-
-                                        TempStore.setResult(parsedData, photo.uri);
-                                        router.push("/product-result");
-
-                                        setTimeout(() => setIsScanning(false), 500);
-                                      })
-                                      .catch((parseError) => {
-                                        console.error("Hata:", parseError);
-                                        alert("Veri işlenemedi. Tekrar deneyin.");
-                                        setIsScanning(false);
-                                      });
-                                  }
-                                } catch (e) {
-                                  console.error("❌ Hata:", e);
-                                  alert("Hata oluştu, tekrar deneyin.");
-                                  setIsScanning(false);
-                                }
-                              }
-                            }}
-                          >
-                            {isScanning ? (
-                              <ActivityIndicator size="large" color={Colors.primary} />
-                            ) : (
-                              <View style={styles.captureButtonInner}>
-                                <Ionicons name="scan" size={28} color={Colors.white} />
-                              </View>
-                            )}
-                          </Pressable>
-                        </Animated.View>
-
-                        {/* Galeri */}
-                        <TouchableOpacity
-                          style={styles.controlButton}
-                          onPress={() => {
-                            ImagePicker.launchImageLibraryAsync({
-                              mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                              base64: true,
-                              quality: 0.3,
-                            })
-                              .then((result) => {
-                                if (!result.canceled && result.assets[0].base64) {
-                                  setShowCamera(false);
-                                  setIsScanning(true);
-
-                                  const currentLang = i18n.language;
-                                  const systemPrompt = generateAnalysisPrompt(currentLang, userProfile);
-
-                                  return callGemini("gemini-2.5-flash-preview-09-2025:generateContent", {
-                                    contents: [{
-                                      parts: [
-                                        { text: systemPrompt },
-                                        { inlineData: { mimeType: "image/jpeg", data: result.assets[0].base64 } }
-                                      ]
-                                    }]
-                                  })
-                                    .then((apiResult) => {
-                                      const rawText = (apiResult as any).candidates[0].content.parts[0].text;
-                                      const startIndex = rawText.indexOf('{');
-                                      const endIndex = rawText.lastIndexOf('}');
-                                      const cleanJson = rawText.substring(startIndex, endIndex + 1);
-                                      const parsedData = JSON.parse(cleanJson);
-
-                                      TempStore.setResult(parsedData, result.assets[0].uri);
-                                      router.push("/product-result");
-                                      setTimeout(() => setIsScanning(false), 500);
-                                    });
-                                }
-                              })
-                              .catch((err) => {
-                                console.error("Galeri hatası:", err);
-                                setIsScanning(false);
-                              });
-                          }}
-                        >
-                          <Ionicons name="images-outline" size={24} color={Colors.white} />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  </Modal>
-
-                  {/* Galeri Seçeneği (Aynen Kalıyor) */}
+                  {/* 2. Galeri Seçeneği */}
                   <View style={styles.divider}>
                     <View style={styles.dividerLine} />
                     <Text style={styles.dividerText}>{t("home.actions.or")}</Text>
                     <View style={styles.dividerLine} />
                   </View>
 
-                  <Pressable style={styles.secondaryButton}>
+                  <Pressable style={styles.secondaryButton} onPress={handleGalleryPick}>
                     <Ionicons name="images-outline" size={20} color={Colors.gray[500]} />
                     <Text style={styles.secondaryButtonText}>{t("home.actions.fromGallery")}</Text>
                   </Pressable>
@@ -423,7 +360,16 @@ export default function ScanScreen() {
               {activeTab === "barcode" && (
                 <>
                   {/* 1. Büyük Tarama Butonu (Kamera ile aynı stilde) */}
-                  <Pressable style={styles.mainButtonWrapper}>
+                  <Pressable
+                    style={styles.mainButtonWrapper}
+                    onPress={() => {
+                      if (!permission?.granted) {
+                        requestPermission();
+                      } else {
+                        setShowCamera(true);
+                      }
+                    }}
+                  >
                     <LinearGradient
                       colors={[Colors.secondary, "#0F172A"]}
                       start={{ x: 0, y: 0 }}
@@ -444,15 +390,22 @@ export default function ScanScreen() {
 
                   {/* 3. Manuel Giriş Satırı (Tek satır: Input + Search Butonu) */}
                   <View style={styles.inputRow}>
-                    <TextInput
-                      style={styles.smallInput}
-                      placeholder="Örn: 869052..."
-                      placeholderTextColor={Colors.gray[400]}
-                      keyboardType="numeric"
-                      value={barcodeInput}
-                      onChangeText={setBarcodeInput}
-                    />
-                    <Pressable style={styles.smallSearchButton}>
+                    <View style={styles.inputWrapper}>
+                      <TextInput
+                        style={styles.inputWithIcon}
+                        placeholder={t("home.placeholders.barcode")}
+                        placeholderTextColor={Colors.gray[400]}
+                        keyboardType="numeric"
+                        value={barcodeInput}
+                        onChangeText={setBarcodeInput}
+                      />
+                      {barcodeInput.length > 0 && (
+                        <Pressable onPress={() => setBarcodeInput("")} style={styles.clearIcon}>
+                          <Ionicons name="close-circle" size={20} color={Colors.gray[400]} />
+                        </Pressable>
+                      )}
+                    </View>
+                    <Pressable style={styles.smallSearchButton} onPress={handleBarcodeSearch}>
                       <Ionicons name="search" size={20} color={Colors.white} />
                     </Pressable>
                   </View>
@@ -464,18 +417,24 @@ export default function ScanScreen() {
               {/* DURUM 3: METİN MODU (Revize - Kompakt) */}
               {activeTab === "text" && (
                 <View style={{ gap: 12 }}>
-                  <TextInput
-                    style={[styles.inputField, styles.textArea]}
-                    placeholder={t("home.actions.enterText")}
-                    placeholderTextColor={Colors.gray[400]}
-                    multiline
-                    textAlignVertical="top"
-                    value={textInput}
-                    onChangeText={setTextInput}
-                  />
-
+                  <View style={styles.textAreaWrapper}>
+                    <TextInput
+                      style={[styles.inputField, styles.textArea, { flex: 1, borderWidth: 0 }]}
+                      placeholder={t("home.actions.enterText")}
+                      placeholderTextColor={Colors.gray[400]}
+                      multiline
+                      textAlignVertical="top"
+                      value={textInput}
+                      onChangeText={setTextInput}
+                    />
+                    {textInput.length > 0 && (
+                      <Pressable onPress={() => setTextInput("")} style={styles.clearIconTopRight}>
+                        <Ionicons name="close-circle" size={22} color={Colors.gray[400]} />
+                      </Pressable>
+                    )}
+                  </View>
                   {/* Daha ince, tek satır buton */}
-                  <Pressable style={styles.slimButton}>
+                  <Pressable style={styles.slimButton} onPress={handleTextAnalyze}>
                     <Text style={styles.slimButtonText}>{t("home.actions.analyzeText")}</Text>
                     <Ionicons name="arrow-forward" size={18} color={Colors.white} />
                   </Pressable>
@@ -484,8 +443,247 @@ export default function ScanScreen() {
             </View>
           </View>
         </View>
+        {/* 2. Kamera Modalı */}
+        <Modal
+          visible={showCamera}
+          animationType="slide"
+          supportedOrientations={["portrait", "landscape"]}
+          onRequestClose={() => setShowCamera(false)}
+        >
+          <View style={styles.cameraContainer}>
+            {/* Kamera */}
+            <CameraView
+              style={StyleSheet.absoluteFill}
+              facing="back"
+              ref={cameraRef}
+              enableTorch={flashOn}
+              onBarcodeScanned={handleCameraBarcodeScanned}
+              barcodeScannerSettings={{
+                barcodeTypes: [
+                  "qr",
+                  "ean13", "ean8",
+                  "upc_e", "upc_a",
+                  "code39", "code128",
+                  "pdf417", "aztec", "datamatrix"
+                ],
+              }}
+            />
+            {/* Üst Gradient Overlay */}
+            <LinearGradient
+              colors={["rgba(0,0,0,0.7)", "transparent"]}
+              style={styles.topOverlay}
+            />
 
-      </View>
+            {/* Alt Gradient Overlay */}
+            <LinearGradient
+              colors={["transparent", "rgba(0,0,0,0.8)"]}
+              style={styles.bottomOverlay}
+            />
+
+            {/* Header */}
+            <SafeAreaView style={styles.cameraHeaderNew}>
+              <TouchableOpacity style={styles.closeButtonNew} onPress={() => setShowCamera(false)}>
+                <Ionicons name="close" size={24} color={Colors.white} />
+              </TouchableOpacity>
+              <View style={styles.headerTitle}>
+                <Ionicons name="scan" size={20} color={Colors.primary} />
+                <Text style={styles.headerTitleText}>PureScan Foods</Text>
+              </View>
+              <View style={{ width: 40 }} />
+            </SafeAreaView>
+
+            {/* Tarama Çerçevesi */}
+            <View style={[
+              styles.scanFrameContainer,
+              {
+                width: isLandscape ? width * 0.75 : width * 0.85,
+                height: isLandscape ? 220 : 180,
+                marginLeft: isLandscape ? -(width * 0.75) / 2 : -(width * 0.85) / 2,
+                marginTop: isLandscape ? -110 : -90,
+              }
+            ]}>
+
+              {/* Köşe İşaretleri */}
+              <View style={[styles.corner, styles.cornerTL]} />
+              <View style={[styles.corner, styles.cornerTR]} />
+              <View style={[styles.corner, styles.cornerBL]} />
+              <View style={[styles.corner, styles.cornerBR]} />
+
+              {/* Animasyonlu Scan Line */}
+              <Animated.View
+                style={[
+                  styles.scanLine,
+                  {
+                    transform: [{
+                      translateY: scanLineAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0, isLandscape ? 200 : 160],
+                      }),
+                    }],
+                  },
+                ]}
+              />
+
+              {/* Merkez İkonu */}
+              <View style={styles.centerIcon}>
+                <Ionicons name="leaf-outline" size={32} color="rgba(255,255,255,0.3)" />
+              </View>
+            </View>
+
+            {/* Yönlendirme Metni */}
+            <View style={styles.guidanceContainer}>
+              {!isLandscape && (
+                <View style={styles.rotateWarning}>
+                  <Ionicons name="phone-landscape-outline" size={20} color={Colors.primary} />
+                  <Text style={styles.rotateWarningText}>
+                    {t("scan.rotateHint")} {"\n"}
+                    <Text style={styles.rotateWarningSubtext}>
+                      {t("scan.rotationLockHint")}
+                    </Text>
+                  </Text>
+                </View>
+              )}
+              <Text style={styles.guidanceTitle}>
+                {t("scan.frameTitle")}
+              </Text>
+              <Text style={styles.guidanceSubtitle}>
+                {isLandscape ? t("scan.frameSubtitleLandscape") : t("scan.frameSubtitlePortrait")}
+              </Text>
+            </View>
+
+            {/* Alt Kontroller (Modal İçi) */}
+            <View style={styles.cameraControls}>
+              {/* Flash Toggle */}
+              <TouchableOpacity
+                style={[styles.controlButton, flashOn && styles.controlButtonActive]}
+                onPress={() => setFlashOn(!flashOn)}
+              >
+                <Ionicons
+                  name={flashOn ? "flash" : "flash-off-outline"}
+                  size={24}
+                  color={flashOn ? Colors.primary : Colors.white}
+                />
+              </TouchableOpacity>
+
+              {/* Ana Çekim Butonu */}
+              {activeTab === "camera" && (
+                <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+                  <Pressable
+                    style={styles.captureButtonNew}
+                    onPress={async () => {
+                      if (cameraRef.current) {
+                        try {
+                          const photo = await cameraRef.current.takePictureAsync({
+                            base64: true,
+                            quality: 0.3,
+                            skipProcessing: true,
+                            shutterSound: false
+                          });
+
+                          setIsScanning(true);
+                          setShowCamera(false);
+
+                          if (photo.base64) {
+                            const currentLang = i18n.language;
+                            const profileData = getActiveData();
+                            const promptProfile = {
+                              allergens: profileData.allergens,
+                              dietaryPreferences: profileData.diet ? [profileData.diet] : []
+                            };
+                            const systemPrompt = generateAnalysisPrompt(currentLang, promptProfile);
+
+                            const apiResult = await callGemini("gemini-2.5-flash-preview-09-2025:generateContent", {
+                              contents: [{
+                                parts: [
+                                  { text: systemPrompt },
+                                  { inlineData: { mimeType: "image/jpeg", data: photo.base64 } }
+                                ]
+                              }]
+                            });
+                            processGeminiResult(apiResult, photo.uri);
+                          }
+                        } catch (e) {
+                          console.error("❌ Hata:", e);
+                          alert("Hata oluştu.");
+                          setIsScanning(false);
+                        }
+                      }
+                    }}
+                  >
+                    {isScanning ? (
+                      <ActivityIndicator size="large" color={Colors.primary} />
+                    ) : (
+                      <View style={styles.captureButtonInner}>
+                        <Ionicons name="scan" size={28} color={Colors.white} />
+                      </View>
+                    )}
+                  </Pressable>
+                </Animated.View>
+              )}
+
+              {/* Barkod Modunda Bilgilendirme Metni */}
+              {activeTab === "barcode" && (
+                <View style={{ alignItems: 'center', justifyContent: 'center', width: 80, height: 80 }}>
+                  <Text style={{ color: 'white', fontSize: 12, textAlign: 'center' }}>
+                    {t("scan.alignBarcode")}
+                  </Text>
+                </View>
+              )}
+
+              {/* Galeri */}
+              <TouchableOpacity
+                style={styles.controlButton}
+                onPress={handleGalleryPick}
+              >
+                <Ionicons name="images-outline" size={24} color={Colors.white} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+
+        {/*3. Ürün Bulunamadı Modalı */}
+        <Modal
+          visible={showNotFoundModal}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowNotFoundModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalIconContainer}>
+                <Ionicons name="alert-circle" size={48} color={Colors.warning} />
+              </View>
+              <Text style={styles.modalTitle}>
+                {t("scan.notFoundTitle")}
+              </Text>
+              <Text style={styles.modalText}>
+                {t("scan.notFoundDesc")}
+              </Text>
+
+              <View style={styles.modalButtons}>
+                <Pressable
+                  style={[styles.modalButton, styles.modalButtonSecondary]}
+                  onPress={() => setShowNotFoundModal(false)}
+                >
+                  <Text style={styles.modalButtonTextSecondary}>{t("common.cancel")}</Text>
+                </Pressable>
+
+                <Pressable
+                  style={[styles.modalButton, styles.modalButtonPrimary]}
+                  onPress={() => {
+                    setShowNotFoundModal(false);
+                    setActiveTab("camera"); // Tab değiştir
+                    setTimeout(() => setShowCamera(true), 300); // Kamerayı aç (hafif gecikme ile)
+                  }}
+                >
+                  <Text style={styles.modalButtonTextPrimary}>{t("home.actions.scanIngredients")}</Text>
+                  <Ionicons name="camera" size={18} color={Colors.white} />
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      </View >
       <HistorySidebar
         visible={isHistoryOpen}
         onClose={() => setHistoryOpen(false)}
@@ -859,5 +1057,116 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "400",
     color: "rgba(255, 152, 0, 0.8)",
+  },
+  // Input UX Stilleri
+  inputWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.gray[100],
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.gray[200],
+    paddingRight: 10,
+  },
+  inputWithIcon: {
+    flex: 1,
+    height: 48,
+    paddingHorizontal: 16,
+    fontSize: 15,
+    color: Colors.secondary,
+  },
+  clearIcon: {
+    padding: 4,
+  },
+  textAreaWrapper: {
+    flexDirection: 'row',
+    backgroundColor: Colors.gray[100],
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.gray[200],
+    padding: 4,
+  },
+  clearIconTopRight: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    zIndex: 10,
+    backgroundColor: Colors.gray[100],
+    borderRadius: 10,
+  },
+
+  // Modal Stilleri
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  modalContent: {
+    backgroundColor: Colors.white,
+    borderRadius: 24,
+    padding: 24,
+    width: '100%',
+    alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  modalIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255, 152, 0, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.secondary,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  modalText: {
+    fontSize: 15,
+    color: Colors.gray[500],
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  modalButtonPrimary: {
+    backgroundColor: Colors.primary,
+  },
+  modalButtonSecondary: {
+    backgroundColor: Colors.gray[100],
+  },
+  modalButtonTextPrimary: {
+    color: Colors.white,
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  modalButtonTextSecondary: {
+    color: Colors.gray[600],
+    fontWeight: '600',
+    fontSize: 15,
   },
 });

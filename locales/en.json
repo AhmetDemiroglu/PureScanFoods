@@ -21,21 +21,24 @@
             "barcode": "Barcode",
             "text": "Text"
         },
+        "placeholders": {
+            "barcode": "Ex: 869052..."
+        },
         "actions": {
             "scanIngredients": "Scan Ingredients",
             "scanBarcode": "Scan Barcode",
+            "enterText": "Paste ingredient list here...",
             "analyzeText": "Analyze",
-            "fromGallery": "Choose from Gallery",
+            "fromGallery": "From Gallery",
             "or": "OR",
             "enterBarcode": "Enter Barcode No",
-            "enterText": "Paste ingredient list here...",
             "search": "Search"
         },
         "permissions": {
             "request": "Camera Permission"
         },
         "disclaimer": {
-            "off": "Data provided by OpenFoodFacts."
+            "off": "Barcode scanning uses OpenFoodFacts database."
         }
     },
     "tabs": {
@@ -142,12 +145,7 @@
             "Chickpeas have been consumed by humans for 7500 years.",
             "Soybeans have the most complete amino acid profile among plant protein sources."
         ],
-        "waitMessages": [
-            "Digging into details...",
-            "AI is comparing data...",
-            "Almost there, thanks for your patience...",
-            "Final touches..."
-        ]
+        "waitMessages": ["Digging into details...", "AI is comparing data...", "Almost there, thanks for your patience...", "Final touches..."]
     },
     "results": {
         "ingredients": "Ingredients",
@@ -242,7 +240,8 @@
         },
         "refresh": "Yenile",
         "refreshing": "Yenileniyor...",
-        "saved_to_history": "Geçmişe Kaydedildi"
+        "saved_to_history": "Geçmişe Kaydedildi",
+        "cancel": "Cancel"
     },
     "nutrition": {
         "subtitle": "Manage your personal health preferences",
@@ -284,6 +283,18 @@
         "rotationLockHint": "Not rotating? Disable rotation lock in phone settings",
         "frameTitle": "Frame the Ingredient List",
         "frameSubtitlePortrait": "Hold phone horizontally for long ingredient lists",
-        "frameSubtitleLandscape": "Position the ingredient list within the scan area"
+        "frameSubtitleLandscape": "Position the ingredient list within the scan area",
+        "enterValidBarcode": "Please enter a valid barcode.",
+        "productNotFound": "Product not found in database.",
+        "textTooShort": "Please enter sufficient content for analysis.",
+        "alignBarcode": "Align barcode...",
+        "notFoundTitle": "Product Not Found",
+        "notFoundDesc": "This product is not in our database, but don't worry! You can scan the ingredients directly with the camera."
+    },
+    "errors": {
+        "generic": "An error occurred, please try again.",
+        "barcodeProcessing": "An error occurred while processing the barcode.",
+        "imageLoad": "An error occurred while loading the image.",
+        "analysisFailed": "Analysis data could not be processed."
     }
 }

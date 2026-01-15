@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
     View, Text, StyleSheet, Image, ScrollView, TouchableOpacity,
-    Dimensions, StatusBar, Modal, Pressable, PanResponder
+    Dimensions, StatusBar, Modal, Pressable, PanResponder, Animated
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -93,12 +93,42 @@ export default function ProductResultScreen() {
     const [selectedMemberReport, setSelectedMemberReport] = useState<{ member: any, report: CompatibilityReport } | null>(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
 
+    const screenHeight = Dimensions.get('window').height;
+    const panY = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        if (showDetailModal) {
+            panY.setValue(0);
+        }
+    }, [showDetailModal]);
+
+    const closeWithAnimation = () => {
+        Animated.timing(panY, {
+            toValue: screenHeight,
+            duration: 250,
+            useNativeDriver: true,
+        }).start(() => setShowDetailModal(false));
+    };
+
     const panResponder = useRef(
         PanResponder.create({
             onStartShouldSetPanResponder: () => true,
             onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 5,
+            onPanResponderMove: (_, gestureState) => {
+                if (gestureState.dy > 0) {
+                    panY.setValue(gestureState.dy);
+                }
+            },
             onPanResponderRelease: (_, gestureState) => {
-                if (gestureState.dy > 50) setShowDetailModal(false);
+                if (gestureState.dy > 100 || gestureState.vy > 0.6) {
+                    closeWithAnimation();
+                } else {
+                    Animated.spring(panY, {
+                        toValue: 0,
+                        bounciness: 4,
+                        useNativeDriver: true,
+                    }).start();
+                }
             },
         })
     ).current;
@@ -603,23 +633,23 @@ export default function ProductResultScreen() {
             <Modal
                 visible={showDetailModal}
                 transparent
-                animationType="fade"
-                onRequestClose={() => setShowDetailModal(false)}
+                animationType="fade" // Overlay için fade kalabilir
+                onRequestClose={closeWithAnimation} // Back tuşu ile de animasyonlu kapansın
             >
                 <View style={styles.modalOverlay}>
-                    <Pressable style={styles.modalDismiss} onPress={() => setShowDetailModal(false)} />
+                    <Pressable style={styles.modalDismiss} onPress={closeWithAnimation} />
 
-                    <View
+                    <Animated.View // <-- DİKKAT: Animated.View oldu
                         style={[
                             styles.bottomSheet,
-                            { paddingBottom: insets.bottom > 0 ? insets.bottom + 20 : 30 }
+                            { paddingBottom: insets.bottom > 0 ? insets.bottom + 20 : 30 },
+                            { transform: [{ translateY: panY }] } // <-- Animasyon bağlandı
                         ]}
-                    // DİKKAT: panResponder'ı buradan kaldırdık! Artık içerik scroll edilebilir.
                     >
-                        {/* Sadece bu gri çubuğa dokunarak kapatabilirsin */}
+                        {/* Gri çubuk çekme alanı */}
                         <View
                             style={styles.bottomSheetHandleContainer}
-                            {...panResponder.panHandlers}
+                            {...panResponder.panHandlers} // <-- Tutamaç burada
                         >
                             <View style={styles.bottomSheetHandle} />
                         </View>
@@ -685,10 +715,10 @@ export default function ProductResultScreen() {
                                 </ScrollView>
                             </View>
                         )}
-                    </View>
+                    </Animated.View>
                 </View>
-            </Modal>
-        </View>
+            </Modal >
+        </View >
     );
 }
 
@@ -1042,7 +1072,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     dietCard: {
-        marginTop: 16,
+        marginTop: 12,
         borderRadius: 16,
         borderWidth: 1,
         padding: 16,
