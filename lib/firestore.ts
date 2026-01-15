@@ -1,5 +1,5 @@
 import { db } from "./firebase";
-import { doc, setDoc, getDoc, updateDoc, serverTimestamp, increment, collection, addDoc, getDocs, query, orderBy, limit, deleteDoc, where, startAfter } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp, increment, collection, addDoc, getDocs, query, orderBy, limit, deleteDoc, startAfter } from "firebase/firestore";
 
 export interface UserProfile {
     uid: string;
@@ -157,24 +157,49 @@ export const getUserStats = async (uid: string): Promise<{ scanCount: number; we
     }
 };
 
-// --- 5. TARAMA HAKKI DÜŞME ---
+// --- 5. TARAMA HAKKI DÜŞME (DÜZELTİLEN KISIM BURASI) ---
 export const incrementScanCount = async (uid: string, deviceId: string | null) => {
     try {
         const promises = [];
 
+        // 1. Kullanıcı İstatistiği
         if (uid) {
             const statsRef = doc(db, "users", uid, "stats", "weekly");
-            promises.push(updateDoc(statsRef, { scanCount: increment(1) }));
+            // updateDoc YERİNE setDoc + merge kullanıyoruz.
+            // Bu sayede doküman yoksa hata vermez, yenisini oluşturur.
+            promises.push(
+                setDoc(
+                    statsRef,
+                    {
+                        scanCount: increment(1),
+                        lastScanAt: serverTimestamp(),
+                    },
+                    { merge: true }
+                )
+            );
         }
 
+        // 2. Cihaz İstatistiği
         if (deviceId) {
             const deviceRef = doc(db, "device_limits", deviceId);
-            promises.push(updateDoc(deviceRef, { scanCount: increment(1) }));
+            // Burada da aynısı. Cihaz kaydı yoksa oluşturur.
+            promises.push(
+                setDoc(
+                    deviceRef,
+                    {
+                        scanCount: increment(1),
+                        lastScanAt: serverTimestamp(),
+                    },
+                    { merge: true }
+                )
+            );
         }
 
         await Promise.all(promises);
+        console.log("✅ Sayaç başarıyla artırıldı (incrementScanCount)");
     } catch (error) {
-        console.error("Error incrementing scan:", error);
+        // Hata olsa bile uygulamayı durdurma, sadece logla.
+        console.error("⚠️ Error incrementing scan (but continuing):", error);
     }
 };
 

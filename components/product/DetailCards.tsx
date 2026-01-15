@@ -16,9 +16,12 @@ interface DetailCardsProps {
 
 export default function DetailCards({ data }: DetailCardsProps) {
     const { t } = useTranslation();
+    if (!data || !data.details) return null;
+
     const [expandedSection, setExpandedSection] = useState<string | null>("ingredients");
 
-    const rawAdditives = data.details.additives || [];
+    const rawAdditives = data.details?.additives || [];
+
     const validAdditives = rawAdditives.filter((item: any) => {
         const name = item.name ? item.name.toLowerCase() : "";
         return name !== "yok" && name !== "none" && name !== "n/a" && name !== "";
@@ -57,12 +60,13 @@ export default function DetailCards({ data }: DetailCardsProps) {
     return (
         <View style={styles.container}>
 
+            {/* INGREDIENTS KISMI */}
             <View style={styles.card}>
-                {renderHeader(t("results.ingredients"), "list", "ingredients", data.details.ingredients?.length)}
+                {renderHeader(t("results.ingredients"), "list", "ingredients", data.details?.ingredients?.length)}
                 {expandedSection === "ingredients" && (
                     <View style={styles.cardBody}>
                         <View style={styles.tagsContainer}>
-                            {data.details.ingredients?.map((ing: any, i: number) => (
+                            {data.details?.ingredients?.map((ing: any, i: number) => (
                                 <View key={i} style={[
                                     styles.tag,
                                     ing.riskLevel === 'High' ? styles.tagDanger :
@@ -82,6 +86,7 @@ export default function DetailCards({ data }: DetailCardsProps) {
                 )}
             </View>
 
+            {/* ADDITIVES KISMI */}
             {validAdditives.length > 0 && (
                 <View style={styles.card}>
                     {renderHeader(t("results.additives"), "flask", "additives", validAdditives.length)}
@@ -103,19 +108,20 @@ export default function DetailCards({ data }: DetailCardsProps) {
                 </View>
             )}
 
+            {/* DETAILS KISMI */}
             <View style={styles.card}>
                 {renderHeader(t("results.details"), "stats-chart", "nutrition")}
                 {expandedSection === "nutrition" && (
                     <View style={styles.cardBody}>
                         <View style={styles.infoBox}>
                             <Text style={styles.infoLabel}>{t("results.processingLevel")}</Text>
-                            <Text style={styles.infoValue}>{data.details.processing?.classification || t("common.unknown")}</Text>
-                            <Text style={styles.infoDesc}>{data.details.processing?.description}</Text>
+                            <Text style={styles.infoValue}>{data.details?.processing?.classification || t("common.unknown")}</Text>
+                            <Text style={styles.infoDesc}>{data.details?.processing?.description}</Text>
                         </View>
 
                         <View style={styles.divider} />
 
-                        {data.details.nutritional_highlights?.pros?.length > 0 && (
+                        {data.details?.nutritional_highlights?.pros?.length > 0 && (
                             <>
                                 <Text style={[styles.subTitle, { color: Colors.success }]}>{t("results.pros")}</Text>
                                 {data.details.nutritional_highlights.pros.map((pro: string, i: number) => (
@@ -128,7 +134,8 @@ export default function DetailCards({ data }: DetailCardsProps) {
                             </>
                         )}
 
-                        {data.details.nutritional_highlights?.cons?.length > 0 && (
+                        {/* DÜZELTME: Optional chaining (?.) */}
+                        {data.details?.nutritional_highlights?.cons?.length > 0 && (
                             <>
                                 <Text style={[styles.subTitle, { color: Colors.error }]}>{t("results.cons")}</Text>
                                 {data.details.nutritional_highlights.cons.map((con: string, i: number) => (

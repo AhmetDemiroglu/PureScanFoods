@@ -12,13 +12,14 @@ import { LinearGradient } from "expo-linear-gradient";
 import { TempStore } from "../lib/tempStore";
 import DetailCards from "../components/product/DetailCards";
 import { useUser } from "../context/UserContext";
-import { analyzeEngine, CompatibilityReport, SeverityLevel } from "../lib/analysisEngine";
+import { analyzeEngine, CompatibilityReport, SeverityLevel, IngredientInput } from "../lib/analysisEngine";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { saveScanResultToDB } from "../lib/firestore";
 import { uploadImage } from "../lib/storageHelper";
 import { useAuth } from "../context/AuthContext";
 import { incrementScanCount } from "../lib/firestore";
+import { useLocalSearchParams } from "expo-router";
 
 const { width } = Dimensions.get("window");
 const IMAGE_HEIGHT = 320;
@@ -60,31 +61,38 @@ const BADGE_CONFIG: Record<string, { icon: keyof typeof Ionicons.glyphMap; color
     DEFAULT: { icon: "information-circle", color: Colors.gray[600], bg: Colors.gray[100], labelKey: "results.badges.general" }
 };
 
-const SEVERITY_STYLES: Record<SeverityLevel, { bg: string; border: string; text: string; icon: string }> = {
-    forbidden: { bg: '#FEF2F2', border: '#FECACA', text: '#B91C1C', icon: 'ban' },
-    restricted: { bg: '#FEF2F2', border: '#FECACA', text: '#DC2626', icon: 'warning' },
-    caution: { bg: '#FFF7ED', border: '#FED7AA', text: '#9A3412', icon: 'alert-circle' },
-    limit: { bg: '#FFFBEB', border: '#FDE68A', text: '#92400E', icon: 'information-circle' },
-    monitor: { bg: '#F0FDF4', border: '#BBF7D0', text: '#166534', icon: 'eye-outline' },
+const getScoreColor = (score: number): string => {
+    if (score >= 80) return "#22C55E";
+    if (score >= 50) return "#F59E0B";
+    return "#EF4444";
 };
+
+const getScoreStyles = (score: number) => ({
+    bg: score >= 80 ? '#F0FDF4' : (score >= 50 ? '#FFF7ED' : '#FEF2F2'),
+    border: score >= 80 ? '#BBF7D0' : (score >= 50 ? '#FED7AA' : '#FECACA'),
+    text: score >= 80 ? '#15803D' : (score >= 50 ? '#9A3412' : '#B91C1C'),
+});
 
 export default function ProductResultScreen() {
     const { t } = useTranslation();
     const router = useRouter();
+
     const { familyMembers, profilesData } = useUser();
-    const { user, deviceId, refreshLimits } = useAuth();
+    const { user, deviceId, refreshLimits, userProfile } = useAuth();
+
     const hasSaved = useRef(false);
     const insets = useSafeAreaInsets();
+    const params = useLocalSearchParams();
 
-    // TempStore Verisi
-    const { data, image } = TempStore.getResult();
-    const imageUri = image || undefined;
+    const tempResult = TempStore.getResult();
+    const data = tempResult?.data;
+    const imageUri = tempResult?.image || undefined;
 
-    // Modal State
+    const [currentData, setCurrentData] = useState<any>(data);
+
     const [selectedMemberReport, setSelectedMemberReport] = useState<{ member: any, report: CompatibilityReport } | null>(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
 
-    // PanResponder (Modal Kapatma İçin)
     const panResponder = useRef(
         PanResponder.create({
             onStartShouldSetPanResponder: () => true,
@@ -95,7 +103,7 @@ export default function ProductResultScreen() {
         })
     ).current;
 
-    if (!data) {
+    if (!data || !currentData) {
         return (
             <View style={styles.errorContainer}>
                 <Ionicons name="alert-circle-outline" size={48} color={Colors.gray[400]} />
@@ -109,7 +117,57 @@ export default function ProductResultScreen() {
 
     useEffect(() => {
         const processScan = async () => {
-            // 1. Kilit Kontrolü
+            if (params.viewMode === 'history') {
+                console.log("📜 History Mode: Analiz yeniden çalıştırılıyor...");
+                const productRaw = data?.product || data;
+
+                if (data?.details) {
+                    console.log("✅ History: Tam veri mevcut, analiz atlanıyor.");
+                    return;
+                }
+
+                if (productRaw) {
+                    try {
+                        const ingredientsInput: IngredientInput[] = (productRaw.ingredients || []).map((ing: any) => ({
+                            display_name: ing.text || ing.display_name || ing.id || "Bilinmeyen",
+                            technical_name: ing.technical_name || ing.id || ing.text || "unknown",
+                            isAllergen: ing.isAllergen || false,
+                            riskLevel: ing.riskLevel || "unknown"
+                        }));
+
+                        const profileForEngine = userProfile ? {
+                            diet: (userProfile.dietaryPreferences?.length > 0) ? userProfile.dietaryPreferences[0] : null,
+                            allergens: userProfile.allergens || []
+                        } : { diet: null, allergens: [] };
+
+                        const report = analyzeEngine(
+                            ingredientsInput,
+                            profileForEngine as any,
+                            data?.scores?.safety?.value || 50,
+                            t
+                        );
+
+                        setCurrentData((prev: any) => ({
+                            ...prev,
+                            scores: {
+                                ...prev.scores,
+                                compatibility: {
+                                    verdict: report.title,
+                                    details: report.findings
+                                }
+                            },
+                            badges: prev.badges || []
+                        }));
+
+                        console.log("✅ Analiz tamamlandı. Puan:", report.score);
+
+                    } catch (err) {
+                        console.error("Analiz hatası:", err);
+                    }
+                }
+                return;
+            }
+
             if (!user || !data || hasSaved.current) {
                 console.log("🚫 Scan process skipped (User missing, Data missing, or Already Saved)");
                 return;
@@ -119,39 +177,37 @@ export default function ProductResultScreen() {
             console.log("🚀 Starting Scan Process...");
 
             try {
-                // A) SAYAÇ ARTIRMA (Hem User Hem Cihaz)
-                console.log(`⏳ Incrementing scan count for User: ${user.uid} & Device: ${deviceId}`);
-
+                console.log(`⏳ Incrementing scan count...`);
                 await incrementScanCount(user.uid, deviceId);
                 refreshLimits();
-                console.log("✅ Scan count incremented.");
 
-                // B) RESİM YÜKLEME (Storage)
                 let imageUrl = null;
                 if (imageUri) {
                     try {
                         const filename = `scans/${user.uid}/${Date.now()}.jpg`;
-                        console.log("⏳ Uploading image to Storage...");
                         imageUrl = await uploadImage(imageUri, filename);
-                        console.log("✅ Image uploaded:", imageUrl ? "Success" : "Failed (Null)");
                     } catch (imgError) {
-                        console.error("⚠️ Image upload failed but continuing:", imgError);
+                        console.error("⚠️ Image upload failed:", imgError);
                     }
                 }
 
-                // C) VERİTABANI KAYDI (Firestore)
-                console.log("⏳ Saving scan result to Firestore...");
+                console.log("⏳ Saving to Firestore...");
                 await saveScanResultToDB(user.uid, {
-                    productName: data.product?.name || t("results.unknownProduct"),
-                    brand: data.product?.brand || t("results.unknownBrand"),
+                    productName: data.product?.product_name || data.product?.name || t("results.unknownProduct"),
+                    brand: data.product?.brands || data.product?.brand || t("results.unknownBrand"),
                     imageUrl: imageUrl,
                     score: data.scores?.safety?.value || 0,
                     verdict: data.scores?.compatibility?.verdict || "Analiz Edildi",
                     badges: data.badges || [],
-                    miniData: JSON.stringify(data.product)
+                    miniData: JSON.stringify({
+                        product: data.product,
+                        details: data.details,
+                        scores: data.scores,
+                        nutrition_facts: data.nutrition_facts,
+                        keto_analysis: data.keto_analysis
+                    })
                 });
-
-                console.log("🎉 Scan saved to history successfully!");
+                console.log("🎉 Scan saved successfully!");
 
             } catch (error) {
                 console.error("❌ CRITICAL SCAN ERROR:", error);
@@ -159,11 +215,10 @@ export default function ProductResultScreen() {
         };
 
         processScan();
-    }, []);
+    }, [user, userProfile, params.viewMode]);
 
     const handleRescan = () => {
         TempStore.clear();
-        // Parametre ile ana sayfaya git
         router.replace({ pathname: "/", params: { autoStart: "true" } });
     };
 
@@ -184,17 +239,13 @@ export default function ProductResultScreen() {
         if (!ketoData) return null;
 
         let limit = 25;
-        let cardTitle = "LOW CARB ANALİZİ";
 
         if (userDiet === 'KETO') {
             limit = 10;
-            cardTitle = "KETO KARNESİ";
         } else if (userDiet === 'ATKINS') {
             limit = 20;
-            cardTitle = "ATKINS ANALİZİ";
         } else if (userDiet === 'DUKAN') {
             limit = 30;
-            cardTitle = "DUKAN ANALİZİ";
         }
 
         let netCarb = 0;
@@ -220,7 +271,6 @@ export default function ProductResultScreen() {
                     adviceText = ketoData.reasoning;
                 }
             } else {
-                // Low Carb
                 if (netCarb > limit) {
                     isRisky = true;
                     adviceText = t("results.analysis.findings.lowcarb_advice_high");
@@ -353,6 +403,7 @@ export default function ProductResultScreen() {
     const ownerAnalysis = familyAnalysis.find(f => f.member.id === "main_user") || familyAnalysis[0];
 
     const displayScore = ownerAnalysis ? ownerAnalysis.report.score : (scores.compatibility?.value || 0);
+    const scoreStyles = getScoreStyles(displayScore);
 
     let displayVerdict = "";
     let displaySummary = "";
@@ -456,8 +507,8 @@ export default function ProductResultScreen() {
 
                     {/* --- BÖLÜM 1: KİŞİSEL UYUM ANALİZİ --- */}
                     <View style={[styles.verdictBox, {
-                        backgroundColor: displayScore >= 80 ? '#F0FDF4' : (displayScore >= 50 ? '#FFF7ED' : '#FEF2F2'),
-                        borderColor: displayScore >= 80 ? '#BBF7D0' : (displayScore >= 50 ? '#FED7AA' : '#FECACA'),
+                        backgroundColor: scoreStyles.bg,
+                        borderColor: scoreStyles.border,
                         borderBottomLeftRadius: criticalBadges.length > 0 ? 4 : 16,
                         borderBottomRightRadius: criticalBadges.length > 0 ? 4 : 16,
                         borderBottomWidth: criticalBadges.length > 0 ? 0 : 1,
@@ -524,7 +575,7 @@ export default function ProductResultScreen() {
                         {familyAnalysis.map((item) => {
                             const mScore = item.report.score;
                             // Renk belirleme (Basit mantık)
-                            const ringColor = mScore >= 80 ? "#22C55E" : mScore >= 50 ? "#F59E0B" : "#EF4444";
+                            const ringColor = getScoreColor(mScore);
 
                             return (
                                 <TouchableOpacity

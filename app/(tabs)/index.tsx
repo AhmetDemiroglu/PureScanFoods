@@ -18,6 +18,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { useUser } from "../../context/UserContext";
 import { useLocalSearchParams } from "expo-router";
+import HistorySidebar from '../history';
 
 type ScanTab = "camera" | "barcode" | "text";
 
@@ -43,6 +44,7 @@ export default function ScanScreen() {
 
   const [barcodeInput, setBarcodeInput] = useState("");
   const [textInput, setTextInput] = useState("");
+  const [isHistoryOpen, setHistoryOpen] = useState(false);
 
   const params = useLocalSearchParams();
 
@@ -90,7 +92,7 @@ export default function ScanScreen() {
       <View style={styles.content}>
 
         {/* 1. Header: Sabit Üstte */}
-        <Header />
+        <Header onHistoryPress={() => setHistoryOpen(true)} />
 
         {/* 2. Orta Alan: Hero ve Kart'ı kapsar ve ortalar */}
         <View style={styles.centerContainer}>
@@ -278,16 +280,12 @@ export default function ScanScreen() {
                             onPress={async () => {
                               if (cameraRef.current) {
                                 try {
-                                  console.log("📸 Çekim komutu gönderildi...");
-
                                   const photo = await cameraRef.current.takePictureAsync({
                                     base64: true,
                                     quality: 0.3,
                                     skipProcessing: true,
                                     shutterSound: false
                                   });
-
-                                  console.log("✅ Fotoğraf başarıyla hafızada.");
 
                                   setIsScanning(true);
                                   setShowCamera(false);
@@ -488,6 +486,10 @@ export default function ScanScreen() {
         </View>
 
       </View>
+      <HistorySidebar
+        visible={isHistoryOpen}
+        onClose={() => setHistoryOpen(false)}
+      />
     </SafeAreaView >
   );
 }

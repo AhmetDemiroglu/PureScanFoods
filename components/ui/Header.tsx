@@ -4,7 +4,11 @@ import { useTranslation } from "react-i18next";
 import { Colors } from "../../constants/colors";
 import { useRouter } from "expo-router";
 
-export default function Header() {
+interface HeaderProps {
+    onHistoryPress?: () => void;
+}
+
+export default function Header({ onHistoryPress }: HeaderProps) {
     const { i18n } = useTranslation();
     const router = useRouter();
 
@@ -30,7 +34,7 @@ export default function Header() {
                 </Pressable>
 
                 {/* History (Sidebar tetikleyici olacak, şimdilik sayfaya gider) */}
-                <Pressable style={styles.iconButton} onPress={() => router.push("/history")}>
+                <Pressable style={styles.iconButton} onPress={onHistoryPress}>
                     <Ionicons name="time-outline" size={20} color={Colors.secondary} />
                 </Pressable>
 
