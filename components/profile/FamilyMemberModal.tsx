@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, Modal, TextInput, TouchableOpacity, ScrollView,
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
 import { AVATAR_ICONS, AVATAR_COLORS } from '../../context/UserContext';
+import { ComponentProps } from 'react';
+type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
 
 interface FamilyMemberModalProps {
     visible: boolean;
@@ -14,18 +16,18 @@ interface FamilyMemberModalProps {
 
 export default function FamilyMemberModal({ visible, onClose, onSave, onDelete, initialData }: FamilyMemberModalProps) {
     const [name, setName] = useState('');
-    const [selectedIcon, setSelectedIcon] = useState(AVATAR_ICONS[0]);
+    const [selectedIcon, setSelectedIcon] = useState<IconName>(AVATAR_ICONS[0] as IconName);
     const [selectedColor, setSelectedColor] = useState(AVATAR_COLORS[0]);
 
     useEffect(() => {
         if (visible) {
             if (initialData) {
                 setName(initialData.name);
-                setSelectedIcon(initialData.icon);
+                setSelectedIcon(initialData.icon as IconName);
                 setSelectedColor(initialData.color);
             } else {
                 setName('');
-                setSelectedIcon(AVATAR_ICONS[0]);
+                setSelectedIcon(AVATAR_ICONS[0] as IconName);
                 setSelectedColor(AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]);
             }
         }
