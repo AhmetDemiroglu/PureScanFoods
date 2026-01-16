@@ -30,6 +30,12 @@ import {
   DIET_DEFINITIONS
 } from "../../lib/diets";
 import {
+  getAllLifeStageTypes,
+  getLifeStageDefinition,
+  LIFESTAGE_DEFINITIONS,
+  LifeStageType
+} from "../../lib/lifestages";
+import {
   getAllAllergenTypes,
   AllergenType,
   getAllergenDefinition,
@@ -66,17 +72,6 @@ export default function NutritionScreen() {
 
   // --- ANIMATED PAN RESPONDER ---
   const panY = React.useRef(new Animated.Value(0)).current;
-  const screenHeight = Dimensions.get('window').height;
-
-  const closeWithAnimation = (callback: () => void) => {
-    Animated.timing(panY, {
-      toValue: screenHeight,
-      duration: 250,
-      useNativeDriver: true,
-    }).start(() => {
-      callback();
-    });
-  };
 
   const panResponder = React.useRef(
     PanResponder.create({
@@ -91,12 +86,11 @@ export default function NutritionScreen() {
       },
       onPanResponderRelease: (_, gestureState) => {
         if (gestureState.dy > 120 || gestureState.vy > 0.6) {
-          closeWithAnimation(() => {
-            setShowFamilyModal(false);
-            setShowDietModal(false);
-            setShowAllergenModal(false);
-            setShowAvatarModal(false);
-          });
+          // Direkt kapat - animation yok
+          setShowFamilyModal(false);
+          setShowDietModal(false);
+          setShowAllergenModal(false);
+          setShowAvatarModal(false);
         } else {
           Animated.spring(panY, {
             toValue: 0,
@@ -144,6 +138,7 @@ export default function NutritionScreen() {
   const [tempRole, setTempRole] = useState<FamilyRole>("child");
   const [tempColor, setTempColor] = useState(Colors.primary);
   const [tempIcon, setTempIcon] = useState<string>("account");
+  const [tempLifeStage, setTempLifeStage] = useState<LifeStageType>("ADULT");
 
   // --- UI STATE  
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -166,6 +161,7 @@ export default function NutritionScreen() {
 
   React.useEffect(() => {
     if (showFamilyModal || showDietModal || showAllergenModal || showAvatarModal) {
+      panY.stopAnimation();
       panY.setValue(0);
     }
   }, [showFamilyModal, showDietModal, showAllergenModal, showAvatarModal]);
@@ -190,19 +186,27 @@ export default function NutritionScreen() {
     setTempRole("child");
     setTempColor(AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]);
     setTempIcon("account");
+    setTempLifeStage("CHILD_3_12");
     setShowFamilyModal(true);
   };
 
-  const handleLongPressMember = (member: any) => {
-    if (member.id === 'main_user') return;
-
+  const openEditModal = (member: any) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setEditingMemberId(member.id);
     setTempName(member.name);
     setTempRole(member.role);
     setTempColor(member.color);
     setTempIcon(member.avatarIcon);
+    setTempLifeStage(member.lifeStage || "ADULT");
     setShowFamilyModal(true);
+  };
+
+  const handleMemberPress = (member: any) => {
+    setActiveProfileId(member.id);
+  };
+
+  const handleMemberLongPress = (member: any) => {
+    openEditModal(member);
   };
 
   const handleSaveMember = () => {
@@ -213,10 +217,11 @@ export default function NutritionScreen() {
         name: tempName,
         role: tempRole,
         color: tempColor,
-        avatarIcon: tempIcon
+        avatarIcon: tempIcon,
+        lifeStage: tempLifeStage
       });
     } else {
-      contextAddMember(tempName, tempRole, tempIcon, tempColor);
+      contextAddMember(tempName, tempRole);
     }
 
     setShowFamilyModal(false);
@@ -486,9 +491,9 @@ export default function NutritionScreen() {
                 <TouchableOpacity
                   key={member.id}
                   style={[styles.memberCard, isActive && styles.memberCardActive]}
-                  onPress={() => setActiveProfileId(member.id)}
-                  onLongPress={() => handleLongPressMember(member)}
-                  delayLongPress={500}
+                  onPress={() => handleMemberPress(member)}
+                  onLongPress={() => handleMemberLongPress(member)}
+                  delayLongPress={400}
                 >
                   <View style={[styles.memberAvatar, { backgroundColor: member.color }]}>
                     <MaterialCommunityIcons name={member.avatarIcon as AvatarIconName} size={20} color="#FFF" />
@@ -534,106 +539,197 @@ export default function NutritionScreen() {
 
       {/* --- MODALS --- */}
 
-      {/* 1. FAMILY ADD MODAL */}
-      <Modal visible={showFamilyModal} transparent animationType="fade" onRequestClose={() => setShowFamilyModal(false)}>
+      {/* 1. FAMILY ADD/EDIT MODAL - YENİLENMİŞ TASARIM */}
+      <Modal
+        visible={showFamilyModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowFamilyModal(false)}
+      >
         <View style={styles.modalOverlay}>
           <Pressable style={styles.modalDismiss} onPress={() => setShowFamilyModal(false)} />
+
           <Animated.View
             style={[
               styles.bottomSheet,
-              { paddingBottom: insets.bottom + 20 },
+              { maxHeight: '85%' }, // Biraz daha alan açtık
               { transform: [{ translateY: panY }] }
             ]}
           >
-            <View {...panResponder.panHandlers} style={{ paddingBottom: 10 }}>
+            {/* HANDLE & HEADER */}
+            <View
+              {...panResponder.panHandlers}
+              style={styles.headerDraggableArea}
+            >
               <View style={styles.bottomSheetHandle} />
-              <View style={styles.sheetHeader}>
+              <View style={styles.sheetHeaderCompact}>
                 <Text style={styles.sheetTitle}>
-                  {editingMemberId ? t("nutrition.family.edit") : t("nutrition.family.add")}
+                  {editingMemberId ? (editingMemberId === 'main_user' ? t("nutrition.profile") : t("nutrition.family.edit")) : t("nutrition.family.add")}
                 </Text>
-                <TouchableOpacity onPress={() => setShowFamilyModal(false)} style={styles.closeButton}>
+                <TouchableOpacity
+                  onPress={() => setShowFamilyModal(false)}
+                  style={styles.closeButtonIcon}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // Tıklama alanını genişlettik
+                >
                   <Ionicons name="close" size={20} color={Colors.gray[500]} />
                 </TouchableOpacity>
               </View>
             </View>
-            <View style={{ padding: 20 }}>
-              {!!editingMemberId && (
-                <TouchableOpacity style={{ alignSelf: 'center', marginBottom: 20 }} onPress={openAvatarSelectorForEdit}>
-                  <View style={[styles.memberAvatar, { width: 80, height: 80, borderRadius: 40, backgroundColor: tempColor }]}>
-                    <MaterialCommunityIcons name={getSafeIcon(tempIcon) as any} size={40} color="#FFF" />
-                    <View style={styles.editBadge}>
-                      <Ionicons name="pencil" size={14} color="#FFF" />
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              )
-              }
 
-              <Text style={styles.inputLabel}>{t("nutrition.family.inputName")}</Text>
-              <TextInput
-                style={styles.modalInput}
-                value={tempName}
-                onChangeText={setTempName}
-                placeholder="İsim"
-                placeholderTextColor={Colors.gray[500]}
-              />
-              <Text style={styles.inputLabel}>{t("nutrition.family.selectRole")}</Text>
-              <View style={styles.roleContainer}>
-                {["spouse", "child", "mother", "father", "sibling", "friend", "other"].map((role) => (
-                  <TouchableOpacity
-                    key={role}
-                    style={[styles.roleChip, tempRole === role && styles.roleChipActive]}
-                    onPress={() => setTempRole(role as FamilyRole)}
-                  >
-                    <Text style={[styles.roleText, tempRole === role && { color: '#FFF' }]}>
-                      {t(`nutrition.family.roles.${role}`, role)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <View style={{ flexDirection: 'row', gap: 12, marginTop: 32 }}>
+            {/* SCROLLABLE FORM CONTENT */}
+            <ScrollView
+              contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 3, paddingBottom: 3 }}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled" // KRİTİK: Klavye açıkken tıklamayı algılaması için
+            >
 
-                {/* SİL BUTONU */}
-                {!!editingMemberId && (
-                  <TouchableOpacity
-                    style={[
-                      styles.saveButton,
-                      {
-                        backgroundColor: '#FEE2E2',
-                        marginTop: 0,
-                        flex: 1,
-                        paddingHorizontal: 0
-                      }
-                    ]}
-                    onPress={handleDeleteMember}
-                  >
-                    <Text style={[styles.saveButtonText, { color: '#DC2626' }]}>
-                      {t("nutrition.family.delete")}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-
-                {/* KAYDET / GÜNCELLE BUTONU */}
+              {/* AVATAR SECTION */}
+              <View style={styles.avatarSection}>
                 <TouchableOpacity
-                  style={[
-                    styles.saveButton,
-                    {
-                      marginTop: 0,
-                      flex: 2
-                    }
-                  ]}
-                  onPress={handleSaveMember}
+                  style={styles.avatarEditContainer}
+                  onPress={editingMemberId ? openAvatarSelectorForEdit : undefined} // Yeni eklemede avatar seçimi kapalı olabilir, isteğine bağlı
+                  activeOpacity={0.8}
                 >
-                  <Text style={styles.saveButtonText}>
-                    {!!editingMemberId ? t("nutrition.family.update") : t("nutrition.family.save")}
-                  </Text>
+                  <View style={[styles.avatarDisplayBig, { backgroundColor: tempColor }]}>
+                    <MaterialCommunityIcons name={getSafeIcon(tempIcon) as any} size={40} color="#FFF" />
+                  </View>
+                  {!!editingMemberId && (
+                    <View style={styles.avatarEditBadge}>
+                      <Ionicons name="camera" size={12} color="#FFF" />
+                    </View>
+                  )}
                 </TouchableOpacity>
-
+                {!editingMemberId && (
+                  <Text style={styles.avatarHintText}>{t("nutrition.family.avatarHint", "Avatar oluşturulduktan sonra düzenlenebilir")}</Text>
+                )}
               </View>
-            </View>
+
+              {/* INPUT: NAME */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.labelSmall}>{t("nutrition.family.inputName")}</Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons name="person-outline" size={20} color={Colors.gray[400]} style={{ marginLeft: 12 }} />
+                  <TextInput
+                    style={styles.textInputClean}
+                    value={tempName}
+                    onChangeText={setTempName}
+                    placeholder={t("nutrition.family.namePlaceholder", "Örn: Ali")}
+                    placeholderTextColor={Colors.gray[400]}
+                  />
+                </View>
+              </View>
+
+              {/* SELECTOR: ROLE */}
+              {editingMemberId !== 'main_user' && (
+                <View style={styles.inputGroup}>
+                  <Text style={styles.labelSmall}>{t("nutrition.family.selectRole")}</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingRight: 20 }}>
+                    {["spouse", "child", "mother", "father", "sibling", "friend", "other"].map((role) => {
+                      const isSelected = tempRole === role;
+                      // Rol ikonlarını basitçe eşleyelim (Daha fazlası eklenebilir)
+                      let iconName = "account-outline";
+                      if (role === 'mother') iconName = "face-woman";
+                      if (role === 'father') iconName = "face-man";
+                      if (role === 'child') iconName = "baby-face-outline";
+
+                      return (
+                        <TouchableOpacity
+                          key={role}
+                          style={[styles.roleCard, isSelected && styles.roleCardActive]}
+                          onPress={() => setTempRole(role as FamilyRole)}
+                          activeOpacity={0.7}
+                        >
+                          <MaterialCommunityIcons
+                            name={iconName as any}
+                            size={20}
+                            color={isSelected ? Colors.primary : Colors.gray[500]}
+                          />
+                          <Text style={[styles.roleCardText, isSelected && styles.roleCardTextActive]}>
+                            {t(`nutrition.family.roles.${role}`, role)}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              )}
+
+              {/* SELECTOR: LIFE STAGE */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.labelSmall}>{t("nutrition.family.selectLifeStage", "Yaş & Durum")}</Text>
+                <View style={styles.lifeStageGrid}>
+                  {getAllLifeStageTypes().map((stage) => {
+                    const def = LIFESTAGE_DEFINITIONS[stage];
+                    const isSelected = tempLifeStage === stage;
+                    const isVulnerable = ['INFANT_0_6', 'INFANT_6_12', 'TODDLER_1_3', 'PREGNANT'].includes(stage);
+                    const activeBorder = isVulnerable ? "#F59E0B" : Colors.primary;
+                    const activeBg = isVulnerable ? "#FEF3C7" : "#EFF6FF";
+                    const activeText = isVulnerable ? "#B45309" : Colors.primary;
+
+                    return (
+                      <TouchableOpacity
+                        key={stage}
+                        style={[
+                          styles.lifeStageItem,
+                          isSelected && { borderColor: activeBorder, backgroundColor: activeBg }
+                        ]}
+                        onPress={() => setTempLifeStage(stage)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.lifeStageText, isSelected && { color: activeText, fontWeight: '700' }]}>
+                          {isTr ? def.nameTr : def.name}
+                        </Text>
+                        {isVulnerable && (
+                          <Ionicons name="warning" size={10} color="#F59E0B" style={{ position: 'absolute', top: 4, right: 4 }} />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* Vulnerable Warning Box */}
+              {['INFANT_0_6', 'INFANT_6_12', 'TODDLER_1_3', 'PREGNANT'].includes(tempLifeStage) && (
+                <View style={styles.warningBox}>
+                  <Ionicons name="alert-circle" size={20} color="#B45309" />
+                  <Text style={styles.warningText}>
+                    {t("nutrition.lifeStageWarning", "Bu yaş grubu için beslenme analizlerinde özel kısıtlamalar dikkate alınacaktır.")}
+                  </Text>
+                </View>
+              )}
+
+            </ScrollView>
+
+            {/* FIXED FOOTER BUTTONS */}
+            <SafeAreaView style={[styles.modalFooter]}>
+              {!!editingMemberId && editingMemberId !== 'main_user' && (
+                <TouchableOpacity
+                  style={styles.buttonDelete}
+                  onPress={handleDeleteMember}
+                >
+                  <Ionicons name="trash-outline" size={22} color="#EF4444" />
+                </TouchableOpacity>
+              )}
+
+              {/* SAVE BUTTON */}
+              <TouchableOpacity
+                style={[
+                  styles.buttonSave,
+                  !tempName.trim() && styles.buttonDisabled
+                ]}
+                onPress={handleSaveMember}
+                disabled={!tempName.trim()}
+              >
+                <Text style={styles.buttonSaveText}>
+                  {editingMemberId ? t("nutrition.family.update") : t("nutrition.family.save")}
+                </Text>
+                <Ionicons name="checkmark" size={20} color="#FFF" />
+              </TouchableOpacity>
+            </SafeAreaView>
+
           </Animated.View>
         </View>
-      </Modal >
+      </Modal>
 
       {/* 2. DIET MODAL */}
       < Modal visible={showDietModal} transparent animationType="fade" onRequestClose={() => setShowDietModal(false)
@@ -646,9 +742,10 @@ export default function NutritionScreen() {
               { paddingBottom: insets.bottom + 20 },
               { transform: [{ translateY: panY }] }
             ]}
-            {...panResponder.panHandlers}
           >
-            <View style={styles.bottomSheetHandle} />
+            <View {...panResponder.panHandlers} style={{ paddingBottom: 8 }}>
+              <View style={styles.bottomSheetHandle} />
+            </View>
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>{t("nutrition.modalDiet")}</Text>
               <TouchableOpacity onPress={() => setShowDietModal(false)} style={styles.closeButton}>
@@ -695,9 +792,10 @@ export default function NutritionScreen() {
               { paddingBottom: insets.bottom + 20 },
               { transform: [{ translateY: panY }] }
             ]}
-            {...panResponder.panHandlers}
           >
-            <View style={styles.bottomSheetHandle} />
+            <View {...panResponder.panHandlers} style={{ paddingBottom: 8 }}>
+              <View style={styles.bottomSheetHandle} />
+            </View>
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>{t("nutrition.modalAllergen")}</Text>
               <TouchableOpacity onPress={() => setShowAllergenModal(false)} style={styles.closeButton}>
@@ -742,10 +840,11 @@ export default function NutritionScreen() {
               { paddingBottom: insets.bottom + 12 },
               { transform: [{ translateY: panY }] }
             ]}
-            {...panResponder.panHandlers}
           >
             {/* Handle */}
-            <View style={styles.avatarSheetHandle} />
+            <View {...panResponder.panHandlers} style={{ paddingBottom: 8 }}>
+              <View style={styles.avatarSheetHandle} />
+            </View>
 
             {/* Header with Hero Avatar */}
             {(() => {
@@ -972,9 +1071,6 @@ const styles = StyleSheet.create({
   optionItemSelected: { backgroundColor: "#F8FAFC", marginHorizontal: -20, paddingHorizontal: 20 },
   optionTitle: { fontSize: 16, fontWeight: "600", color: "#334155", marginBottom: 2 },
   optionDesc: { fontSize: 12, color: "#94A3B8" },
-
-  inputLabel: { fontSize: 13, fontWeight: '600', color: "#64748B", marginBottom: 8, marginTop: 12 },
-  modalInput: { backgroundColor: "#F1F5F9", borderRadius: 12, padding: 14, fontSize: 16, borderWidth: 1, borderColor: "#E2E8F0", color: "#1E293B", marginBottom: 20 },
   roleContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   roleChip: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: "#F1F5F9", borderWidth: 1, borderColor: "#E2E8F0" },
   roleChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
@@ -1018,10 +1114,10 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 0 // Varsayılan border yok
+    borderWidth: 0
   },
   iconGridColumnWrapper: {
-    gap: 8 // X ekseni boşluğu
+    gap: 8
   },
   iconBox: {
     flex: 1,
@@ -1029,7 +1125,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    maxWidth: '16%', // 6 sütun için limit
+    maxWidth: '16%',
     borderWidth: 1,
     borderColor: 'transparent'
   },
@@ -1220,5 +1316,204 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: '#FFF'
+  },
+  headerDraggableArea: {
+    paddingBottom: 10,
+    backgroundColor: '#FFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  sheetHeaderCompact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    paddingBottom: 8,
+  },
+  closeButtonIcon: {
+    padding: 6,
+    backgroundColor: Colors.gray[100],
+    borderRadius: 50,
+  },
+
+  // Avatar Section
+  avatarSection: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  avatarEditContainer: {
+    position: 'relative',
+  },
+  avatarDisplayBig: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  avatarEditBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: Colors.secondary,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFF',
+  },
+  avatarHintText: {
+    fontSize: 12,
+    color: Colors.gray[400],
+    marginTop: 10,
+  },
+
+  // Input Groups
+  inputGroup: {
+    marginBottom: 15,
+  },
+  labelSmall: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.gray[700],
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.gray[50],
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.gray[200],
+    height: 50,
+  },
+  textInputClean: {
+    flex: 1,
+    height: '100%',
+    paddingHorizontal: 12,
+    fontSize: 16,
+    color: Colors.secondary,
+    fontWeight: '500',
+  },
+
+  // Role Cards
+  roleCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: Colors.gray[200],
+    minWidth: 100,
+    justifyContent: 'center',
+  },
+  roleCardActive: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary + '10', // %10 opacity hex sonuna ekleme tekniği yoksa rgba kullan
+  },
+  roleCardText: {
+    fontSize: 14,
+    color: Colors.gray[600],
+    fontWeight: '500',
+  },
+  roleCardTextActive: {
+    color: Colors.primary,
+    fontWeight: '700',
+  },
+
+  // Life Stage Grid
+  lifeStageGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  lifeStageItem: {
+    width: '48%',
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    backgroundColor: '#FFF',
+    borderWidth: 1,
+    borderColor: Colors.gray[200],
+    alignItems: 'center',
+  },
+  lifeStageText: {
+    fontSize: 13,
+    color: Colors.gray[600],
+    textAlign: 'center',
+  },
+
+  // Warning Box
+  warningBox: {
+    flexDirection: 'row',
+    gap: 10,
+    backgroundColor: '#FEF3C7',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 10,
+  },
+  warningText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#92400E',
+    lineHeight: 18,
+  },
+
+  // Footer Buttons
+  modalFooter: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 16,
+    borderTopWidth: 1,
+    borderTopColor: Colors.gray[100],
+    backgroundColor: '#FFF',
+    gap: 12,
+  },
+  buttonDelete: {
+    width: 50,
+    height: 50,
+    borderRadius: 14,
+    backgroundColor: '#FEF2F2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  buttonSave: {
+    flex: 1,
+    height: 50,
+    backgroundColor: Colors.primary,
+    borderRadius: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  buttonDisabled: {
+    backgroundColor: Colors.gray[300],
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  buttonSaveText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFF',
   },
 });

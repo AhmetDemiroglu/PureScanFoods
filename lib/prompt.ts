@@ -1,8 +1,12 @@
-export function generateAnalysisPrompt(lang: string, userProfile: { allergens: string[]; dietaryPreferences: string[] } | null): string {
+export function generateAnalysisPrompt(
+    lang: string,
+    userProfile: { allergens: string[]; dietaryPreferences: string[]; lifeStage?: string | null } | null
+): string {
     const targetLang = lang === "tr" ? "TURKISH" : "ENGLISH";
 
     const diet = userProfile?.dietaryPreferences?.join(", ") || "None";
     const allergens = userProfile?.allergens?.join(", ") || "None";
+    const lifeStage = userProfile?.lifeStage || "ADULT";
 
     return `
 ROLE: Senior Food Scientist & Clinical Nutritionist
@@ -12,6 +16,10 @@ MODE: STRICT & EXHAUSTIVE
 USER PROFILE:
 - Allergens: ${allergens}
 - Diet: ${diet}
+- Life Stage: ${lifeStage}
+
+LIFE STAGE CONTEXT:
+${getLifeStageContext(lifeStage)}
 
 TASK: 
 1. READ EVERY SINGLE WORD in the ingredient list. DO NOT SUMMARIZE. DO NOT SKIP minor ingredients.
@@ -150,7 +158,11 @@ BE STRICT. Unhealthy ultra-processed foods should score 5-30, not 50+.
 `.trim();
 }
 
-export function generateBarcodeDataPrompt(lang: string, userProfile: { allergens: string[]; dietaryPreferences: string[] } | null, offData: any): string {
+export function generateBarcodeDataPrompt(
+    lang: string,
+    userProfile: { allergens: string[]; dietaryPreferences: string[] } | null,
+    offData: any
+): string {
     const basePrompt = generateAnalysisPrompt(lang, userProfile);
 
     return `
@@ -161,4 +173,19 @@ ${JSON.stringify(offData, null, 2)}
 
 Use this data to enhance your analysis. Apply the same scoring rules.
 `.trim();
+}
+
+function getLifeStageContext(lifeStage: string): string {
+    const contexts: Record<string, string> = {
+        INFANT_0_6: "Baby 0-6 months. ONLY breast milk or formula. Flag ALL solid food ingredients as inappropriate.",
+        INFANT_6_12: "Baby 6-12 months. No honey (botulism risk), limit salt/sugar, no whole nuts, no raw eggs/fish, no caffeine.",
+        TODDLER_1_3: "Toddler 1-3 years. Choking hazards (whole nuts, popcorn, hard candy). Limit artificial sweeteners, no energy drinks.",
+        CHILD_3_12: "Child 3-12 years. No alcohol, limit caffeine, avoid energy drinks.",
+        TEEN: "Teenager 12-18 years. No alcohol, limit energy drinks and excessive caffeine.",
+        ADULT: "Adult. Standard analysis, no age-specific restrictions.",
+        ELDERLY: "Senior 65+. Caution with high sodium, raw foods, unpasteurized products.",
+        PREGNANT: "Pregnant woman. No alcohol, raw fish/eggs, unpasteurized dairy, high-mercury fish, limit caffeine to 200mg/day.",
+        BREASTFEEDING: "Breastfeeding mother. Limit alcohol and caffeine, avoid high-mercury fish.",
+    };
+    return contexts[lifeStage] || contexts.ADULT;
 }
