@@ -730,9 +730,14 @@ export default function ScanScreen() {
         onClose={() => setShowLimitModal(false)}
         onGoPremium={() => {
           setShowLimitModal(false);
-          console.log("Navigating to Paywall...");
+          // Router varsa navigation işlemini yap
+          router.push("/paywall");
         }}
-        resetDate={new Date(usageStats.weekStartDate).toLocaleDateString()}
+        // Context'ten gelen "usageStats"ı, modalın "stats" propuna veriyoruz
+        stats={usageStats}
+
+        // Context'ten gelen "userProfile"ı, modalın "user" propuna veriyoruz
+        user={userProfile}
       />
     </SafeAreaView >
   );

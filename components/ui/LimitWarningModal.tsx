@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Modal, View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
@@ -8,87 +8,79 @@ import Animated, {
     useAnimatedStyle,
     withSpring,
     withTiming,
-    withDelay,
-    FadeInDown,
-    withRepeat,
-    withSequence
+    FadeInDown
 } from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
-
 interface LimitWarningModalProps {
     visible: boolean;
     onClose: () => void;
     onGoPremium: () => void;
-    resetDate?: string;
+    stats: {
+        scanCount: number;
+        aiChatCount?: number;
+        weekStartDate?: any;
+    } | null;
+    user: any;
 }
 
 const { width } = Dimensions.get('window');
 
-const FeatureRow = ({ label, subLabel, freeVal, proCheck, delay }: { label: string, subLabel: string, freeVal: string | boolean, proCheck: boolean, delay: number }) => {
+const UsageRow = ({ icon, label, status, isLimitReached, delay }: { icon: any, label: string, status: string, isLimitReached: boolean, delay: number }) => {
+    const { t } = useTranslation();
     return (
         <Animated.View
             entering={FadeInDown.delay(delay).duration(500).springify()}
-            style={styles.row}
+            style={styles.usageRow}
         >
-            {/* SOL: İkon ve Metinler */}
-            <View style={styles.rowLeft}>
-                <View style={styles.iconBox}>
+            <View style={styles.usageLeft}>
+                <View style={[styles.usageIconBox, isLimitReached && styles.usageIconBoxError]}>
                     <MaterialCommunityIcons
-                        name={label.includes("Sohbet") ? "robot" : label.includes("Reklam") ? "block-helper" : label.includes("Aile") ? "account-group" : "scan-helper"}
+                        name={icon}
                         size={20}
-                        color={Colors.gray[600]}
+                        color={isLimitReached ? '#EF4444' : Colors.gray[600]}
                     />
                 </View>
-                <View style={{ flex: 1 }}>
-                    <Text style={styles.rowLabel}>{label || ""}</Text>
-                    <Text style={styles.rowSubLabel} numberOfLines={2}>{subLabel || ""}</Text>
-                </View>
+                <Text style={styles.usageLabel}>{label}</Text>
             </View>
 
-            {/* SAĞ: Değerler */}
-            <View style={styles.rowRight}>
-                {/* FREE */}
-                <View style={styles.colCenter}>
-                    {typeof freeVal === 'string' ? (
-                        <Text style={styles.limitText}>{freeVal}</Text>
-                    ) : (
-                        <Ionicons name="close" size={20} color="#EF4444" />
-                    )}
-                </View>
-
-                {/* PRO */}
-                <View style={styles.colCenter}>
-                    <View style={styles.checkCircle}>
-                        <Ionicons name="checkmark" size={14} color="white" />
+            <View style={styles.usageRight}>
+                {isLimitReached ? (
+                    <View style={styles.adBadge}>
+                        <Ionicons name="play" size={10} color="#FFF" />
+                        <Text style={styles.adBadgeText}>{t('limits.watch_ad')}</Text>
                     </View>
-                </View>
+                ) : (
+                    // NORMAL DURUM: Sayaç
+                    <View style={styles.statusBadge}>
+                        <Text style={styles.statusText}>{status}</Text>
+                        <Ionicons name="checkmark-circle" size={14} color="#10B981" />
+                    </View>
+                )}
             </View>
         </Animated.View>
     );
 };
 
-export default function LimitWarningModal({ visible, onClose, onGoPremium }: LimitWarningModalProps) {
-    const { t } = useTranslation();
+const parseDate = (input: any): Date => {
+    if (!input) return new Date();
+    if (typeof input === 'object' && input.seconds) {
+        return new Date(input.seconds * 1000);
+    }
+    return new Date(input);
+};
 
-    // Animasyonlar
+export default function LimitWarningModal({ visible, onClose, onGoPremium, stats, user }: LimitWarningModalProps) {
+    const { t } = useTranslation();
     const scale = useSharedValue(0.9);
     const opacity = useSharedValue(0);
-    const buttonPulse = useSharedValue(1);
 
     useEffect(() => {
         if (visible) {
             scale.value = withSpring(1, { damping: 12 });
             opacity.value = withTiming(1, { duration: 300 });
-
-            buttonPulse.value = withRepeat(
-                withSequence(withTiming(1.05, { duration: 800 }), withTiming(1, { duration: 800 })),
-                -1,
-                true
-            );
         } else {
             scale.value = 0.9;
             opacity.value = 0;
-            buttonPulse.value = 1;
         }
     }, [visible]);
 
@@ -97,9 +89,28 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium }: Lim
         opacity: opacity.value,
     }));
 
-    const buttonAnimatedStyle = useAnimatedStyle(() => ({
-        transform: [{ scale: buttonPulse.value }]
-    }));
+    const computedData = useMemo(() => {
+        const s = stats || { scanCount: 0, aiChatCount: 0 };
+        const u = user || { familyMembers: [] };
+
+        return {
+            scan: { current: s.scanCount || 0, max: 3 },
+            ai: { current: s.aiChatCount || 0, max: 5 },
+            family: { current: u.familyMembers?.length || 0, max: 1 }
+        };
+    }, [stats, user]);
+
+    const renewalDateText = useMemo(() => {
+        const rawDate = stats?.weekStartDate
+            || user?.metadata?.createdAt
+            || user?.createdAt
+            || new Date();
+
+        const date = parseDate(rawDate);
+        date.setDate(date.getDate() + 7);
+
+        return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'long' });
+    }, [stats, user]);
 
     if (!visible) return null;
 
@@ -107,91 +118,79 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium }: Lim
         <Modal transparent visible={visible} animationType="none" onRequestClose={onClose}>
             <View style={styles.overlay}>
                 <Pressable style={styles.backdrop} onPress={onClose} />
-
                 <Animated.View style={[styles.container, animatedStyle]}>
-
                     <Pressable style={styles.closeIconBtn} onPress={onClose}>
                         <Ionicons name="close" size={20} color={Colors.gray[500]} />
                     </Pressable>
 
-                    {/* 2. HEADER */}
-                    <View style={styles.header}>
-                        <Text style={styles.title}>{t('limits.pro_title')}</Text>
-                        <Text style={styles.subtitle}>{t('limits.pro_subtitle')}</Text>
-                    </View>
-
-                    {/* 1. LIMIT DURUM KARTI */}
-                    <View style={styles.limitStatusCard}>
-                        <View style={styles.limitIconBox}>
-                            <MaterialCommunityIcons name="lock" size={24} color="#EF4444" />
-                        </View>
-                        <View style={styles.limitInfo}>
-                            <Text style={styles.limitTitle}>{t('limits.limit_reached_title')}</Text>
-                            <Text style={styles.limitDesc}>{t('limits.limit_reached_desc')}</Text>
-                            <View style={styles.limitBarBg}>
-                                <View style={styles.limitBarFill} />
-                            </View>
+                    <View style={styles.headerIconContainer}>
+                        <View style={styles.headerIconBg}>
+                            <MaterialCommunityIcons name="alert-decagram-outline" size={32} color="#EF4444" />
                         </View>
                     </View>
 
-                    {/* 3. TABLO BAŞLIKLARI */}
-                    <View style={styles.tableHeader}>
-                        <View style={{ flex: 1.5 }} />
-                        <Text style={styles.colTitle}>{t('limits.col_free')}</Text>
-                        <Text style={[styles.colTitle, styles.colPro]}>{t('limits.col_pro')}</Text>
+                    <Text style={styles.mainTitle}>{t('limits.weekly_title', 'Limit Uyarısı')}</Text>
+                    <Text style={styles.description}>
+                        {t('limits.limit_reached_desc', 'Haftalık ücretsiz kullanım haklarınızdan bazıları doldu. Premium ile sınırsız kullanın.')}
+                    </Text>
+
+                    {/* LISTE */}
+                    <View style={styles.listSection}>
+                        <Text style={styles.sectionTitle}>{t('limits.usage_status', 'KULLANIM DURUMU')}</Text>
+                        <View style={styles.listContainer}>
+                            <UsageRow
+                                icon="barcode-scan"
+                                label={t('limits.feat_analysis', 'Ürün Analizi')}
+                                status={`${computedData.scan.current}/${computedData.scan.max}`}
+                                isLimitReached={computedData.scan.current >= computedData.scan.max}
+                                delay={100}
+                            />
+                            <UsageRow
+                                icon="robot-outline"
+                                label={t('limits.feat_chat', 'AI Asistan')}
+                                status={`${computedData.ai.current}/${computedData.ai.max}`}
+                                isLimitReached={computedData.ai.current >= computedData.ai.max}
+                                delay={200}
+                            />
+                            <UsageRow
+                                icon="account-group-outline"
+                                label={t('limits.feat_family', 'Aile Üyesi')}
+                                status={`${computedData.family.current}/${computedData.family.max}`}
+                                isLimitReached={computedData.family.current >= computedData.family.max}
+                                delay={300}
+                            />
+                        </View>
                     </View>
 
-                    {/* 4. LİSTE */}
-                    <View style={styles.listContainer}>
-                        <FeatureRow
-                            label={t('limits.feat_scan')}
-                            subLabel={t('limits.feat_scan_sub')}
-                            freeVal={t('limits.limit_val', { count: 3 })}
-                            proCheck={true}
-                            delay={100}
-                        />
-                        <FeatureRow
-                            label={t('limits.feat_family')}
-                            subLabel={t('limits.feat_family_sub')}
-                            freeVal={t('limits.val_family_free')}
-                            proCheck={true}
-                            delay={200}
-                        />
-                        <FeatureRow
-                            label={t('limits.feat_ai')}
-                            subLabel={t('limits.feat_ai_sub')}
-                            freeVal={t('limits.limit_val', { count: 5 })}
-                            proCheck={true}
-                            delay={300}
-                        />
-                        <FeatureRow
-                            label={t('limits.feat_ads')}
-                            subLabel={t('limits.feat_ads_sub')}
-                            freeVal={false}
-                            proCheck={true}
-                            delay={400}
-                        />
+                    {/* TARİH */}
+                    <View style={styles.infoBox}>
+                        <View style={styles.infoIcon}>
+                            <MaterialCommunityIcons name="calendar-refresh-outline" size={20} color="#3B82F6" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.infoTitle}>{t('limits.renewal_title', 'YENİLENME ZAMANI')}</Text>
+                            <Text style={styles.infoDesc}>
+                                {t('limits.renewal_desc', { date: renewalDateText })} tarihinde haklarınız sıfırlanacak.
+                            </Text>
+                        </View>
                     </View>
 
-                    {/* AKSİYON BUTONU */}
-                    <Animated.View style={[styles.buttonContainer, buttonAnimatedStyle]}>
-                        <Pressable style={styles.premiumButton} onPress={onGoPremium}>
-                            <LinearGradient
-                                colors={['#FF8C00', '#EA580C']}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 0 }}
-                                style={styles.gradientBtn}
-                            >
-                                <Text style={styles.premiumBtnText}>{t('limits.go_pro')}</Text>
-                                <Ionicons name="arrow-forward" size={20} color="white" />
-                            </LinearGradient>
-                        </Pressable>
-                    </Animated.View>
-
-                    <Pressable style={styles.restoreBtn}>
-                        <Text style={styles.restoreText}>{t('limits.restore')}</Text>
+                    <Pressable style={styles.ctaButton} onPress={onGoPremium}>
+                        <LinearGradient
+                            colors={['#FF8C00', '#EA580C']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.ctaGradient}
+                        >
+                            <MaterialCommunityIcons name="crown-outline" size={20} color="#FFF" />
+                            <Text style={styles.ctaText}>{t('limits.go_premium_caps', 'PREMIUM\'A GEÇ')}</Text>
+                            <Ionicons name="arrow-forward" size={18} color="#FFF" />
+                        </LinearGradient>
                     </Pressable>
 
+                    <Pressable style={styles.secondaryButton} onPress={onClose}>
+                        <Text style={styles.secondaryText}>{t('limits.maybe_later', 'Şimdilik İdare Et')}</Text>
+                    </Pressable>
                 </Animated.View>
             </View>
         </Modal>
@@ -205,224 +204,85 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: 'rgba(15, 23, 42, 0.7)',
     },
-    backdrop: {
-        ...StyleSheet.absoluteFillObject,
-    },
-    container: {
-        width: width * 0.9,
-        maxWidth: 400,
+    usageRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         backgroundColor: '#F8FAFC',
-        borderRadius: 32,
-        padding: 24,
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 20 },
-        shadowOpacity: 0.25,
-        shadowRadius: 25,
-        elevation: 10,
-        overflow: 'hidden',
+        paddingVertical: 12,
+        paddingHorizontal: 14,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#F1F5F9',
     },
-    closeIconBtn: {
-        position: 'absolute',
-        top: 16,
-        right: 16,
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: Colors.gray[200],
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 10,
-    },
-    header: {
-        alignItems: 'center',
-        marginBottom: 24,
-        marginTop: 8,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: '800',
-        color: Colors.secondary,
-        marginBottom: 6,
-    },
-    subtitle: {
-        fontSize: 14,
-        color: Colors.gray[500],
-        textAlign: 'center',
-        paddingHorizontal: 10,
-    },
-    tableHeader: {
-        flexDirection: 'row',
-        width: '100%',
-        paddingHorizontal: 12,
-        marginBottom: 12,
-    },
-    colTitle: {
-        width: 60,
-        textAlign: 'center',
-        fontSize: 11,
-        fontWeight: '700',
-        color: Colors.gray[400],
-        letterSpacing: 0.5,
-    },
-    colPro: {
-        color: '#F59E0B',
-    },
-    listContainer: {
-        width: '100%',
-        gap: 12,
-        marginBottom: 32,
-    },
-    row: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'white',
-        paddingVertical: 14,
-        paddingHorizontal: 16,
-        borderRadius: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.03,
-        shadowRadius: 4,
-        elevation: 1,
-    },
-    rowLeft: {
-        flex: 1.5,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-    },
-    iconBox: {
+    usageIconBox: {
         width: 32,
         height: 32,
         borderRadius: 10,
-        backgroundColor: Colors.gray[50],
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    rowLabel: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: Colors.secondary,
-        marginBottom: 2,
-    },
-    rowSubLabel: {
-        fontSize: 10,
-        color: Colors.gray[500],
-        lineHeight: 14,
-        paddingRight: 8,
-    },
-    rowRight: {
-        flexDirection: 'row',
-    },
-    colCenter: {
-        width: 60,
+        backgroundColor: '#FFF',
         alignItems: 'center',
         justifyContent: 'center',
-    },
-    limitText: {
-        fontSize: 10,
-        fontWeight: '700',
-        color: Colors.gray[600],
-        textAlign: 'center',
-    },
-    checkCircle: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        backgroundColor: '#10B981',
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: '#10B981',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-    },
-    buttonContainer: {
-        width: '100%',
-    },
-    premiumButton: {
-        width: '100%',
-        borderRadius: 20,
-        shadowColor: '#EA580C',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 16,
-        elevation: 8,
-    },
-    gradientBtn: {
-        paddingVertical: 18,
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 8,
-        borderRadius: 20,
-    },
-    premiumBtnText: {
-        color: 'white',
-        fontSize: 17,
-        fontWeight: '700',
-        letterSpacing: 0.5,
-    },
-    restoreBtn: {
-        marginTop: 16,
-        padding: 8,
-    },
-    restoreText: {
-        fontSize: 11,
-        fontWeight: '700',
-        color: Colors.gray[400],
-        letterSpacing: 0.5,
-    },
-    // LIMIT CARD
-    limitStatusCard: {
-        width: '100%',
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#FEF2F2',
-        padding: 12,
-        borderRadius: 16,
         borderWidth: 1,
+        borderColor: '#E2E8F0',
+    },
+    usageIconBoxError: {
         borderColor: '#FECACA',
-        marginBottom: 20,
-        gap: 12,
+        backgroundColor: '#FEF2F2',
     },
-    limitIconBox: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: 'white',
-        justifyContent: 'center',
+    statusBadge: {
+        flexDirection: 'row',
         alignItems: 'center',
-        shadowColor: '#EF4444',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+        gap: 6,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
     },
-    limitInfo: {
-        flex: 1,
+    statusBadgeError: {
+        backgroundColor: '#FEF2F2',
     },
-    limitTitle: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: '#991B1B',
-        marginBottom: 2,
+    statusText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#64748B',
     },
-    limitDesc: {
+    statusTextError: {
+        color: '#EF4444',
+    },
+    listContainer: { gap: 10 },
+    listSection: { width: '100%', marginBottom: 14 },
+    sectionTitle: { fontSize: 11, fontWeight: '700', color: '#94A3B8', marginBottom: 12, letterSpacing: 0.5 },
+    usageLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    usageLabel: { fontSize: 13, fontWeight: '600', color: '#334155' },
+    usageRight: { flexDirection: 'row', alignItems: 'center' },
+    container: { width: width * 0.88, maxWidth: 380, backgroundColor: '#FFF', borderRadius: 24, padding: 24, alignItems: 'center' },
+    backdrop: { ...StyleSheet.absoluteFillObject },
+    closeIconBtn: { position: 'absolute', top: 16, right: 16, zIndex: 10, padding: 4 },
+    headerIconContainer: { marginBottom: 16, marginTop: 8 },
+    headerIconBg: { width: 64, height: 64, borderRadius: 20, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FECACA', borderStyle: 'dashed' },
+    mainTitle: { fontSize: 20, fontWeight: '800', color: '#0F172A', textAlign: 'center', marginBottom: 8 },
+    description: { fontSize: 13, color: '#64748B', textAlign: 'center', lineHeight: 18, marginBottom: 24, paddingHorizontal: 10 },
+    infoBox: { width: '100%', flexDirection: 'row', alignItems: 'center', backgroundColor: '#EFF6FF', padding: 14, borderRadius: 16, marginBottom: 14, borderWidth: 1, borderColor: '#DBEAFE', gap: 12 },
+    infoIcon: { width: 36, height: 36, borderRadius: 12, backgroundColor: '#DBEAFE', alignItems: 'center', justifyContent: 'center' },
+    infoTitle: { fontSize: 11, fontWeight: '800', color: '#1E40AF', marginBottom: 2 },
+    infoDesc: { fontSize: 11, color: '#3B82F6', lineHeight: 14, fontWeight: '500' },
+    ctaButton: { width: '100%', marginBottom: 16 },
+    ctaGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 18, gap: 8 },
+    ctaText: { color: '#FFF', fontSize: 15, fontWeight: '700', letterSpacing: 0.3 },
+    secondaryButton: { paddingVertical: 4 },
+    secondaryText: { fontSize: 11, fontWeight: '700', color: '#94A3B8', letterSpacing: 0.5 },
+    adBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F43F5E',
+        paddingVertical: 5,
+        paddingHorizontal: 10,
+        borderRadius: 20,
+        gap: 4,
+    },
+    adBadgeText: {
+        color: '#FFF',
         fontSize: 11,
-        color: '#B91C1C',
-        marginBottom: 6,
-    },
-    limitBarBg: {
-        height: 6,
-        backgroundColor: '#FCA5A5',
-        borderRadius: 3,
-        width: '100%',
-    },
-    limitBarFill: {
-        width: '100%',
-        height: '100%',
-        backgroundColor: '#EF4444',
-        borderRadius: 3,
+        fontWeight: '700',
+        letterSpacing: 0.3,
     },
 });

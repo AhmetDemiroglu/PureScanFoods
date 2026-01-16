@@ -424,24 +424,18 @@
     },
 
     "limits": {
-        "limit_reached_title": "Tarama Hakkınız Doldu",
-        "limit_reached_desc": "Haftalık ücretsiz analiz limitinizi doldurdunuz.",
-        "feat_scan": "Ürün Analizi",
-        "feat_scan_sub": "Barkod veya görsel ile detaylı içerik analizi.",
-        "feat_family": "Aile Profilleri",
-        "feat_family_sub": "Sevdikleriniz için sınırsız ek profil oluşturun.",
-        "val_family_free": "1 Ek Profil",
-        "feat_ai": "AI Sohbet Asistanı",
-        "feat_ai_sub": "Gıdalar hakkında dilediğinizi sorun.",
-        "feat_ads": "Reklamsız Deneyim",
-        "feat_ads_sub": "Kesintisiz ve odaklı kullanım.",
-        "col_free": "FREE",
-        "col_pro": "PRO",
-        "pro_title": "PureScan PRO",
-        "pro_subtitle": "Tüm özelliklerin kilidini aç, sınırsız keşfet.",
-        "go_pro": "PRO'ya Geç",
-        "restore": "SATIN ALIMI GERİ YÜKLE",
-        "close": "Kapat",
-        "limit_val": "{{count}} / hafta"
+        "weekly_title": "Haftalık Limit Doldu",
+        "family_title": "Aile Limiti Doldu",
+        "weekly_desc": "Ücretsiz planda haftalık {{limit}} analiz hakkınız bulunmaktadır ve bu limitin sonuna geldiniz.",
+        "family_desc": "Ücretsiz planda kendiniz dışında en fazla 1 aile üyesi profili oluşturabilirsiniz.",
+        "usage_title": "HAFTALIK KULLANIM",
+        "feat_analysis": "Ürün Analizi",
+        "feat_chat": "AI Sohbet",
+        "feat_face": "Yüz Taraması",
+        "renewal_title": "HAKLARINIZ YENİLENİYOR",
+        "renewal_desc": "Premium'a geçmezseniz yeni haklarınız {{date}} tarihinde tanımlanacaktır.",
+        "go_premium_caps": "Sınırları Kaldır & Premium Ol",
+        "wait_text": "ŞİMDİLİK BEKLEYECEĞİM",
+        "watch_ad": "İzle +1"
     }
 }

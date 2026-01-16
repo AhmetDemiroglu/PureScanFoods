@@ -418,24 +418,18 @@
         "analysisFailed": "Analysis data could not be processed."
     },
     "limits": {
-        "limit_reached_title": "Scan Limit Reached",
-        "limit_reached_desc": "You have reached your weekly free analysis limit.",
-        "feat_scan": "Product Analysis",
-        "feat_scan_sub": "Detailed analysis via barcode or image.",
-        "feat_family": "Family Profiles",
-        "feat_family_sub": "Create unlimited profiles for your loved ones.",
-        "val_family_free": "1 Extra Profile",
-        "feat_ai": "AI Chat Assistant",
-        "feat_ai_sub": "Ask anything about food & nutrition.",
-        "feat_ads": "Ad-Free Experience",
-        "feat_ads_sub": "Seamless and focused experience.",
-        "col_free": "FREE",
-        "col_pro": "PRO",
-        "limit_val": "{{count}} / week",
-        "pro_title": "PureScan PRO",
-        "pro_subtitle": "Unlock all features, explore without limits.",
-        "go_pro": "Go PRO",
-        "restore": "RESTORE PURCHASE",
-        "close": "Close"
+        "weekly_title": "Weekly Limit Reached",
+        "family_title": "Family Limit Reached",
+        "weekly_desc": "You have {{limit}} analysis credits per week on the free plan and you have reached this limit.",
+        "family_desc": "On the free plan, you can create at most 1 family member profile besides yourself.",
+        "usage_title": "WEEKLY USAGE",
+        "feat_analysis": "Product Analysis",
+        "feat_chat": "AI Chat",
+        "feat_face": "Face Scan",
+        "renewal_title": "LIMITS RENEWING",
+        "renewal_desc": "If you don't upgrade, your limits will refresh on {{date}}.",
+        "go_premium_caps": "Remove Limits & Go Premium",
+        "wait_text": "I'LL WAIT FOR NOW",
+        "watch_ad": "Watch +1"
     }
 }
