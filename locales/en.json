@@ -424,17 +424,17 @@
     },
     "limits": {
         "weekly_title": "Weekly Limit Reached",
-        "family_title": "Family Limit Reached",
-        "weekly_desc": "You have {{limit}} analysis credits per week on the free plan and you have reached this limit.",
-        "family_desc": "On the free plan, you can create at most 1 family member profile besides yourself.",
-        "usage_title": "WEEKLY USAGE",
+        "family_limit_title": "Family Member Limit Reached",
+        "limit_reached_desc": "Some of your weekly free usage limits have been reached. Switch to Premium for unlimited access.",
+        "family_limit_desc": "You can add a maximum of 1 family member in the free plan. Switch to Premium for unlimited profiles.",
+        "usage_status": "USAGE STATUS",
         "feat_analysis": "Product Analysis",
         "feat_chat": "AI Chat",
-        "feat_face": "Face Scan",
-        "renewal_title": "LIMITS RENEWING",
-        "renewal_desc": "If you don't upgrade, your limits will refresh on {{date}}.",
-        "go_premium_caps": "Remove Limits & Go Premium",
-        "wait_text": "I'LL WAIT FOR NOW",
-        "watch_ad": "Watch +1"
+        "feat_family": "Family Member",
+        "renewal_title": "YOUR LIMITS ARE RENEWING",
+        "renewal_desc": "If you don't switch to Premium, your new limits will be available on {{date}}.",
+        "go_premium_caps": "REMOVE LIMITS & GO PREMIUM",
+        "maybe_later": "Manage for Now",
+        "watch_ad": "Watch (+1)"
     }
 }

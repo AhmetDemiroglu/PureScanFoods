@@ -51,6 +51,7 @@ import {
 } from "../../context/UserContext";
 import * as Haptics from "expo-haptics";
 import { useAuth } from "../../context/AuthContext";
+import LimitWarningModal from "../../components/ui/LimitWarningModal";
 
 const getSafeIcon = (iconName: string): any => iconName === "person" ? "account" : iconName;
 
@@ -63,7 +64,7 @@ if (Platform.OS === 'android') {
 type AvatarIconName = keyof typeof MaterialCommunityIcons.glyphMap;
 
 export default function NutritionScreen() {
-  const { userProfile, user } = useAuth();
+  const { userProfile, user, usageStats } = useAuth();
   const isPremium = userProfile?.subscriptionStatus === "premium" || false;
   const router = useRouter();
   const { t, i18n } = useTranslation();
@@ -159,6 +160,9 @@ export default function NutritionScreen() {
   const [newMemberRole, setNewMemberRole] = useState<FamilyRole>("child");
   const [editingAvatarId, setEditingAvatarId] = useState<string | null>(null);
 
+  // Limit Warning Modal State
+  const [showLimitModal, setShowLimitModal] = useState(false);
+
   React.useEffect(() => {
     if (showFamilyModal || showDietModal || showAllergenModal || showAvatarModal) {
       panY.stopAnimation();
@@ -181,6 +185,10 @@ export default function NutritionScreen() {
   };
 
   const openAddModal = () => {
+    if (!isPremium && familyMembers.length >= 2) {
+      setShowLimitModal(true);
+      return;
+    }
     setEditingMemberId(null);
     setTempName("");
     setTempRole("child");
@@ -580,14 +588,14 @@ export default function NutritionScreen() {
             <ScrollView
               contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 3, paddingBottom: 3 }}
               showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled" // KRİTİK: Klavye açıkken tıklamayı algılaması için
+              keyboardShouldPersistTaps="handled"
             >
 
               {/* AVATAR SECTION */}
               <View style={styles.avatarSection}>
                 <TouchableOpacity
                   style={styles.avatarEditContainer}
-                  onPress={editingMemberId ? openAvatarSelectorForEdit : undefined} // Yeni eklemede avatar seçimi kapalı olabilir, isteğine bağlı
+                  onPress={editingMemberId ? openAvatarSelectorForEdit : undefined}
                   activeOpacity={0.8}
                 >
                   <View style={[styles.avatarDisplayBig, { backgroundColor: tempColor }]}>
@@ -1008,7 +1016,20 @@ export default function NutritionScreen() {
           </Animated.View>
         </View>
       </Modal >
-
+      <LimitWarningModal
+        visible={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        onGoPremium={() => {
+          setShowLimitModal(false);
+          router.push("/paywall");
+        }}
+        stats={usageStats}
+        user={{
+          ...userProfile,
+          familyMembers: familyMembers
+        }}
+        limitType="family"
+      />
     </View >
   );
 }

@@ -427,20 +427,19 @@
         "imageLoad": "Görsel yüklenirken hata oluştu.",
         "analysisFailed": "Analiz verisi işlenemedi."
     },
-
     "limits": {
         "weekly_title": "Haftalık Limit Doldu",
-        "family_title": "Aile Limiti Doldu",
-        "weekly_desc": "Ücretsiz planda haftalık {{limit}} analiz hakkınız bulunmaktadır ve bu limitin sonuna geldiniz.",
-        "family_desc": "Ücretsiz planda kendiniz dışında en fazla 1 aile üyesi profili oluşturabilirsiniz.",
-        "usage_title": "HAFTALIK KULLANIM",
+        "family_limit_title": "Aile Sınırı Doldu",
+        "limit_reached_desc": "Haftalık ücretsiz kullanım haklarınızdan bazıları doldu. Premium ile sınırsız kullanın.",
+        "family_limit_desc": "Ücretsiz planda en fazla 1 aile üyesi ekleyebilirsiniz. Sınırsız profil için Premium'a geçin.",
+        "usage_status": "KULLANIM DURUMU",
         "feat_analysis": "Ürün Analizi",
         "feat_chat": "AI Sohbet",
-        "feat_face": "Yüz Taraması",
+        "feat_family": "Aile Üyesi",
         "renewal_title": "HAKLARINIZ YENİLENİYOR",
         "renewal_desc": "Premium'a geçmezseniz yeni haklarınız {{date}} tarihinde tanımlanacaktır.",
-        "go_premium_caps": "Sınırları Kaldır & Premium Ol",
-        "wait_text": "ŞİMDİLİK BEKLEYECEĞİM",
-        "watch_ad": "İzle +1"
+        "go_premium_caps": "SINIRLARI KALDIR & PREMIUM OL",
+        "maybe_later": "Şimdilik İdare Et",
+        "watch_ad": "İzle (+1)"
     }
 }

@@ -20,7 +20,6 @@ import * as ScreenOrientation from "expo-screen-orientation";
 import { useUser } from "../../context/UserContext";
 import { useLocalSearchParams } from "expo-router";
 import HistorySidebar from '../history';
-import { Alert } from "react-native";
 import LimitWarningModal from "../../components/ui/LimitWarningModal";
 
 type ScanTab = "camera" | "barcode" | "text";
@@ -31,6 +30,7 @@ export default function ScanScreen() {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<ScanTab>("barcode");
   const { userProfile, usageStats, isPremium } = useAuth();
+  const { familyMembers } = useUser();
   const [flashOn, setFlashOn] = useState(false);
 
   const { width, height } = useWindowDimensions();
@@ -730,14 +730,13 @@ export default function ScanScreen() {
         onClose={() => setShowLimitModal(false)}
         onGoPremium={() => {
           setShowLimitModal(false);
-          // Router varsa navigation işlemini yap
           router.push("/paywall");
         }}
-        // Context'ten gelen "usageStats"ı, modalın "stats" propuna veriyoruz
         stats={usageStats}
-
-        // Context'ten gelen "userProfile"ı, modalın "user" propuna veriyoruz
-        user={userProfile}
+        user={{
+          ...userProfile,
+          familyMembers: familyMembers
+        }}
       />
     </SafeAreaView >
   );
