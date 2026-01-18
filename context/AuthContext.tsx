@@ -16,6 +16,8 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import * as Crypto from "expo-crypto";
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "../lib/firebase";
 
 interface AuthContextType {
     user: User | null;
@@ -23,7 +25,6 @@ interface AuthContextType {
     loading: boolean;
     usageStats: UsageStats;
     deviceId: string | null;
-    refreshLimits: () => Promise<void>;
     isPremium: boolean;
     login: (email: string, pass: string) => Promise<void>;
     register: (email: string, pass: string) => Promise<void>;
@@ -73,11 +74,121 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         weekStartDate: new Date().toISOString(),
     });
 
+    const [rawDeviceStats, setRawDeviceStats] = useState<any>(null);
+    const [rawUserProfile, setRawUserProfile] = useState<UserProfile | null>(null);
+    const [rawUserStats, setRawUserStats] = useState<any>(null);
+
     useEffect(() => {
         GoogleSignin.configure({
             webClientId: "333478186372-mvrgjh408gp3jrpojqtc2kogmf3ha403.apps.googleusercontent.com",
         });
     }, []);
+
+    // 1. CİHAZ LİMİTLERİNİ DİNLE (device_limits/{deviceId})
+    useEffect(() => {
+        if (!deviceId || !user) return;
+
+        const unsubDevice = onSnapshot(doc(db, "device_limits", deviceId), (docSnap) => {
+            if (docSnap.exists()) {
+                setRawDeviceStats(docSnap.data());
+            } else {
+                setRawDeviceStats({ scanCount: 0, weekStartDate: null });
+            }
+        }, (err) => console.error("Device Listener Error:", err));
+
+        return () => unsubDevice();
+    }, [deviceId, user]);
+
+    // 2. KULLANICI PROFİLİNİ DİNLE (users/{uid})
+    useEffect(() => {
+        if (!user) {
+            setRawUserProfile(null);
+            return;
+        }
+
+        const unsubUser = onSnapshot(doc(db, "users", user.uid), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                // TS Hatası Çözümü: Veriyi güvenli şekilde cast ediyoruz
+                const profileData = { id: user.uid, ...data } as unknown as UserProfile;
+
+                setUserProfile(profileData);
+                setRawUserProfile(profileData);
+            }
+        }, (err) => console.error("User Profile Listener Error:", err));
+
+        return () => unsubUser();
+    }, [user]);
+
+    // 3. KULLANICI İSTATİSTİKLERİNİ DİNLE (users/{uid}/stats/weekly)
+    useEffect(() => {
+        if (!user) {
+            setRawUserStats(null);
+            return;
+        }
+
+        const unsubStats = onSnapshot(doc(db, "users", user.uid, "stats", "weekly"), (docSnap) => {
+            if (docSnap.exists()) {
+                setRawUserStats(docSnap.data());
+            } else {
+                setRawUserStats({ scanCount: 0 });
+            }
+        }, (err) => console.error("User Stats Listener Error:", err));
+
+        return () => unsubStats();
+    }, [user]);
+
+    // 4. LİMİT HESAPLAMA MOTORU
+    useEffect(() => {
+        const deviceData = rawDeviceStats || { scanCount: 0 };
+        const deviceLimit = 3;
+
+        if (!user || !rawUserProfile) {
+            setUsageStats({
+                scanCount: deviceData.scanCount || 0,
+                scanLimit: deviceLimit,
+                weekStartDate: deviceData.weekStartDate ? (deviceData.weekStartDate.toDate ? deviceData.weekStartDate.toDate().toISOString() : new Date().toISOString()) : new Date().toISOString()
+            });
+            return;
+        }
+
+        const isPremium = rawUserProfile.subscriptionStatus === "premium";
+
+        // PREMIUM KONTROLÜ
+        if (isPremium) {
+            setUsageStats({
+                scanCount: rawUserStats?.scanCount || 0,
+                scanLimit: 9999,
+                weekStartDate: new Date().toISOString()
+            });
+            return;
+        }
+
+        // STANDART KULLANICI KONTROLÜ
+        const userLimit = 5;
+        const userCount = rawUserStats?.scanCount || 0;
+        const deviceCount = deviceData.scanCount || 0;
+
+        const deviceRemaining = deviceLimit - deviceCount;
+        const userRemaining = userLimit - userCount;
+
+        if (deviceRemaining < userRemaining) {
+            console.log("🔒 Limiting by DEVICE");
+            setUsageStats({
+                scanCount: deviceCount,
+                scanLimit: deviceLimit,
+                weekStartDate: deviceData.weekStartDate ? (deviceData.weekStartDate.toDate ? deviceData.weekStartDate.toDate().toISOString() : new Date().toISOString()) : new Date().toISOString()
+            });
+        } else {
+            console.log("🔒 Limiting by USER");
+            setUsageStats({
+                scanCount: userCount,
+                scanLimit: userLimit,
+                weekStartDate: rawUserStats?.weekStartDate ? (rawUserStats.weekStartDate.toDate ? rawUserStats.weekStartDate.toDate().toISOString() : new Date().toISOString()) : new Date().toISOString()
+            });
+        }
+
+    }, [rawDeviceStats, rawUserProfile, rawUserStats, user]);
 
     // --- AUTH ACTIONS ---
     const login = async (email: string, pass: string) => {
@@ -131,63 +242,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
-    const refreshLimits = async (currentUid?: string, currentDeviceId?: string) => {
-        const targetDeviceId = currentDeviceId || deviceId;
-        const targetUid = currentUid || user?.uid;
-
-        let deviceStats = { scanCount: 0, scanLimit: 3 };
-        if (targetDeviceId) {
-            const ds = await checkDeviceLimit(targetDeviceId);
-            deviceStats = { scanCount: ds.scanCount, scanLimit: 3 };
-        }
-
-        let userStats = { scanCount: 0, scanLimit: 5 };
-        let isPremium = false;
-
-        if (targetUid) {
-            const profile = await getUserProfile(targetUid);
-            if (profile) {
-                setUserProfile(profile);
-                isPremium = profile.subscriptionStatus === "premium";
-            }
-
-            const us = await getUserStats(targetUid);
-            userStats.scanCount = us.scanCount;
-            userStats.scanLimit = isPremium ? 9999 : 5;
-        }
-
-        let finalStats: UsageStats;
-
-        if (isPremium) {
-            finalStats = {
-                scanCount: userStats.scanCount,
-                scanLimit: 9999,
-                weekStartDate: new Date().toISOString()
-            };
-        } else {
-            const deviceRemaining = deviceStats.scanLimit - deviceStats.scanCount;
-            const userRemaining = userStats.scanLimit - userStats.scanCount;
-
-            if (deviceRemaining < userRemaining) {
-                finalStats = {
-                    scanCount: deviceStats.scanCount,
-                    scanLimit: deviceStats.scanLimit,
-                    weekStartDate: new Date().toISOString()
-                };
-                console.log("🔒 Limiting by DEVICE stats");
-            } else {
-                finalStats = {
-                    scanCount: userStats.scanCount,
-                    scanLimit: userStats.scanLimit,
-                    weekStartDate: new Date().toISOString()
-                };
-                console.log("🔒 Limiting by USER stats");
-            }
-        }
-
-        setUsageStats(finalStats);
-    };
-
     useEffect(() => {
         let mounted = true;
 
@@ -205,8 +259,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     await initializeUser(currentUser);
                     const profile = await getUserProfile(currentUser.uid);
                     if (mounted) setUserProfile(profile);
-
-                    await refreshLimits(currentUser.uid, id);
 
                     if (mounted) setLoading(false);
                 } else {
@@ -235,7 +287,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         loading,
         usageStats,
         deviceId,
-        refreshLimits,
         isPremium: userProfile?.subscriptionStatus === "premium",
         login,
         register,

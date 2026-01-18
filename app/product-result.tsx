@@ -81,7 +81,7 @@ export default function ProductResultScreen() {
     const router = useRouter();
 
     const { familyMembers, profilesData } = useUser();
-    const { user, deviceId, refreshLimits, userProfile } = useAuth();
+    const { user, deviceId, userProfile } = useAuth();
 
     const [showNutriInfo, setShowNutriInfo] = useState(false);
 
@@ -242,7 +242,6 @@ export default function ProductResultScreen() {
         const saveScan = async () => {
             try {
                 await incrementScanCount(user.uid, deviceId);
-                refreshLimits();
 
                 let imageUrl = null;
                 if (imageUri) {
