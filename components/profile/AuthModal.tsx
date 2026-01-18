@@ -13,9 +13,6 @@ interface AuthModalProps {
     onClose: () => void;
 }
 
-// ═══════════════════════════════════════════════════════════
-// INLINE TOAST COMPONENT
-// ═══════════════════════════════════════════════════════════
 function Toast({ message, type, visible }: { message: string; type: "success" | "error"; visible: boolean }) {
     const translateY = useState(new Animated.Value(-100))[0];
 
