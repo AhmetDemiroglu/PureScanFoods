@@ -167,6 +167,13 @@
             "HIGH": "HIGH (>10g)",
             "UNKNOWN": "UNKNOWN"
         },
+        "diet_card": {
+            "keto_title": "KETO REPORT",
+            "lowcarb_title": "LOW CARB ANALYSIS",
+            "carb": "Carb",
+            "fiber": "Fiber",
+            "net": "NET"
+        },
         "family": {
             "title": "FAMILY COMPATIBILITY",
             "safe": "Safe",
@@ -174,7 +181,8 @@
             "unsafe": "Avoid",
             "unknown": "Unknown",
             "alertTitle": "Compatibility Analysis",
-            "reasons": "Detected issues:"
+            "reasons": "Detected issues:",
+            "profile_settings": "Profile Settings"
         },
         "badges": {
             "food": "Food Product",
@@ -234,11 +242,11 @@
             "findings": {
                 "high_allergen": "{{source}} Detected ({{keyword}}).",
                 "high_allergen_desc": "{{keyword}} detected. This ingredient is a derivative of {{source}} and is incompatible with your profile.",
-                "macro_violation_desc": "{{keyword}} detected. May disrupt your {{diet}} balance due to potential high carbohydrate or sugar content.",
+                "macro_violation_desc": "{{keyword}} detected. May disrupt your {{diet}} diet balance due to potential high carbohydrate or sugar content.",
                 "medium_ambiguous_desc": "{{keyword}} detected. Since its source (plant/animal) is unspecified, it may carry a {{source}} risk.",
                 "medical_ambiguous_desc": "{{keyword}} detected. May carry a {{source}} risk (cross-contamination) depending on manufacturing. Check the label.",
                 "diet_violation": "Violates {{diet}} diet.",
-                "diet_violation_desc": "Contains {{keyword}}, which may not be suitable for {{diet}} rules.",
+                "diet_violation_desc": "Contains {{keyword}}, which may not be suitable for {{diet}} diet rules.",
                 "safe_summary": "Ingredients list seems compatible with your profile.",
                 "high_risk_summary": "Ingredients derived from {{source}} detected. Consumption not recommended.",
                 "medium_risk_summary": "Some ingredients might cause sensitivity, please check details.",
@@ -249,7 +257,63 @@
                 "keto_advice_moderate": "WARNING: Covers a significant part of your daily limit.",
                 "lowcarb_advice_high": "HIGH: Risky amount for Low Carb diet.",
                 "lowcarb_advice_ok": "SUITABLE: Can be consumed with portion control.",
-                "generic_diet_advice": "Should be consumed with caution based on ingredients and nutrition facts."
+                "generic_diet_advice": "Should be consumed with caution based on ingredients and nutrition facts.",
+
+                "infant_honey": "{{keyword}} detected. Honey poses botulism risk for infants under 1 year.",
+                "infant_salt": "{{keyword}} detected. Infant kidneys cannot process salt properly.",
+                "infant_sugar": "{{keyword}} detected. Added sugar is not recommended for infant nutrition.",
+                "infant_nut": "{{keyword}} detected. Whole nuts pose choking hazard for infants.",
+                "infant_cow_milk": "{{keyword}} detected. Cow's milk is not suitable for infants under 1 year.",
+                "infant_egg_white": "{{keyword}} detected. Egg whites may cause allergic reactions under 1 year.",
+                "infant_shellfish": "{{keyword}} detected. Shellfish poses allergy risk for infants.",
+                "infant_caffeine": "{{keyword}} detected. Caffeine is not suitable for infants and children.",
+                "infant_chocolate": "{{keyword}} detected. Chocolate contains caffeine, not suitable for infants.",
+                "infant_raw": "{{keyword}} detected. Raw foods are not safe for infants.",
+
+                "baby_salt": "{{keyword}} detected. Salt intake should be limited for babies 6-12 months.",
+                "baby_sugar": "{{keyword}} detected. Sugar is not recommended for babies under 1 year.",
+                "baby_whole_nut": "{{keyword}} detected. Whole nuts pose choking hazard.",
+                "baby_peanut_intro": "{{keyword}} detected. Nut butters can be introduced carefully with allergy monitoring.",
+                "baby_cow_milk": "{{keyword}} detected. Recommended as main drink after 1 year.",
+                "baby_chocolate": "{{keyword}} detected. Should be limited due to caffeine and sugar content.",
+                "baby_raw_egg": "{{keyword}} detected. Raw or undercooked eggs pose salmonella risk.",
+                "baby_raw_fish": "{{keyword}} detected. Raw fish is not safe for babies.",
+                "baby_processed": "{{keyword}} detected. Processed meats contain high salt and additives.",
+                "baby_sweetener": "{{keyword}} detected. Artificial sweeteners are not recommended for babies.",
+
+                "toddler_choking": "{{keyword}} detected. May pose choking hazard for toddlers.",
+                "toddler_raw_fish": "{{keyword}} detected. Raw fish should be consumed carefully by toddlers.",
+                "toddler_sodium": "{{keyword}} detected. Salt intake should be monitored for toddlers.",
+                "toddler_sweetener": "{{keyword}} detected. Artificial sweeteners should be limited for toddlers.",
+
+                "child_caffeine": "{{keyword}} detected. Caffeine should be limited for children.",
+                "child_energy_drink": "{{keyword}} detected. Energy drinks are not suitable for children.",
+                "child_alcohol": "{{keyword}} detected. Alcohol is absolutely not suitable for children.",
+                "child_raw_fish": "{{keyword}} detected. Raw fish should be consumed carefully.",
+                "child_sweetener": "{{keyword}} detected. Artificial sweetener intake should be monitored.",
+
+                "teen_energy_drink": "{{keyword}} detected. Energy drinks should be limited for teenagers.",
+                "teen_alcohol": "{{keyword}} detected. Alcohol is not suitable for under 18.",
+                "teen_caffeine": "{{keyword}} detected. Excessive caffeine consumption should be avoided.",
+
+                "elderly_sodium": "{{keyword}} detected. Salt intake should be monitored for blood pressure.",
+                "elderly_raw": "{{keyword}} detected. Raw foods may pose immune system risks.",
+                "elderly_unpasteurized": "{{keyword}} detected. Unpasteurized products may pose risks.",
+
+                "pregnant_alcohol": "{{keyword}} detected. Alcohol must be completely avoided during pregnancy.",
+                "pregnant_raw_fish": "{{keyword}} detected. Raw fish poses listeria and parasite risks during pregnancy.",
+                "pregnant_raw_egg": "{{keyword}} detected. Raw eggs pose salmonella risk during pregnancy.",
+                "pregnant_unpasteurized": "{{keyword}} detected. Unpasteurized products pose risks during pregnancy.",
+                "pregnant_soft_cheese": "{{keyword}} detected. Soft cheeses may pose listeria risk.",
+                "pregnant_mercury": "{{keyword}} detected. High-mercury fish should be avoided during pregnancy.",
+                "pregnant_tuna": "{{keyword}} detected. Tuna should be limited to 1-2 servings per week.",
+                "pregnant_caffeine": "{{keyword}} detected. Caffeine should be limited to 200mg daily during pregnancy.",
+                "pregnant_liver": "{{keyword}} detected. Liver is high in vitamin A, should be limited during pregnancy.",
+                "pregnant_deli": "{{keyword}} detected. Deli meats should not be consumed without thorough heating.",
+
+                "breastfeeding_alcohol": "{{keyword}} detected. Alcohol should be limited while breastfeeding.",
+                "breastfeeding_caffeine": "{{keyword}} detected. Caffeine may affect the baby while breastfeeding.",
+                "breastfeeding_mercury": "{{keyword}} detected. High-mercury fish should be limited while breastfeeding."
             }
         },
         "nutriscore": {
@@ -267,6 +331,8 @@
         }
     },
     "common": {
+        "suitable": "SUITABLE",
+        "limit_exceeded": "LIMIT EXCEEDED",
         "unknown": "Unknown",
         "back": "Go Back",
         "disclaimer": {

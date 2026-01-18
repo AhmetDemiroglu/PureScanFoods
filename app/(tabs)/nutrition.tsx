@@ -229,7 +229,7 @@ export default function NutritionScreen() {
         lifeStage: tempLifeStage
       });
     } else {
-      contextAddMember(tempName, tempRole);
+      contextAddMember(tempName, tempRole, tempIcon, tempColor, tempLifeStage);
     }
 
     setShowFamilyModal(false);

@@ -27,6 +27,7 @@ export interface UserProfile {
     avatarIcon?: string;
     color?: string;
     createdAt: any;
+    lifeStage?: string;
 }
 export interface UsageStats {
     scanCount: number;
@@ -190,8 +191,8 @@ export const incrementScanCount = async (uid: string, deviceId: string | null) =
                         scanCount: increment(1),
                         lastScanAt: serverTimestamp(),
                     },
-                    { merge: true }
-                )
+                    { merge: true },
+                ),
             );
         }
 
@@ -206,8 +207,8 @@ export const incrementScanCount = async (uid: string, deviceId: string | null) =
                         scanCount: increment(1),
                         lastScanAt: serverTimestamp(),
                     },
-                    { merge: true }
-                )
+                    { merge: true },
+                ),
             );
         }
 
@@ -248,7 +249,7 @@ export const getFamilyMembersFromDB = async (uid: string): Promise<FamilyMember[
                 ({
                     id: doc.id,
                     ...doc.data(),
-                } as FamilyMember)
+                }) as FamilyMember,
         );
     } catch (error) {
         console.error("Error fetching family members:", error);
@@ -311,7 +312,7 @@ export const getScanHistoryFromDB = async (uid: string, lastDoc: any = null, lim
                 ({
                     id: doc.id,
                     ...doc.data(),
-                } as ScanResult)
+                }) as ScanResult,
         );
 
         return { data, lastDoc: snapshot.docs[snapshot.docs.length - 1] };

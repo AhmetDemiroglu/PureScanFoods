@@ -179,7 +179,15 @@
             "unsafe": "Sakıncalı",
             "unknown": "Bilinmiyor",
             "alertTitle": "Uyum Analizi",
-            "reasons": "Tespit edilenler:"
+            "reasons": "Tespit edilenler:",
+            "profile_settings": "Profil Tercihleri"
+        },
+        "diet_card": {
+            "keto_title": "KETO KARNESİ",
+            "lowcarb_title": "LOW CARB ANALİZİ",
+            "carb": "Karb",
+            "fiber": "Lif",
+            "net": "NET"
         },
         "badges": {
             "food": "Gıda Ürünü",
@@ -239,11 +247,11 @@
             "findings": {
                 "high_allergen": "{{source}} Tespiti ({{keyword}}).",
                 "high_allergen_desc": "{{keyword}} tespit edildi. Bu bileşen {{source}} türevidir ve profilinizle uyumsuzdur.",
-                "macro_violation_desc": "{{keyword}} tespit edildi. Yüksek karbonhidrat veya şeker potansiyeli nedeniyle {{diet}} dengenizi bozabilir.",
+                "macro_violation_desc": "{{keyword}} tespit edildi. Yüksek karbonhidrat veya şeker potansiyeli nedeniyle {{diet}} beslenme dengenizi bozabilir.",
                 "medium_ambiguous_desc": "{{keyword}} tespit edildi. Kaynağı (bitkisel/hayvansal) belirsiz olduğu için {{source}} hassasiyetine dokunabilir.",
                 "medical_ambiguous_desc": "{{keyword}} tespit edildi. Üretim sürecine bağlı olarak {{source}} riski (çapraz bulaşma) taşıyabilir. Etiketi kontrol ediniz.",
-                "diet_violation": "{{diet}} diyetiyle çelişiyor.",
-                "diet_violation_desc": "{{keyword}} içerdiği için {{diet}} kurallarına uygun olmayabilir.",
+                "diet_violation": "{{diet}} beslenme ile çelişiyor.",
+                "diet_violation_desc": "{{keyword}} içerdiği için {{diet}} beslenme kurallarına uygun olmayabilir.",
                 "safe_summary": "İçerik listesi profilinizle uyumlu görünüyor.",
                 "high_risk_summary": "{{source}} kaynaklı bileşenler tespit edildi. Tüketmeniz önerilmez.",
                 "medium_risk_summary": "Bazı içerikler hassasiyet yaratabilir, detayları inceleyiniz.",
@@ -254,7 +262,63 @@
                 "keto_advice_moderate": "DİKKAT: Günlük limitinizin önemli bir kısmını kapsar.",
                 "lowcarb_advice_high": "YÜKSEK: Düşük Karbonhidrat diyeti için riskli miktar.",
                 "lowcarb_advice_ok": "UYGUN: Porsiyon kontrolüyle tüketilebilir.",
-                "generic_diet_advice": "İçerik listesi ve besin değerlerine göre dikkatli tüketilmelidir."
+                "generic_diet_advice": "İçerik listesi ve besin değerlerine göre dikkatli tüketilmelidir.",
+
+                "infant_honey": "{{keyword}} tespit edildi. Bal, 1 yaş altı bebekler için botulizm riski taşır.",
+                "infant_salt": "{{keyword}} tespit edildi. 1 yaş altı bebeklerin böbrekleri tuzu işleyemez.",
+                "infant_sugar": "{{keyword}} tespit edildi. Eklenen şeker bebek beslenmesinde önerilmez.",
+                "infant_nut": "{{keyword}} tespit edildi. Bütün kuruyemişler bebekler için boğulma riski taşır.",
+                "infant_cow_milk": "{{keyword}} tespit edildi. İnek sütü 1 yaş altı bebekler için uygun değildir.",
+                "infant_egg_white": "{{keyword}} tespit edildi. Yumurta akı 1 yaş altında alerji riski taşır.",
+                "infant_shellfish": "{{keyword}} tespit edildi. Kabuklu deniz ürünleri bebeklerde alerji riski taşır.",
+                "infant_caffeine": "{{keyword}} tespit edildi. Kafein bebek ve çocuklar için uygun değildir.",
+                "infant_chocolate": "{{keyword}} tespit edildi. Çikolata kafein içerir, bebekler için uygun değildir.",
+                "infant_raw": "{{keyword}} tespit edildi. Çiğ gıdalar bebekler için güvenli değildir.",
+
+                "baby_salt": "{{keyword}} tespit edildi. 6-12 ay arası bebekler için tuz miktarı sınırlı tutulmalıdır.",
+                "baby_sugar": "{{keyword}} tespit edildi. 1 yaş altı bebekler için şeker önerilmez.",
+                "baby_whole_nut": "{{keyword}} tespit edildi. Bütün kuruyemişler boğulma riski taşır.",
+                "baby_peanut_intro": "{{keyword}} tespit edildi. Fıstık ezmesi dikkatli şekilde tanıtılabilir, alerji takibi önerilir.",
+                "baby_cow_milk": "{{keyword}} tespit edildi. Ana içecek olarak 1 yaş sonrası önerilir.",
+                "baby_chocolate": "{{keyword}} tespit edildi. Kafein ve şeker içeriği nedeniyle sınırlı tutulmalıdır.",
+                "baby_raw_egg": "{{keyword}} tespit edildi. Çiğ veya az pişmiş yumurta salmonella riski taşır.",
+                "baby_raw_fish": "{{keyword}} tespit edildi. Çiğ balık bebekler için güvenli değildir.",
+                "baby_processed": "{{keyword}} tespit edildi. İşlenmiş etler yüksek tuz ve katkı içerir.",
+                "baby_sweetener": "{{keyword}} tespit edildi. Yapay tatlandırıcılar bebekler için önerilmez.",
+
+                "toddler_choking": "{{keyword}} tespit edildi. Küçük çocuklar için boğulma riski taşıyabilir.",
+                "toddler_raw_fish": "{{keyword}} tespit edildi. Çiğ balık küçük çocuklarda dikkatli tüketilmelidir.",
+                "toddler_sodium": "{{keyword}} tespit edildi. Küçük çocuklar için tuz miktarına dikkat edilmelidir.",
+                "toddler_sweetener": "{{keyword}} tespit edildi. Yapay tatlandırıcılar küçük çocuklarda sınırlı tutulmalıdır.",
+
+                "child_caffeine": "{{keyword}} tespit edildi. Kafein çocuklar için sınırlı tutulmalıdır.",
+                "child_energy_drink": "{{keyword}} tespit edildi. Enerji içecekleri çocuklar için uygun değildir.",
+                "child_alcohol": "{{keyword}} tespit edildi. Alkol çocuklar için kesinlikle uygun değildir.",
+                "child_raw_fish": "{{keyword}} tespit edildi. Çiğ balık dikkatli tüketilmelidir.",
+                "child_sweetener": "{{keyword}} tespit edildi. Yapay tatlandırıcı tüketimi izlenmelidir.",
+
+                "teen_energy_drink": "{{keyword}} tespit edildi. Enerji içecekleri ergenler için sınırlı tutulmalıdır.",
+                "teen_alcohol": "{{keyword}} tespit edildi. Alkol 18 yaş altı için uygun değildir.",
+                "teen_caffeine": "{{keyword}} tespit edildi. Aşırı kafein tüketiminden kaçınılmalıdır.",
+
+                "elderly_sodium": "{{keyword}} tespit edildi. Yaşlı bireylerde tuz tüketimi tansiyon açısından izlenmelidir.",
+                "elderly_raw": "{{keyword}} tespit edildi. Çiğ gıdalar bağışıklık açısından risk oluşturabilir.",
+                "elderly_unpasteurized": "{{keyword}} tespit edildi. Pastörize edilmemiş ürünler risk taşıyabilir.",
+
+                "pregnant_alcohol": "{{keyword}} tespit edildi. Hamilelikte alkol kesinlikle tüketilmemelidir.",
+                "pregnant_raw_fish": "{{keyword}} tespit edildi. Çiğ balık hamilelikte listeria ve parazit riski taşır.",
+                "pregnant_raw_egg": "{{keyword}} tespit edildi. Çiğ yumurta hamilelikte salmonella riski taşır.",
+                "pregnant_unpasteurized": "{{keyword}} tespit edildi. Pastörize edilmemiş ürünler hamilelikte risk taşır.",
+                "pregnant_soft_cheese": "{{keyword}} tespit edildi. Yumuşak peynirler listeria riski taşıyabilir.",
+                "pregnant_mercury": "{{keyword}} tespit edildi. Yüksek cıvalı balıklar hamilelikte sakıncalıdır.",
+                "pregnant_tuna": "{{keyword}} tespit edildi. Ton balığı haftada 1-2 porsiyonla sınırlı tutulmalıdır.",
+                "pregnant_caffeine": "{{keyword}} tespit edildi. Hamilelikte günlük kafein 200mg ile sınırlandırılmalıdır.",
+                "pregnant_liver": "{{keyword}} tespit edildi. Karaciğer yüksek A vitamini içerir, hamilelikte sınırlı tutulmalıdır.",
+                "pregnant_deli": "{{keyword}} tespit edildi. İşlenmiş etler iyice ısıtılmadan tüketilmemelidir.",
+
+                "breastfeeding_alcohol": "{{keyword}} tespit edildi. Emzirme döneminde alkol sınırlı tutulmalıdır.",
+                "breastfeeding_caffeine": "{{keyword}} tespit edildi. Emzirme döneminde kafein bebeği etkileyebilir.",
+                "breastfeeding_mercury": "{{keyword}} tespit edildi. Yüksek cıvalı balıklar emzirme döneminde sınırlı tutulmalıdır."
             }
         },
         "nutriscore": {
@@ -272,6 +336,8 @@
         }
     },
     "common": {
+        "suitable": "UYGUN",
+        "limit_exceeded": "LİMİT AŞIMI",
         "unknown": "Bilinmiyor",
         "back": "Geri Dön",
         "disclaimer": {

@@ -63,7 +63,7 @@ export function analyzeEngine(
     ingredients: IngredientInput[],
     userProfile: { diet: DietType | null; allergens: AllergenType[]; lifeStage?: LifeStageType | null },
     safetyScore: number = 50,
-    t: (key: string, options?: any) => string
+    t: (key: string, options?: any) => string,
 ): CompatibilityReport {
     if (!userProfile.diet && userProfile.allergens.length === 0) {
         return {
@@ -161,7 +161,7 @@ export function analyzeEngine(
                             type: "diet",
                             severity,
                             message: t("results.analysis.findings.diet_violation_desc", {
-                                diet: userProfile.diet,
+                                diet: t(`diets.${userProfile.diet}`),
                                 keyword: ingredients[index].display_name,
                             }),
                         });
@@ -204,7 +204,7 @@ export function analyzeEngine(
                         type: "ambiguous",
                         severity,
                         message: t(`results.analysis.findings.${messageKey}`, {
-                            diet: userProfile.diet,
+                            diet: t(`diets.${userProfile.diet}`),
                             source: userProfile.diet,
                             keyword: ingredients[index].display_name,
                         }),
@@ -260,7 +260,7 @@ export function analyzeEngine(
         summary = t("results.analysis.findings.high_risk_summary", { source: highRisk[0].source });
     } else if (mediumRisk.length > 0) {
         const hasGlutenAmbiguity = mediumRisk.some(
-            (f) => f.keyword.toLowerCase().includes("maltodextrin") || f.keyword.toLowerCase().includes("maltodekstrin")
+            (f) => f.keyword.toLowerCase().includes("maltodextrin") || f.keyword.toLowerCase().includes("maltodekstrin"),
         );
 
         if (hasGlutenAmbiguity && userProfile.allergens.includes("GLUTEN")) {

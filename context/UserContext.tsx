@@ -36,7 +36,7 @@ export interface UserContextType {
     activeProfileId: string;
     setActiveProfileId: (id: string) => void;
 
-    addFamilyMember: (name: string, role: FamilyRole, icon?: string, color?: string) => Promise<void>;
+    addFamilyMember: (name: string, role: FamilyRole, icon?: string, color?: string, lifeStage?: LifeStageType | null) => Promise<void>;
     deleteFamilyMember: (id: string) => Promise<void>;
     updateMemberInfo: (id: string, updates: Partial<FamilyMember>) => Promise<void>;
     updateProfileData: (id: string, field: keyof ProfileData, value: any) => Promise<void>;
@@ -216,7 +216,8 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         name: string,
         role: FamilyRole,
         icon?: string,
-        color?: string
+        color?: string,
+        lifeStage?: LifeStageType | null,
     ) => {
         if (!user) return;
 
@@ -232,7 +233,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                 color: assignedColor,
                 diet: null,
                 allergens: [],
-                lifeStage: null
+                lifeStage: lifeStage || null
             };
 
             await addFamilyMemberToDB(user.uid, newMemberData);

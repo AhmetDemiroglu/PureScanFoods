@@ -23,6 +23,8 @@ import { useAuth } from "../context/AuthContext";
 import { incrementScanCount } from "../lib/firestore";
 import { useLocalSearchParams } from "expo-router";
 import { NutriScoreGraphic } from "../components/ui/NutriScoreAssets";
+import { getLifeStageDefinition, LifeStageType } from "../lib/lifestages";
+
 
 const { width } = Dimensions.get("window");
 const IMAGE_HEIGHT = 320;
@@ -77,7 +79,9 @@ const getScoreStyles = (score: number) => ({
 });
 
 export default function ProductResultScreen() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    const isTr = i18n.language === "tr";
+
     const router = useRouter();
 
     const { familyMembers, profilesData } = useUser();
@@ -358,7 +362,9 @@ export default function ProductResultScreen() {
         const bg = isSafe ? '#F0FDF4' : '#FEF2F2';
         const border = isSafe ? '#BBF7D0' : '#FECACA';
         const text = isSafe ? '#15803D' : '#B91C1C';
-        const label = userDiet === 'KETO' ? "KETO KARNESİ" : "LOW CARB ANALİZİ";
+        const label = userDiet === 'KETO'
+            ? t("results.diet_card.keto_title")
+            : t("results.diet_card.lowcarb_title");
 
         return (
             <View style={[styles.dietCard, { backgroundColor: bg, borderColor: border }]}>
@@ -372,7 +378,7 @@ export default function ProductResultScreen() {
                     {/* Sağ Üst Köşe: Durum Rozeti */}
                     <View style={[styles.statusBadge, { backgroundColor: isSafe ? '#DCFCE7' : '#FEE2E2' }]}>
                         <Text style={[styles.statusText, { color: text }]}>
-                            {isSafe ? t("common.suitable", "UYGUN") : t("common.limit_exceeded", "LİMİT AŞIMI")}
+                            {isSafe ? t("common.suitable") : t("common.limit_exceeded")}
                         </Text>
                     </View>
                 </View>
@@ -399,7 +405,7 @@ export default function ProductResultScreen() {
                     <View style={styles.dietStatsRow}>
                         {/* Karb */}
                         <View style={styles.statCompact}>
-                            <Text style={styles.statLabel}>Karb</Text>
+                            <Text style={styles.statLabel}>{t("results.diet_card.carb")}</Text>
                             <Text style={styles.statValue}>{nutritionData?.carbohydrates}g</Text>
                         </View>
 
@@ -407,7 +413,7 @@ export default function ProductResultScreen() {
 
                         {/* Lif */}
                         <View style={styles.statCompact}>
-                            <Text style={styles.statLabel}>Lif</Text>
+                            <Text style={styles.statLabel}>{t("results.diet_card.fiber")}</Text>
                             <Text style={styles.statValue}>{nutritionData?.fiber || 0}g</Text>
                         </View>
 
@@ -415,7 +421,7 @@ export default function ProductResultScreen() {
 
                         {/* NET (Vurgulu) */}
                         <View style={[styles.statResult, { borderColor: border }]}>
-                            <Text style={[styles.statResultLabel, { color: text }]}>NET</Text>
+                            <Text style={[styles.statResultLabel, { color: text }]}>{t("results.diet_card.net")}</Text>
                             <Text style={[styles.statResultValue, { color: text }]}>
                                 {netCarb.toFixed(1)}g
                             </Text>
@@ -451,10 +457,8 @@ export default function ProductResultScreen() {
 
     const familyAnalysis = familyMembers.map(member => {
         const profile = profilesData[member.id];
-
         const safetyScore = scores.safety?.value || 50;
         const report = analyzeEngine(analysisIngredients, profile, safetyScore, t);
-
         return { member, report };
     });
 
@@ -759,12 +763,36 @@ export default function ProductResultScreen() {
                                         // Eğer hiçbir bilgi yoksa render etme
                                         if (!dietDef && userAllergens.length === 0) return null;
 
-                                        const isTr = t("common.lang", { defaultValue: "en" }) === "tr" || true;
-
                                         return (
                                             <View style={styles.profileSummaryBox}>
-                                                <Text style={styles.profileSummaryTitle}>{t("nutrition.profileSettings", "Profil Tercihleri")}</Text>
+                                                <Text style={styles.profileSummaryTitle}>{t("results.family.profile_settings")}</Text>
                                                 <View style={styles.tagsContainer}>
+                                                    {/* Life Stage Badge */}
+                                                    {(() => {
+                                                        const lifeStage = profile?.lifeStage;
+                                                        if (!lifeStage || lifeStage === 'ADULT') return null;
+
+                                                        const lifeStageDef = getLifeStageDefinition(lifeStage as LifeStageType);
+                                                        if (!lifeStageDef) return null;
+
+                                                        const isVulnerable = ['INFANT_0_6', 'INFANT_6_12', 'TODDLER_1_3', 'PREGNANT', 'BREASTFEEDING'].includes(lifeStage);
+                                                        const bgColor = isVulnerable ? '#FEF3C7' : '#F0FDF4';
+                                                        const borderColor = isVulnerable ? '#FCD34D' : '#BBF7D0';
+                                                        const textColor = isVulnerable ? '#B45309' : '#15803D';
+                                                        const iconName = lifeStage.includes('INFANT') || lifeStage.includes('TODDLER')
+                                                            ? 'nutrition-outline'
+                                                            : (lifeStage === 'PREGNANT' ? 'heart' : 'person');
+
+                                                        return (
+                                                            <View style={[styles.infoChip, { backgroundColor: bgColor, borderColor: borderColor }]}>
+                                                                <Ionicons name={iconName as any} size={14} color={textColor} />
+                                                                <Text style={[styles.infoChipText, { color: textColor }]}>
+                                                                    {isTr ? lifeStageDef.nameTr : lifeStageDef.name}
+                                                                </Text>
+                                                            </View>
+                                                        );
+                                                    })()}
+
                                                     {/* Diyet Bilgisi */}
                                                     {dietDef && (
                                                         <View style={[styles.infoChip, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
