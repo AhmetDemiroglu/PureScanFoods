@@ -40,12 +40,12 @@ export default function TabsLayout() {
         }}
       />
 
-      {/* 2. SOL-ORTA: Listeler */}
+      {/* 2. SOL-ORTA: Guru */}
       <Tabs.Screen
-        name="lists"
+        name="guru"
         options={{
-          title: t("navigation.lists"),
-          tabBarIcon: ({ color }) => <Ionicons name="list-outline" size={24} color={color} />,
+          title: t("navigation.guru", { defaultValue: "Guru" }),
+          tabBarIcon: ({ color }) => <Ionicons name="chatbubbles-outline" size={24} color={color} />,
         }}
       />
 
