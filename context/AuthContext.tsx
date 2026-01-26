@@ -71,6 +71,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [usageStats, setUsageStats] = useState<UsageStats>({
         scanCount: 0,
         scanLimit: 3,
+        aiChatCount: 0,
+        aiChatLimit: 5,
         weekStartDate: new Date().toISOString(),
     });
 
@@ -140,14 +142,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // 4. LİMİT HESAPLAMA MOTORU
     useEffect(() => {
-        const deviceData = rawDeviceStats || { scanCount: 0 };
-        const deviceLimit = 3;
+        const deviceData = rawDeviceStats || { scanCount: 0, aiChatCount: 0 };
+        const deviceScanLimit = 3;
+        const deviceChatLimit = 5;
+
+        // Ortak weekStartDate hesaplama helper'ı
+        const getWeekStartDate = (source: any) => {
+            if (!source?.weekStartDate) return new Date().toISOString();
+            return source.weekStartDate.toDate
+                ? source.weekStartDate.toDate().toISOString()
+                : new Date().toISOString();
+        };
 
         if (!user || !rawUserProfile) {
             setUsageStats({
                 scanCount: deviceData.scanCount || 0,
-                scanLimit: deviceLimit,
-                weekStartDate: deviceData.weekStartDate ? (deviceData.weekStartDate.toDate ? deviceData.weekStartDate.toDate().toISOString() : new Date().toISOString()) : new Date().toISOString()
+                scanLimit: deviceScanLimit,
+                aiChatCount: deviceData.aiChatCount || 0,
+                aiChatLimit: deviceChatLimit,
+                weekStartDate: getWeekStartDate(deviceData)
             });
             return;
         }
@@ -159,34 +172,65 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setUsageStats({
                 scanCount: rawUserStats?.scanCount || 0,
                 scanLimit: 9999,
+                aiChatCount: rawUserStats?.aiChatCount || 0,
+                aiChatLimit: 9999,
                 weekStartDate: new Date().toISOString()
             });
             return;
         }
 
-        // STANDART KULLANICI KONTROLÜ
-        const userLimit = 5;
-        const userCount = rawUserStats?.scanCount || 0;
-        const deviceCount = deviceData.scanCount || 0;
+        // STANDART KULLANICI KONTROLÜ - SCAN
+        const userScanLimit = 5;
+        const userScanCount = rawUserStats?.scanCount || 0;
+        const deviceScanCount = deviceData.scanCount || 0;
 
-        const deviceRemaining = deviceLimit - deviceCount;
-        const userRemaining = userLimit - userCount;
+        const deviceScanRemaining = deviceScanLimit - deviceScanCount;
+        const userScanRemaining = userScanLimit - userScanCount;
 
-        if (deviceRemaining < userRemaining) {
-            console.log("🔒 Limiting by DEVICE");
-            setUsageStats({
-                scanCount: deviceCount,
-                scanLimit: deviceLimit,
-                weekStartDate: deviceData.weekStartDate ? (deviceData.weekStartDate.toDate ? deviceData.weekStartDate.toDate().toISOString() : new Date().toISOString()) : new Date().toISOString()
-            });
+        // STANDART KULLANICI KONTROLÜ - AI CHAT
+        const userChatLimit = 5;
+        const userChatCount = rawUserStats?.aiChatCount || 0;
+        const deviceChatCount = deviceData.aiChatCount || 0;
+
+        const deviceChatRemaining = deviceChatLimit - deviceChatCount;
+        const userChatRemaining = userChatLimit - userChatCount;
+
+        // Scan için hangisi daha kısıtlayıcı?
+        let finalScanCount: number;
+        let finalScanLimit: number;
+        if (deviceScanRemaining < userScanRemaining) {
+            console.log("🔒 Scan: Limiting by DEVICE");
+            finalScanCount = deviceScanCount;
+            finalScanLimit = deviceScanLimit;
         } else {
-            console.log("🔒 Limiting by USER");
-            setUsageStats({
-                scanCount: userCount,
-                scanLimit: userLimit,
-                weekStartDate: rawUserStats?.weekStartDate ? (rawUserStats.weekStartDate.toDate ? rawUserStats.weekStartDate.toDate().toISOString() : new Date().toISOString()) : new Date().toISOString()
-            });
+            console.log("🔒 Scan: Limiting by USER");
+            finalScanCount = userScanCount;
+            finalScanLimit = userScanLimit;
         }
+
+        // Chat için hangisi daha kısıtlayıcı?
+        let finalChatCount: number;
+        let finalChatLimit: number;
+        if (deviceChatRemaining < userChatRemaining) {
+            console.log("🔒 Chat: Limiting by DEVICE");
+            finalChatCount = deviceChatCount;
+            finalChatLimit = deviceChatLimit;
+        } else {
+            console.log("🔒 Chat: Limiting by USER");
+            finalChatCount = userChatCount;
+            finalChatLimit = userChatLimit;
+        }
+
+        // weekStartDate: Scan veya Chat'ten hangisi varsa onu al
+        const weekStart = getWeekStartDate(rawUserStats) || getWeekStartDate(deviceData);
+
+        setUsageStats({
+            scanCount: finalScanCount,
+            scanLimit: finalScanLimit,
+            aiChatCount: finalChatCount,
+            aiChatLimit: finalChatLimit,
+            weekStartDate: weekStart
+        });
 
     }, [rawDeviceStats, rawUserProfile, rawUserStats, user]);
 

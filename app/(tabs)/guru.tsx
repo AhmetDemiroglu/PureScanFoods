@@ -28,6 +28,8 @@ import { GuruOnboarding } from "../../components/guru/GuruOnboarding";
 import { TypingIndicator } from "../../components/guru/TypingIndicator";
 import { ChatInput } from "../../components/guru/ChatInput";
 import { ScanSelector } from "../../components/guru/ScanSelector";
+import LimitWarningModal from "../../components/ui/LimitWarningModal";
+
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -41,6 +43,7 @@ export default function GuruScreen() {
     const [loadingScans, setLoadingScans] = useState(false);
 
     // --- CONTEXT ---
+    const { usageStats, userProfile } = useAuth();
     const guru = useGuru() || {};
     const {
         messages = [],
@@ -55,6 +58,7 @@ export default function GuruScreen() {
 
     // --- STATE ---
     const [inputText, setInputText] = useState("");
+    const [showLimitModal, setShowLimitModal] = useState(false);
     const [isPageLoading, setIsPageLoading] = useState(true);
     const [showOnboarding, setShowOnboarding] = useState(false);
 
@@ -120,9 +124,19 @@ export default function GuruScreen() {
 
     const handleSend = async () => {
         if (!inputText.trim() || isLoading) return;
+
+        if (!isPremium && remainingMessages <= 0) {
+            setShowLimitModal(true);
+            return;
+        }
+
         const text = inputText.trim();
         setInputText("");
-        await sendMessage(text);
+        const success = await sendMessage(text);
+
+        if (success === false && !isPremium) {
+            setShowLimitModal(true);
+        }
     };
 
     if (isPageLoading) {
@@ -153,7 +167,7 @@ export default function GuruScreen() {
                             <Text style={styles.headerTitle}>{t("guru.title")}</Text>
                             <Text style={styles.headerSubtitle}>
                                 {isPremium
-                                    ? t("guru.limits.unlimited")
+                                    ? t("guru.premium_subtitle")
                                     : t("guru.limits.free", { count: remainingMessages })}
                             </Text>
                         </View>
@@ -223,6 +237,17 @@ export default function GuruScreen() {
             <GuruOnboarding
                 visible={showOnboarding}
                 onFinish={handleOnboardingFinish}
+            />
+            <LimitWarningModal
+                visible={showLimitModal}
+                onClose={() => setShowLimitModal(false)}
+                onGoPremium={() => {
+                    setShowLimitModal(false);
+                    router.push("/premium");
+                }}
+                stats={usageStats}
+                user={userProfile}
+                limitType="weekly"
             />
         </View>
     );

@@ -5,6 +5,7 @@ import { useAuth } from "./AuthContext";
 import { useUser } from "./UserContext";
 import { useTranslation } from "react-i18next";
 import { sendGuruMessage } from "../lib/guru";
+import { incrementAiChatCount } from "../lib/firestore";
 
 export interface GuruMessage {
     id: string;
@@ -26,8 +27,8 @@ export interface ActiveProduct {
 interface GuruContextType {
     messages: GuruMessage[];
     isPremium: boolean;
-    weeklyUsed: number;
-    weeklyLimit: number;
+    aiChatCount: number;
+    aiChatLimit: number;
     isLoading: boolean;
     activeProduct: ActiveProduct | null;
     userName: string;
@@ -37,28 +38,30 @@ interface GuruContextType {
         diet?: string | null;
         allergens?: string[];
     }>;
-    sendMessage: (text: string) => Promise<void>;
+    sendMessage: (text: string) => Promise<boolean | undefined>;
     clearHistory: () => void;
     setActiveProduct: (product: ActiveProduct | null) => void;
     remainingMessages: number;
 }
 
-const GURU_WEEKLY_FREE_LIMIT = 5;
 const STORAGE_KEY = "@purescan_guru_messages";
 
 const GuruContext = createContext<GuruContextType>({} as GuruContextType);
 
 export const GuruProvider = ({ children }: { children: React.ReactNode }) => {
-    const { userProfile, isPremium: authIsPremium, usageStats } = useAuth();
+    const { user, userProfile, isPremium: authIsPremium, usageStats, deviceId } = useAuth();
     const { familyMembers, activeProfileId, getActiveProfile } = useUser();
 
     const [messages, setMessages] = useState<GuruMessage[]>([]);
-    const [weeklyUsed, setWeeklyUsed] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [activeProduct, setActiveProductState] = useState<ActiveProduct | null>(null);
 
     const { i18n } = useTranslation();
     const isTr = i18n.language === "tr";
+
+    const aiChatCount = usageStats?.aiChatCount || 0;
+    const aiChatLimit = usageStats?.aiChatLimit || 5;
+    const remainingMessages = Math.max(0, aiChatLimit - aiChatCount);
 
     useEffect(() => {
         const load = async () => {
@@ -67,7 +70,6 @@ export const GuruProvider = ({ children }: { children: React.ReactNode }) => {
                 if (stored) {
                     const data = JSON.parse(stored);
                     setMessages(data.messages || []);
-                    setWeeklyUsed(data.weeklyUsed || 0);
                 }
             } catch (e) {
                 console.error("Guru storage load error:", e);
@@ -76,11 +78,10 @@ export const GuruProvider = ({ children }: { children: React.ReactNode }) => {
         load();
     }, []);
 
-    const saveToStorage = async (newMessages: GuruMessage[], used: number) => {
+    const saveToStorage = async (newMessages: GuruMessage[]) => {
         try {
             await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({
                 messages: newMessages,
-                weeklyUsed: used,
                 lastUpdate: new Date().toISOString()
             }));
         } catch (e) {
@@ -95,14 +96,9 @@ export const GuruProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         const userIsPremium = authIsPremium ?? false;
-        const limit = GURU_WEEKLY_FREE_LIMIT;
 
-        if (!userIsPremium && weeklyUsed >= limit) {
-            Alert.alert(
-                isTr ? "Limit Doldu" : "Limit Reached",
-                isTr ? "Bu haftalık ücretsiz mesaj hakkınızı doldurdunuz." : "You've used all your free messages this week."
-            );
-            return;
+        if (!userIsPremium && remainingMessages <= 0) {
+            return false;
         }
 
         setIsLoading(true);
@@ -117,7 +113,6 @@ export const GuruProvider = ({ children }: { children: React.ReactNode }) => {
         setMessages(prev => [...prev, userMessage]);
 
         try {
-            // Context hazırla
             const guruContext = {
                 userProfile: {
                     allergens: getActiveProfile()?.allergens || [],
@@ -127,7 +122,7 @@ export const GuruProvider = ({ children }: { children: React.ReactNode }) => {
                 userName,
                 familyMembers: memberList,
                 activeProduct: activeProduct,
-                recentScans: [] // TODO: Firestore'dan recent scans çekilebilir
+                recentScans: []
             };
 
             const response = await sendGuruMessage(
@@ -145,8 +140,14 @@ export const GuruProvider = ({ children }: { children: React.ReactNode }) => {
             };
 
             setMessages(prev => [...prev, assistantMessage]);
-            setWeeklyUsed(prev => prev + 1);
-            saveToStorage([...messages, userMessage, assistantMessage], weeklyUsed + 1);
+
+            if (user?.uid) {
+                await incrementAiChatCount(user.uid, deviceId);
+            }
+
+            saveToStorage([...messages, userMessage, assistantMessage]);
+
+            return true;
 
         } catch (error) {
             console.error("Guru Error:", error);
@@ -157,15 +158,14 @@ export const GuruProvider = ({ children }: { children: React.ReactNode }) => {
                 timestamp: Date.now()
             };
             setMessages(prev => [...prev, errorMsg]);
+            return false;
         } finally {
             setIsLoading(false);
         }
     };
-
     const clearHistory = () => {
         setMessages([]);
-        setWeeklyUsed(0);
-        saveToStorage([], 0);
+        saveToStorage([]);
     };
 
     const setActiveProduct = (product: ActiveProduct | null) => {
@@ -187,8 +187,8 @@ export const GuruProvider = ({ children }: { children: React.ReactNode }) => {
         <GuruContext.Provider value={{
             messages: messages || [],
             isPremium: authIsPremium ?? false,
-            weeklyUsed,
-            weeklyLimit: GURU_WEEKLY_FREE_LIMIT,
+            aiChatCount,
+            aiChatLimit,
             isLoading,
             activeProduct,
             userName,
@@ -196,7 +196,7 @@ export const GuruProvider = ({ children }: { children: React.ReactNode }) => {
             sendMessage,
             clearHistory,
             setActiveProduct,
-            remainingMessages: GURU_WEEKLY_FREE_LIMIT - weeklyUsed
+            remainingMessages
         }}>
             {children}
         </GuruContext.Provider>

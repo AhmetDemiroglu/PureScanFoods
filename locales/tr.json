@@ -46,6 +46,7 @@
             "free": "{{count}} mesaj kaldı",
             "unlimited": "Sınırsız Mesaj"
         },
+        "premium_subtitle": "Premium Asistan",
         "recentScans": "Son Taramalar",
         "activeProduct": "Aktif Ürün"
     },

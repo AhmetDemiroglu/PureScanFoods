@@ -46,6 +46,7 @@
             "free": "{{count}} messages left",
             "unlimited": "Unlimited Messages"
         },
+        "premium_subtitle": "Premium Assistant",
         "recentScans": "Recent Scans",
         "activeProduct": "Active Product"
     },

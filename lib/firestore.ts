@@ -1,20 +1,5 @@
 import { db } from "./firebase";
-import {
-    doc,
-    setDoc,
-    getDoc,
-    updateDoc,
-    serverTimestamp,
-    increment,
-    collection,
-    addDoc,
-    getDocs,
-    query,
-    orderBy,
-    limit,
-    deleteDoc,
-    startAfter,
-} from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp, increment, collection, addDoc, getDocs, query, orderBy, limit, deleteDoc, startAfter } from "firebase/firestore";
 
 export interface UserProfile {
     uid: string;
@@ -32,6 +17,8 @@ export interface UserProfile {
 export interface UsageStats {
     scanCount: number;
     scanLimit: number;
+    aiChatCount: number;
+    aiChatLimit: number;
     weekStartDate: string;
 }
 
@@ -121,9 +108,17 @@ export const updateUserPreferences = async (uid: string, updates: Partial<UserPr
     }
 };
 
-// --- 4. CİHAZ LİMİT KONTROLÜ (MİSAFİRLER İÇİN KRİTİK) ---
+// --- 4. CİHAZ LİMİT KONTROLÜ (MİSAFİRLER İÇİN) ---
 export const checkDeviceLimit = async (deviceId: string): Promise<UsageStats> => {
-    if (!deviceId) return { scanCount: 0, scanLimit: 3, weekStartDate: new Date().toISOString() };
+    const defaultStats: UsageStats = {
+        scanCount: 0,
+        scanLimit: 3,
+        aiChatCount: 0,
+        aiChatLimit: 5,
+        weekStartDate: new Date().toISOString(),
+    };
+
+    if (!deviceId) return defaultStats;
 
     const deviceRef = doc(db, "device_limits", deviceId);
     const deviceSnap = await getDoc(deviceRef);
@@ -133,10 +128,11 @@ export const checkDeviceLimit = async (deviceId: string): Promise<UsageStats> =>
     if (!deviceSnap.exists()) {
         await setDoc(deviceRef, {
             scanCount: 0,
+            aiChatCount: 0,
             weekStartDate: serverTimestamp(),
             firstSeenAt: serverTimestamp(),
         });
-        return { scanCount: 0, scanLimit: 3, weekStartDate: now.toISOString() };
+        return defaultStats;
     }
 
     const data = deviceSnap.data();
@@ -146,14 +142,17 @@ export const checkDeviceLimit = async (deviceId: string): Promise<UsageStats> =>
     if (daysDiff >= 7) {
         await updateDoc(deviceRef, {
             scanCount: 0,
+            aiChatCount: 0,
             weekStartDate: serverTimestamp(),
         });
-        return { scanCount: 0, scanLimit: 3, weekStartDate: now.toISOString() };
+        return defaultStats;
     }
 
     return {
         scanCount: data.scanCount || 0,
         scanLimit: 3,
+        aiChatCount: data.aiChatCount || 0,
+        aiChatLimit: 5,
         weekStartDate: formatDateSafe(weekStart),
     };
 };
@@ -217,6 +216,48 @@ export const incrementScanCount = async (uid: string, deviceId: string | null) =
     } catch (error) {
         // Hata olsa bile uygulamayı durdurma, sadece logla.
         console.error("⚠️ Error incrementing scan (but continuing):", error);
+    }
+};
+
+// --- 5b. AI CHAT HAKKI DÜŞME ---
+export const incrementAiChatCount = async (uid: string, deviceId: string | null) => {
+    try {
+        const promises = [];
+
+        // 1. Kullanıcı İstatistiği
+        if (uid) {
+            const statsRef = doc(db, "users", uid, "stats", "weekly");
+            promises.push(
+                setDoc(
+                    statsRef,
+                    {
+                        aiChatCount: increment(1),
+                        lastChatAt: serverTimestamp(),
+                    },
+                    { merge: true },
+                ),
+            );
+        }
+
+        // 2. Cihaz İstatistiği
+        if (deviceId) {
+            const deviceRef = doc(db, "device_limits", deviceId);
+            promises.push(
+                setDoc(
+                    deviceRef,
+                    {
+                        aiChatCount: increment(1),
+                        lastChatAt: serverTimestamp(),
+                    },
+                    { merge: true },
+                ),
+            );
+        }
+
+        await Promise.all(promises);
+        console.log("✅ AI Chat sayacı başarıyla artırıldı (incrementAiChatCount)");
+    } catch (error) {
+        console.error("⚠️ Error incrementing AI chat (but continuing):", error);
     }
 };
 

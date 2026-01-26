@@ -87,15 +87,15 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium, stats
     }));
 
     const computedData = useMemo(() => {
-        const s = stats || { scanCount: 0, aiChatCount: 0 };
+        const s = stats || { scanCount: 0, scanLimit: 3, aiChatCount: 0, aiChatLimit: 5 };
         const u = user || { familyMembers: [] };
 
         const rawFamilyCount = u.familyMembers?.length || 0;
         const adjustedFamilyCount = rawFamilyCount > 0 ? rawFamilyCount - 1 : 0;
 
         return {
-            scan: { current: s.scanCount || 0, max: 3 },
-            ai: { current: s.aiChatCount || 0, max: 5 },
+            scan: { current: s.scanCount || 0, max: s.scanLimit || 3 },
+            ai: { current: s.aiChatCount || 0, max: s.aiChatLimit || 5 },
             family: { current: adjustedFamilyCount, max: 1 }
         };
     }, [stats, user]);
@@ -161,6 +161,7 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium, stats
                                         label={t('limits.feat_chat', 'AI Asistan')}
                                         status={`${computedData.ai.current}/${computedData.ai.max}`}
                                         isLimitReached={computedData.ai.current >= computedData.ai.max}
+                                        isAdAvailable={true}
                                         delay={200}
                                     />
                                 </>
