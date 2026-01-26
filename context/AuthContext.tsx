@@ -16,7 +16,7 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import * as Crypto from "expo-crypto";
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../lib/firebase";
 
 interface AuthContextType {
@@ -80,6 +80,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [rawUserProfile, setRawUserProfile] = useState<UserProfile | null>(null);
     const [rawUserStats, setRawUserStats] = useState<any>(null);
 
+    const isWeekExpired = (weekStartDate: any): boolean => {
+        if (!weekStartDate) return true;
+        const startDate = weekStartDate.toDate ? weekStartDate.toDate() : new Date(weekStartDate);
+        const now = new Date();
+        const daysDiff = (now.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
+        return daysDiff >= 7;
+    };
+
+    const resetDeviceLimits = async (devId: string) => {
+        try {
+            const deviceRef = doc(db, "device_limits", devId);
+            await updateDoc(deviceRef, {
+                scanCount: 0,
+                aiChatCount: 0,
+                weekStartDate: serverTimestamp()
+            });
+            console.log("✅ Device limitleri sıfırlandı (hafta doldu)");
+        } catch (error) {
+            console.error("Device reset error:", error);
+        }
+    };
+
+    const resetUserLimits = async (uid: string) => {
+        try {
+            const statsRef = doc(db, "users", uid, "stats", "weekly");
+            await updateDoc(statsRef, {
+                scanCount: 0,
+                aiChatCount: 0,
+                weekStartDate: serverTimestamp()
+            });
+            console.log("✅ User limitleri sıfırlandı (hafta doldu)");
+        } catch (error) {
+            console.error("User reset error:", error);
+        }
+    };
+
     useEffect(() => {
         GoogleSignin.configure({
             webClientId: "333478186372-mvrgjh408gp3jrpojqtc2kogmf3ha403.apps.googleusercontent.com",
@@ -90,11 +126,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         if (!deviceId || !user) return;
 
-        const unsubDevice = onSnapshot(doc(db, "device_limits", deviceId), (docSnap) => {
+        const unsubDevice = onSnapshot(doc(db, "device_limits", deviceId), async (docSnap) => {
             if (docSnap.exists()) {
-                setRawDeviceStats(docSnap.data());
+                const data = docSnap.data();
+
+                if (isWeekExpired(data.weekStartDate)) {
+                    await resetDeviceLimits(deviceId);
+                    return;
+                }
+
+                setRawDeviceStats(data);
             } else {
-                setRawDeviceStats({ scanCount: 0, weekStartDate: null });
+                setRawDeviceStats({ scanCount: 0, aiChatCount: 0, weekStartDate: null });
             }
         }, (err) => console.error("Device Listener Error:", err));
 
@@ -129,11 +172,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             return;
         }
 
-        const unsubStats = onSnapshot(doc(db, "users", user.uid, "stats", "weekly"), (docSnap) => {
+        const unsubStats = onSnapshot(doc(db, "users", user.uid, "stats", "weekly"), async (docSnap) => {
             if (docSnap.exists()) {
-                setRawUserStats(docSnap.data());
+                const data = docSnap.data();
+
+                // Hafta geçtiyse sıfırla
+                if (isWeekExpired(data.weekStartDate)) {
+                    await resetUserLimits(user.uid);
+                    // Reset sonrası listener tekrar tetiklenecek, return et
+                    return;
+                }
+
+                setRawUserStats(data);
             } else {
-                setRawUserStats({ scanCount: 0 });
+                setRawUserStats({ scanCount: 0, aiChatCount: 0 });
             }
         }, (err) => console.error("User Stats Listener Error:", err));
 

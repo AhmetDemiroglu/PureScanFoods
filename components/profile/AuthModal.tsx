@@ -6,6 +6,7 @@ import {
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Colors } from "../../constants/colors";
 import { useAuth } from "../../context/AuthContext";
+import { useUser } from "../../context/UserContext";
 import { useTranslation } from "react-i18next";
 
 interface AuthModalProps {
@@ -39,7 +40,7 @@ function Toast({ message, type, visible }: { message: string; type: "success" | 
 export default function AuthModal({ visible, onClose }: AuthModalProps) {
     const { t } = useTranslation();
     const { user, userProfile, login, register, loginWithGoogle, logout, usageStats, isPremium } = useAuth();
-
+    const { familyMembers } = useUser();
     const [isRegister, setIsRegister] = useState(false);
     const [loading, setLoading] = useState(false);
     const [email, setEmail] = useState("");
@@ -86,13 +87,18 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
 
     const isLoggedIn = user && !user.isAnonymous;
 
-    // ═══════════════════════════════════════════════════════════
     // PROFILE VIEW
-    // ═══════════════════════════════════════════════════════════
     const renderProfile = () => {
         const diet = userProfile?.dietaryPreferences?.[0];
         const allergens = (userProfile?.allergens as string[]) || [];
-        const remaining = isPremium ? "∞" : Math.max(0, usageStats.scanLimit - usageStats.scanCount);
+
+        // Limit hesaplamaları
+        const scanRemaining = isPremium ? "∞" : Math.max(0, usageStats.scanLimit - usageStats.scanCount);
+        const chatRemaining = isPremium ? "∞" : Math.max(0, usageStats.aiChatLimit - usageStats.aiChatCount);
+
+        // Aile üyesi sayısı (userProfile'dan)
+        const familyCount = Math.max(0, (familyMembers?.length || 1) - 1);
+        const familyLimit = isPremium ? "∞" : "1";
 
         return (
             <View style={styles.content}>
@@ -115,22 +121,53 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
                     </View>
                 </View>
 
-                {/* Stats Row */}
-                <View style={styles.statsRow}>
-                    <View style={styles.statItem}>
-                        <Ionicons name="scan-outline" size={20} color={Colors.primary} />
-                        <Text style={styles.statValue}>{remaining}</Text>
-                        <Text style={styles.statLabel}>{t("profile.scan_rights")}</Text>
-                    </View>
-                    <View style={styles.statDivider} />
-                    <View style={styles.statItem}>
-                        <MaterialCommunityIcons name="leaf" size={20} color="#22C55E" />
-                        <Text style={styles.statValue}>{diet ? t(`diets.${diet}` as any) : "—"}</Text>
-                        <Text style={styles.statLabel}>{t("profile.diet_plan")}</Text>
+                {/* Usage Stats - 3 Column */}
+                <View style={styles.usageSection}>
+                    <Text style={styles.usageSectionTitle}>{t("profile.weekly_usage")}</Text>
+                    <View style={styles.usageGrid}>
+                        {/* Scan */}
+                        <View style={styles.usageCard}>
+                            <View style={[styles.usageIconBox, { backgroundColor: "#FFF7ED" }]}>
+                                <Ionicons name="scan-outline" size={18} color={Colors.primary} />
+                            </View>
+                            <Text style={styles.usageValue}>{scanRemaining}</Text>
+                            <Text style={styles.usageLabel}>{t("profile.scan_rights")}</Text>
+                        </View>
+
+                        {/* AI Chat */}
+                        <View style={styles.usageCard}>
+                            <View style={[styles.usageIconBox, { backgroundColor: "#EDE9FE" }]}>
+                                <MaterialCommunityIcons name="robot-outline" size={18} color="#7C3AED" />
+                            </View>
+                            <Text style={styles.usageValue}>{chatRemaining}</Text>
+                            <Text style={styles.usageLabel}>{t("profile.chat_rights")}</Text>
+                        </View>
+
+                        {/* Family */}
+                        <View style={styles.usageCard}>
+                            <View style={[styles.usageIconBox, { backgroundColor: "#E0F2FE" }]}>
+                                <MaterialCommunityIcons name="account-group-outline" size={18} color="#0284C7" />
+                            </View>
+                            <Text style={styles.usageValue}>{familyCount}/{familyLimit}</Text>
+                            <Text style={styles.usageLabel}>{t("profile.family_slots")}</Text>
+                        </View>
                     </View>
                 </View>
 
-                {/* Allergens - Collapsible */}
+                {/* Diet Plan */}
+                {diet && (
+                    <View style={styles.dietSection}>
+                        <View style={styles.dietIconBox}>
+                            <MaterialCommunityIcons name="silverware-fork-knife" size={16} color={Colors.primary} />
+                        </View>
+                        <View style={styles.dietInfo}>
+                            <Text style={styles.dietLabel}>{t("profile.diet_plan")}</Text>
+                            <Text style={styles.dietValue}>{t(`diets.${diet}` as any)}</Text>
+                        </View>
+                    </View>
+                )}
+
+                {/* Allergens - Warm Amber Design */}
                 {allergens.length > 0 && (
                     <View style={styles.allergensSection}>
                         <Pressable
@@ -139,7 +176,7 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
                         >
                             <View style={styles.allergensHeaderLeft}>
                                 <View style={styles.allergenIconBox}>
-                                    <Ionicons name="warning" size={14} color="#EF4444" />
+                                    <Ionicons name="alert-circle-outline" size={14} color="#B45309" />
                                 </View>
                                 <Text style={styles.allergensTitle}>{t("profile.allergens_title")}</Text>
                                 <View style={styles.allergenCount}>
@@ -149,13 +186,13 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
                             <Ionicons
                                 name={showAllAllergens ? "chevron-up" : "chevron-down"}
                                 size={18}
-                                color={Colors.gray[400]}
+                                color="#92400E"
                             />
                         </Pressable>
 
                         {showAllAllergens && (
                             <View style={styles.allergensList}>
-                                {allergens.map((a, i) => (
+                                {allergens.map((a) => (
                                     <View key={a} style={styles.allergenChip}>
                                         <Text style={styles.allergenChipText}>{t(`allergens.${a}` as any)}</Text>
                                     </View>
@@ -174,9 +211,7 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
         );
     };
 
-    // ═══════════════════════════════════════════════════════════
     // AUTH VIEW
-    // ═══════════════════════════════════════════════════════════
     const renderAuth = () => (
         <View style={styles.content}>
             {/* Header */}
@@ -247,9 +282,7 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
         </View>
     );
 
-    // ═══════════════════════════════════════════════════════════
     // RENDER
-    // ═══════════════════════════════════════════════════════════
     return (
         <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose} statusBarTranslucent>
             <View style={styles.container}>
@@ -273,9 +306,7 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
     );
 }
 
-// ═══════════════════════════════════════════════════════════
 // STYLES
-// ═══════════════════════════════════════════════════════════
 const styles = StyleSheet.create({
     container: { flex: 1 },
     backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(15,23,42,0.5)" },
@@ -299,22 +330,33 @@ const styles = StyleSheet.create({
     memberText: { fontSize: 11, fontWeight: "700", color: Colors.gray[600] },
     memberTextPremium: { color: "#D97706" },
 
-    statsRow: { flexDirection: "row", backgroundColor: Colors.gray[50], borderRadius: 16, padding: 16, marginBottom: 16 },
-    statItem: { flex: 1, alignItems: "center", gap: 4 },
-    statValue: { fontSize: 16, fontWeight: "700", color: Colors.secondary },
-    statLabel: { fontSize: 11, color: Colors.gray[500] },
-    statDivider: { width: 1, backgroundColor: Colors.gray[200], marginHorizontal: 12 },
+    // Usage Section - 3 Column Grid
+    usageSection: { marginBottom: 16 },
+    usageSectionTitle: { fontSize: 11, fontWeight: "700", color: Colors.gray[400], marginBottom: 10, letterSpacing: 0.5 },
+    usageGrid: { flexDirection: "row", gap: 10 },
+    usageCard: { flex: 1, backgroundColor: "#FFF", borderRadius: 14, padding: 14, alignItems: "center", borderWidth: 1, borderColor: Colors.gray[200], gap: 8 },
+    usageIconBox: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+    usageValue: { fontSize: 20, fontWeight: "800", color: Colors.secondary },
+    usageLabel: { fontSize: 10, color: Colors.gray[500], textAlign: "center" },
 
-    allergensSection: { backgroundColor: "#FFF9F9", borderRadius: 14, borderWidth: 1, borderColor: "#FEE2E2", marginBottom: 16, overflow: "hidden" },
+    // Diet Section
+    dietSection: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFBEB", borderRadius: 12, padding: 12, marginBottom: 12, gap: 12, borderWidth: 1, borderColor: "#FEF3C7" },
+    dietIconBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center" },
+    dietInfo: { flex: 1 },
+    dietLabel: { fontSize: 11, color: "#92400E", marginBottom: 2 },
+    dietValue: { fontSize: 14, fontWeight: "700", color: "#B45309" },
+
+    // Allergens - Warm Amber Design
+    allergensSection: { backgroundColor: "#FFFBEB", borderRadius: 14, borderWidth: 1, borderColor: "#FDE68A", marginBottom: 16, overflow: "hidden" },
     allergensHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, paddingVertical: 12 },
     allergensHeaderLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
-    allergenIconBox: { width: 28, height: 28, borderRadius: 8, backgroundColor: "#FEE2E2", alignItems: "center", justifyContent: "center" },
-    allergensTitle: { fontSize: 14, fontWeight: "600", color: "#991B1B" },
-    allergenCount: { backgroundColor: "#FECACA", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
-    allergenCountText: { fontSize: 12, fontWeight: "700", color: "#DC2626" },
+    allergenIconBox: { width: 28, height: 28, borderRadius: 8, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center" },
+    allergensTitle: { fontSize: 14, fontWeight: "600", color: "#92400E" },
+    allergenCount: { backgroundColor: "#FDE68A", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
+    allergenCountText: { fontSize: 12, fontWeight: "700", color: "#B45309" },
     allergensList: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 14, paddingBottom: 14 },
-    allergenChip: { backgroundColor: "#FEE2E2", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-    allergenChipText: { fontSize: 13, fontWeight: "500", color: "#B91C1C" },
+    allergenChip: { backgroundColor: "#FEF3C7", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+    allergenChipText: { fontSize: 13, fontWeight: "600", color: "#92400E" },
 
     logoutBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 14, borderRadius: 14, borderWidth: 1.5, borderColor: "#FECACA", backgroundColor: "#FEF2F2" },
     logoutText: { fontSize: 15, fontWeight: "600", color: "#EF4444" },
