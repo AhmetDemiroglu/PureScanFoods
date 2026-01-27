@@ -382,7 +382,8 @@
         "saved_to_history": "Geçmişe Kaydedildi",
         "cancel": "Vazgeç",
         "ok": "Tamam",
-        "or": "VEYA"
+        "or": "VEYA",
+        "tryAgain": "Tekrar Deneyin"
     },
     "nutrition": {
         "subtitle": "Kişisel sağlık tercihlerinizi yönetin",
@@ -437,7 +438,9 @@
         "textTooShort": "Lütfen analiz için yeterli içerik girin.",
         "alignBarcode": "Barkodu hizalayın...",
         "notFoundTitle": "Ürün Bulunamadı",
-        "notFoundDesc": "Bu ürün veritabanımızda yok ama üzülme! İçeriği kamerayla tarayarak anında analiz yapabilirsin."
+        "notFoundDesc": "Bu ürün veritabanımızda yok ama üzülme! İçeriği kamerayla tarayarak anında analiz yapabilirsin.",
+        "invalidScanTitle": "Analiz Yapılamadı",
+        "invalidScanDesc": "Görüntüde okunabilir bir gıda içeriği tespit edilemedi veya bu bir gıda ürünü değil."
     },
     "auth": {
         "welcome_back": "Tekrar Hoş Geldin!",

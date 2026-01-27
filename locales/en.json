@@ -382,7 +382,8 @@
         "saved_to_history": "Saved to history",
         "cancel": "Cancel",
         "ok": "OK",
-        "or": "OR"
+        "or": "OR",
+        "tryAgain": "Try Again"
     },
     "nutrition": {
         "subtitle": "Manage your personal health preferences",
@@ -437,7 +438,9 @@
         "textTooShort": "Please enter sufficient content for analysis.",
         "alignBarcode": "Align barcode...",
         "notFoundTitle": "Product Not Found",
-        "notFoundDesc": "This product is not in our database, but don't worry! You can scan the ingredients directly with the camera."
+        "notFoundDesc": "This product is not in our database, but don't worry! You can scan the ingredients directly with the camera.",
+        "invalidScanTitle": "Analysis Failed",
+        "invalidScanDesc": "No readable food ingredients detected or this is not a food product."
     },
     "auth": {
         "welcome_back": "Welcome Back!",

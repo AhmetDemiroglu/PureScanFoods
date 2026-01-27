@@ -1,7 +1,4 @@
-export function generateAnalysisPrompt(
-    lang: string,
-    userProfile: { allergens: string[]; dietaryPreferences: string[]; lifeStage?: string | null } | null
-): string {
+export function generateAnalysisPrompt(lang: string, userProfile: { allergens: string[]; dietaryPreferences: string[]; lifeStage?: string | null } | null): string {
     const targetLang = lang === "tr" ? "TURKISH" : "ENGLISH";
 
     const diet = userProfile?.dietaryPreferences?.join(", ") || "None";
@@ -22,6 +19,14 @@ LIFE STAGE CONTEXT:
 ${getLifeStageContext(lifeStage)}
 
 TASK: 
+0. CRITICAL VALIDATION (FIRST STEP):
+   - Check if the input is a valid food product and if the ingredient list is LEGIBLE.
+   - If the text/image is NOT food, OR if ingredients are blurry/unreadable/missing:
+     -> Set "isFood": false
+     -> Set "ingredients": [] (EMPTY ARRAY)
+     -> Set "scores": safety value 0, compatibility value 0
+     -> STOP ANALYSIS IMMEDIATELY. DO NOT HALLUCINATE OR GUESS DATA.
+
 1. READ EVERY SINGLE WORD in the ingredient list. DO NOT SUMMARIZE. DO NOT SKIP minor ingredients.
 2. Analyze product and calculate scores using STRICT MATHEMATICAL RULES below.
 
@@ -158,11 +163,7 @@ BE STRICT. Unhealthy ultra-processed foods should score 5-30, not 50+.
 `.trim();
 }
 
-export function generateBarcodeDataPrompt(
-    lang: string,
-    userProfile: { allergens: string[]; dietaryPreferences: string[] } | null,
-    offData: any
-): string {
+export function generateBarcodeDataPrompt(lang: string, userProfile: { allergens: string[]; dietaryPreferences: string[] } | null, offData: any): string {
     const basePrompt = generateAnalysisPrompt(lang, userProfile);
 
     return `

@@ -21,6 +21,7 @@ import { useUser } from "../../context/UserContext";
 import { useLocalSearchParams } from "expo-router";
 import HistorySidebar from '../history';
 import LimitWarningModal from "../../components/ui/LimitWarningModal";
+import { ScanFailGraphic } from "../../components/ui/ScanFailGraphic";
 
 type ScanTab = "camera" | "barcode" | "text";
 
@@ -50,7 +51,7 @@ export default function ScanScreen() {
   const [isHistoryOpen, setHistoryOpen] = useState(false);
   const [showNotFoundModal, setShowNotFoundModal] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
-
+  const [showInvalidScanModal, setShowInvalidScanModal] = useState(false);
   const params = useLocalSearchParams();
 
   const { getActiveData } = useUser();
@@ -191,6 +192,12 @@ export default function ScanScreen() {
 
       const cleanJson = rawText.substring(startIndex, endIndex + 1);
       const parsedData = JSON.parse(cleanJson);
+
+      if (parsedData.product?.isFood === false || !parsedData.details?.ingredients || parsedData.details.ingredients.length === 0) {
+        setIsScanning(false);
+        setShowInvalidScanModal(true);
+        return;
+      }
 
       if (offData) {
         if (parsedData.product) {
@@ -738,6 +745,57 @@ export default function ScanScreen() {
           familyMembers: familyMembers
         }}
       />
+      <Modal
+        visible={showInvalidScanModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowInvalidScanModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { paddingTop: 32 }]}>
+
+            {/* 1. Yeni Animasyonlu Grafik */}
+            <ScanFailGraphic />
+
+            {/* 2. Başlık ve Açıklama */}
+            <Text style={[styles.modalTitle, { marginTop: 16, color: Colors.secondary }]}>
+              {t("scan.invalidScanTitle", { defaultValue: "Hmm, Gıda Bulunamadı" })}
+            </Text>
+
+            <Text style={[styles.modalText, { marginBottom: 32, maxWidth: '85%' }]}>
+              {t("scan.invalidScanDesc", { defaultValue: "Görüntüde okunabilir bir gıda içeriği tespit edilemedi. Işık açısını değiştirip tekrar deneyebilirsin." })}
+            </Text>
+
+            {/* 3. Butonlar */}
+            <View style={styles.modalButtons}>
+              <Pressable
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={() => setShowInvalidScanModal(false)}
+              >
+                <Text style={styles.modalButtonTextSecondary}>
+                  {t("common.cancel", { defaultValue: "Vazgeç" })}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={[styles.modalButton, styles.modalButtonPrimary]}
+                onPress={() => {
+                  setShowInvalidScanModal(false);
+                  if (activeTab === "camera") {
+                    setTimeout(() => setShowCamera(true), 300);
+                  }
+                }}
+              >
+                <Ionicons name="refresh" size={18} color={Colors.white} style={{ marginLeft: 4 }} />
+                <Text style={styles.modalButtonTextPrimary}>
+                  {t("common.tryAgain", { defaultValue: "Tekrar Dene" })}
+                </Text>
+              </Pressable>
+            </View>
+
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView >
   );
 }
@@ -1157,14 +1215,30 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: Colors.white,
     borderRadius: 24,
-    padding: 24,
-    width: '100%',
+    padding: 18,
+    width: '90%',
+    maxWidth: 400,
     alignItems: 'center',
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
     elevation: 10,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: Colors.secondary,
+    marginBottom: 8,
+    textAlign: 'center',
+    letterSpacing: 0.5,
+  },
+  modalText: {
+    fontSize: 15,
+    color: Colors.gray[500],
+    textAlign: 'center',
+    lineHeight: 22,
+    fontWeight: '500',
   },
   modalIconContainer: {
     width: 80,
@@ -1174,20 +1248,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: Colors.secondary,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  modalText: {
-    fontSize: 15,
-    color: Colors.gray[500],
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 24,
   },
   modalButtons: {
     flexDirection: 'row',
