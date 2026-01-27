@@ -14,6 +14,8 @@ import { TempStore } from '../lib/tempStore';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { BrandLoader } from '../components/ui/BrandLoader';
+
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SIDEBAR_WIDTH = SCREEN_WIDTH * 0.80;

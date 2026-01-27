@@ -29,6 +29,7 @@ import { TypingIndicator } from "../../components/guru/TypingIndicator";
 import { ChatInput } from "../../components/guru/ChatInput";
 import { ScanSelector } from "../../components/guru/ScanSelector";
 import LimitWarningModal from "../../components/ui/LimitWarningModal";
+import { BrandLoader } from "../../components/ui/BrandLoader";
 
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -140,11 +141,7 @@ export default function GuruScreen() {
     };
 
     if (isPageLoading) {
-        return (
-            <View style={{ flex: 1, backgroundColor: Colors.primary, justifyContent: "center", alignItems: "center" }}>
-                <ActivityIndicator size="large" color={Colors.white} />
-            </View>
-        );
+        return <BrandLoader mode="fullscreen" />;
     }
 
     return (

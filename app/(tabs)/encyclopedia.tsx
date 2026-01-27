@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
     View,
     Text,
@@ -18,6 +18,8 @@ import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "../../constants/colors";
+import { BrandLoader } from "../../components/ui/BrandLoader";
+
 import {
     NOVA_GROUPS,
     getAllAdditives,
@@ -58,6 +60,7 @@ export default function AdditivesLibraryScreen() {
     const { t, i18n } = useTranslation();
     const router = useRouter();
     const isTr = i18n.language === "tr";
+    const [isLoading, setIsLoading] = useState(true);
 
     const [activeTab, setActiveTab] = useState<TabType>("additives");
     const [searchQuery, setSearchQuery] = useState("");
@@ -77,7 +80,6 @@ export default function AdditivesLibraryScreen() {
             results = getAdditivesByRisk(riskFilter);
         }
 
-        // Sort: HAZARDOUS first, then CAUTION, then SAFE
         const riskOrder: Record<AdditiveRisk, number> = { HAZARDOUS: 0, CAUTION: 1, SAFE: 2 };
         return results.sort((a, b) => riskOrder[a.risk] - riskOrder[b.risk]);
     }, [searchQuery, riskFilter]);
@@ -99,6 +101,10 @@ export default function AdditivesLibraryScreen() {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setExpandedNova(expandedNova === group ? null : group);
     };
+
+    useEffect(() => {
+        setTimeout(() => setIsLoading(false), 100);
+    }, []);
 
     const renderAdditiveCard = (additive: AdditiveInfo) => {
         const isExpanded = expandedAdditive === additive.code;
@@ -286,6 +292,10 @@ export default function AdditivesLibraryScreen() {
             </View>
         );
     };
+
+    if (isLoading) {
+        return <BrandLoader mode="fullscreen" />;
+    }
 
     return (
         <View style={styles.container}>
