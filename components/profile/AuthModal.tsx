@@ -8,6 +8,9 @@ import { Colors } from "../../constants/colors";
 import { useAuth } from "../../context/AuthContext";
 import { useUser } from "../../context/UserContext";
 import { useTranslation } from "react-i18next";
+import { sendPasswordResetEmail } from "firebase/auth";
+import { auth } from "../../lib/firebase";
+import PremiumCompareModal from "../ui/PremiumCompareModal";
 
 interface AuthModalProps {
     visible: boolean;
@@ -49,6 +52,17 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
         message: "", type: "success", visible: false
     });
     const [showAllAllergens, setShowAllAllergens] = useState(false);
+    const [showPremiumModal, setShowPremiumModal] = useState(false);
+    const [profileUnlocked, setProfileUnlocked] = useState(false);
+
+    const isLoggedIn = user && !user.isAnonymous;
+
+    // Premium modal kontrolü - giriş yapan kullanıcı premium değilse göster
+    useEffect(() => {
+        if (visible && isLoggedIn && !isPremium && !profileUnlocked) {
+            setShowPremiumModal(true);
+        }
+    }, [visible, isLoggedIn, isPremium, profileUnlocked]);
 
     useEffect(() => {
         if (!visible) {
@@ -57,6 +71,8 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
             setPassword("");
             setShowAllAllergens(false);
             setToast(prev => ({ ...prev, visible: false }));
+            setShowPremiumModal(false);
+            setProfileUnlocked(false);
         }
     }, [visible]);
 
@@ -81,24 +97,49 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
             .finally(() => setLoading(false));
     };
 
+    const handleForgotPassword = () => {
+        if (!email) {
+            showToast(t("auth.enter_email_first"), "error");
+            return;
+        }
+        setLoading(true);
+        sendPasswordResetEmail(auth, email)
+            .then(() => {
+                showToast(t("auth.reset_email_sent"), "success");
+            })
+            .catch((err: any) => {
+                const errorMsg = err.code === "auth/user-not-found"
+                    ? t("auth.user_not_found")
+                    : t("auth.reset_email_error");
+                showToast(errorMsg, "error");
+            })
+            .finally(() => setLoading(false));
+    };
+
     const handleLogout = () => {
         logout().then(() => onClose());
     };
 
-    const isLoggedIn = user && !user.isAnonymous;
+    const handlePremiumModalClose = () => {
+        setShowPremiumModal(false);
+        setProfileUnlocked(true);
+    };
+
+    // Haklar hesaplama
+    const scanRemaining = isPremium ? "∞" : Math.max(0, usageStats.scanLimit - usageStats.scanCount);
+    const chatRemaining = isPremium ? "∞" : Math.max(0, usageStats.aiChatLimit - usageStats.aiChatCount);
+    const familyCount = Math.max(0, (familyMembers?.length || 1) - 1);
+    const familyLimit = isPremium ? "∞" : 1;
+
+    // Exhausted kontrolleri
+    const isScanExhausted = !isPremium && scanRemaining === 0;
+    const isChatExhausted = !isPremium && chatRemaining === 0;
+    const isFamilyExhausted = !isPremium && familyCount >= (familyLimit as number);
 
     // PROFILE VIEW
     const renderProfile = () => {
         const diet = userProfile?.dietaryPreferences?.[0];
         const allergens = (userProfile?.allergens as string[]) || [];
-
-        // Limit hesaplamaları
-        const scanRemaining = isPremium ? "∞" : Math.max(0, usageStats.scanLimit - usageStats.scanCount);
-        const chatRemaining = isPremium ? "∞" : Math.max(0, usageStats.aiChatLimit - usageStats.aiChatCount);
-
-        // Aile üyesi sayısı (userProfile'dan)
-        const familyCount = Math.max(0, (familyMembers?.length || 1) - 1);
-        const familyLimit = isPremium ? "∞" : "1";
 
         return (
             <View style={styles.content}>
@@ -126,30 +167,63 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
                     <Text style={styles.usageSectionTitle}>{t("profile.weekly_usage")}</Text>
                     <View style={styles.usageGrid}>
                         {/* Scan */}
-                        <View style={styles.usageCard}>
-                            <View style={[styles.usageIconBox, { backgroundColor: "#FFF7ED" }]}>
-                                <Ionicons name="scan-outline" size={18} color={Colors.primary} />
+                        <View style={[styles.usageCard, isScanExhausted && styles.usageCardExhausted]}>
+                            <View style={[
+                                styles.usageIconBox,
+                                { backgroundColor: isScanExhausted ? "#FEF2F2" : "#FFF7ED" }
+                            ]}>
+                                <Ionicons
+                                    name="scan-outline"
+                                    size={18}
+                                    color={isScanExhausted ? "#DC2626" : Colors.primary}
+                                />
                             </View>
-                            <Text style={styles.usageValue}>{scanRemaining}</Text>
-                            <Text style={styles.usageLabel}>{t("profile.scan_rights")}</Text>
+                            <Text style={[styles.usageValue, isScanExhausted && styles.usageValueExhausted]}>
+                                {scanRemaining}
+                            </Text>
+                            <Text style={[styles.usageLabel, isScanExhausted && styles.usageLabelExhausted]}>
+                                {t("profile.scan_rights")}
+                            </Text>
                         </View>
 
                         {/* AI Chat */}
-                        <View style={styles.usageCard}>
-                            <View style={[styles.usageIconBox, { backgroundColor: "#EDE9FE" }]}>
-                                <MaterialCommunityIcons name="robot-outline" size={18} color="#7C3AED" />
+                        <View style={[styles.usageCard, isChatExhausted && styles.usageCardExhausted]}>
+                            <View style={[
+                                styles.usageIconBox,
+                                { backgroundColor: isChatExhausted ? "#FEF2F2" : "#EDE9FE" }
+                            ]}>
+                                <MaterialCommunityIcons
+                                    name="robot-outline"
+                                    size={18}
+                                    color={isChatExhausted ? "#DC2626" : "#7C3AED"}
+                                />
                             </View>
-                            <Text style={styles.usageValue}>{chatRemaining}</Text>
-                            <Text style={styles.usageLabel}>{t("profile.chat_rights")}</Text>
+                            <Text style={[styles.usageValue, isChatExhausted && styles.usageValueExhausted]}>
+                                {chatRemaining}
+                            </Text>
+                            <Text style={[styles.usageLabel, isChatExhausted && styles.usageLabelExhausted]}>
+                                {t("profile.chat_rights")}
+                            </Text>
                         </View>
 
                         {/* Family */}
-                        <View style={styles.usageCard}>
-                            <View style={[styles.usageIconBox, { backgroundColor: "#E0F2FE" }]}>
-                                <MaterialCommunityIcons name="account-group-outline" size={18} color="#0284C7" />
+                        <View style={[styles.usageCard, isFamilyExhausted && styles.usageCardExhausted]}>
+                            <View style={[
+                                styles.usageIconBox,
+                                { backgroundColor: isFamilyExhausted ? "#FEF2F2" : "#E0F2FE" }
+                            ]}>
+                                <MaterialCommunityIcons
+                                    name="account-group-outline"
+                                    size={18}
+                                    color={isFamilyExhausted ? "#DC2626" : "#0284C7"}
+                                />
                             </View>
-                            <Text style={styles.usageValue}>{familyCount}/{familyLimit}</Text>
-                            <Text style={styles.usageLabel}>{t("profile.family_slots")}</Text>
+                            <Text style={[styles.usageValue, isFamilyExhausted && styles.usageValueExhausted]}>
+                                {familyCount}/{familyLimit}
+                            </Text>
+                            <Text style={[styles.usageLabel, isFamilyExhausted && styles.usageLabelExhausted]}>
+                                {t("profile.family_slots")}
+                            </Text>
                         </View>
                     </View>
                 </View>
@@ -249,6 +323,17 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
                 />
             </View>
 
+            {/* Forgot Password - Sadece Login modunda */}
+            {!isRegister && (
+                <Pressable
+                    style={styles.forgotPasswordBtn}
+                    onPress={handleForgotPassword}
+                    disabled={loading}
+                >
+                    <Text style={styles.forgotPasswordText}>{t("auth.forgot_password")}</Text>
+                </Pressable>
+            )}
+
             <Pressable
                 style={({ pressed }) => [styles.submitBtn, pressed && styles.btnPressed, loading && styles.btnDisabled]}
                 onPress={handleSubmit}
@@ -284,25 +369,33 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
 
     // RENDER
     return (
-        <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-            <View style={styles.container}>
-                {/* Backdrop - Ayrı layer, keyboard'dan etkilenmez */}
-                <Pressable style={styles.backdrop} onPress={onClose} />
+        <>
+            <Modal transparent visible={visible && !showPremiumModal} animationType="fade" onRequestClose={onClose} statusBarTranslucent>
+                <View style={styles.container}>
+                    {/* Backdrop */}
+                    <Pressable style={styles.backdrop} onPress={onClose} />
 
-                {/* Modal - Keyboard ile hareket eder */}
-                <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardView}>
-                    <View style={styles.modal}>
-                        <Toast message={toast.message} type={toast.type} visible={toast.visible} />
+                    {/* Modal */}
+                    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardView}>
+                        <View style={styles.modal}>
+                            <Toast message={toast.message} type={toast.type} visible={toast.visible} />
 
-                        <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={12}>
-                            <Ionicons name="close" size={22} color={Colors.gray[400]} />
-                        </Pressable>
+                            <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={12}>
+                                <Ionicons name="close" size={22} color={Colors.gray[400]} />
+                            </Pressable>
 
-                        {isLoggedIn ? renderProfile() : renderAuth()}
-                    </View>
-                </KeyboardAvoidingView>
-            </View>
-        </Modal>
+                            {isLoggedIn ? renderProfile() : renderAuth()}
+                        </View>
+                    </KeyboardAvoidingView>
+                </View>
+            </Modal>
+
+            {/* Premium Compare Modal - Profile açılmadan önce */}
+            <PremiumCompareModal
+                visible={showPremiumModal}
+                onClose={handlePremiumModalClose}
+            />
+        </>
     );
 }
 
@@ -335,9 +428,12 @@ const styles = StyleSheet.create({
     usageSectionTitle: { fontSize: 11, fontWeight: "700", color: Colors.gray[400], marginBottom: 10, letterSpacing: 0.5 },
     usageGrid: { flexDirection: "row", gap: 10 },
     usageCard: { flex: 1, backgroundColor: "#FFF", borderRadius: 14, padding: 14, alignItems: "center", borderWidth: 1, borderColor: Colors.gray[200], gap: 8 },
+    usageCardExhausted: { borderColor: "#FECACA", backgroundColor: "#FEF2F2" },
     usageIconBox: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
     usageValue: { fontSize: 20, fontWeight: "800", color: Colors.secondary },
+    usageValueExhausted: { color: "#DC2626" },
     usageLabel: { fontSize: 10, color: Colors.gray[500], textAlign: "center" },
+    usageLabelExhausted: { color: "#EF4444" },
 
     // Diet Section
     dietSection: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFBEB", borderRadius: 12, padding: 12, marginBottom: 12, gap: 12, borderWidth: 1, borderColor: "#FEF3C7" },
@@ -369,6 +465,9 @@ const styles = StyleSheet.create({
 
     inputBox: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: Colors.gray[50], borderRadius: 14, paddingHorizontal: 14, height: 52, marginBottom: 12, borderWidth: 1, borderColor: Colors.gray[200] },
     input: { flex: 1, fontSize: 15, color: Colors.secondary },
+
+    forgotPasswordBtn: { alignSelf: "flex-end", marginBottom: 8, marginTop: -4 },
+    forgotPasswordText: { fontSize: 13, fontWeight: "600", color: Colors.primary },
 
     submitBtn: { height: 52, borderRadius: 14, backgroundColor: Colors.primary, alignItems: "center", justifyContent: "center", marginTop: 4 },
     submitText: { fontSize: 16, fontWeight: "700", color: "#FFF" },

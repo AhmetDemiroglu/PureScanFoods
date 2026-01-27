@@ -81,10 +81,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [rawUserStats, setRawUserStats] = useState<any>(null);
 
     const isWeekExpired = (weekStartDate: any): boolean => {
-        if (!weekStartDate) return true;
+        if (weekStartDate === undefined) return true;
+        if (weekStartDate === null) return false;
+
         const startDate = weekStartDate.toDate ? weekStartDate.toDate() : new Date(weekStartDate);
         const now = new Date();
         const daysDiff = (now.getTime() - startDate.getTime()) / (1000 * 3600 * 24);
+
         return daysDiff >= 7;
     };
 
