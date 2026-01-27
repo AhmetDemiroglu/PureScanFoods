@@ -589,7 +589,8 @@
         "wrong_password": "Mevcut şifre yanlış",
         "password_change_error": "Şifre değiştirme başarısız",
         "password_changed": "Şifreniz başarıyla güncellendi",
-        "privacy_policy_desc": "Verilerinizi nasıl kullandığımızı öğrenin"
+        "privacy_policy_desc": "Verilerinizi nasıl kullandığımızı öğrenin",
+        "developer_text": "GELİŞTİRİCİ"
     },
     "premium": {
         "compare_title": "Premium Avantajları",

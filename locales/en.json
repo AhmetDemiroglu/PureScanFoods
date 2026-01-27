@@ -589,7 +589,8 @@
         "wrong_password": "Current password is incorrect",
         "password_change_error": "Password change failed",
         "password_changed": "Your password has been updated successfully",
-        "privacy_policy_desc": "Learn how we use your data"
+        "privacy_policy_desc": "Learn how we use your data",
+        "developer_text": "DEVELOPER"
     },
     "premium": {
         "compare_title": "Premium Benefits",

@@ -13,6 +13,7 @@ import {
   UIManager,
   TextInput,
   ActivityIndicator,
+  TouchableOpacity,
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -20,6 +21,7 @@ import { useTranslation } from "react-i18next";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "../../constants/colors";
+import { useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { useUser } from "../../context/UserContext";
 import {
@@ -44,6 +46,7 @@ export default function SettingsScreen() {
   const { t } = useTranslation();
   const { user, userProfile, isPremium, usageStats, logout } = useAuth();
   const { familyMembers } = useUser();
+  const router = useRouter();
 
   const [passwordSectionOpen, setPasswordSectionOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -134,9 +137,9 @@ export default function SettingsScreen() {
       >
         <SafeAreaView edges={["top"]}>
           <View style={styles.headerContent}>
-            <View style={styles.headerIcon}>
-              <Ionicons name="settings" size={24} color="#FFF" />
-            </View>
+            <TouchableOpacity style={styles.backButton} onPress={() => router.canGoBack() ? router.back() : router.push("/")}>
+              <Ionicons name="arrow-back" size={24} color="#FFF" />
+            </TouchableOpacity>
             <View style={styles.headerTitleArea}>
               <Text style={styles.headerTitle}>{t("settings.title")}</Text>
               <Text style={styles.headerSubtitle}>{t("settings.subtitle")}</Text>
@@ -384,7 +387,7 @@ export default function SettingsScreen() {
           </Pressable>
         </View>
 
-        {/* === SECTION 7: Disclaimer === */}
+        {/* === SECTION 6: Disclaimer === */}
         <View style={styles.disclaimerCard}>
           <View style={styles.disclaimerHeader}>
             <Ionicons name="alert-circle" size={20} color="#D97706" />
@@ -393,8 +396,9 @@ export default function SettingsScreen() {
           <Text style={styles.disclaimerText}>{t("settings.disclaimer_text")}</Text>
         </View>
 
-        {/* === SECTION 6: Geliştirici + Versiyon === */}
+        {/* === SECTION 7: Geliştirici + Versiyon === */}
         <View style={styles.developerCard}>
+          <Text style={styles.developerTitle}>{t("settings.developer_text")} </Text>
           <Image
             source={require("../../assets/septimus_lab.png")}
             style={styles.developerLogo}
@@ -457,6 +461,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
   },
+  backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center", marginRight: 12 },
 
   // Profile Card
   profileCard: {
@@ -734,13 +739,20 @@ const styles = StyleSheet.create({
     padding: 0,
     alignItems: "center",
     marginBottom: 0,
+    opacity: 0.65,
   },
   developerLogo: {
     width: 180,
     height: 75,
   },
+  developerTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    paddingBottom: 4,
+    color: Colors.gray[500],
+  },
   versionBadge: {
-    marginTop: 6,
+    marginTop: 0,
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 8,
