@@ -24,7 +24,8 @@ import { incrementScanCount } from "../lib/firestore";
 import { useLocalSearchParams } from "expo-router";
 import { NutriScoreGraphic } from "../components/ui/NutriScoreAssets";
 import { getLifeStageDefinition, LifeStageType } from "../lib/lifestages";
-
+import { showInterstitialAd, isInterstitialReady, loadInterstitialAd } from "../lib/admob";
+import ProcessingView from "../components/ui/ProcessingView";
 
 const { width } = Dimensions.get("window");
 const IMAGE_HEIGHT = 320;
@@ -85,19 +86,21 @@ export default function ProductResultScreen() {
     const router = useRouter();
 
     const { familyMembers, profilesData } = useUser();
-    const { user, deviceId, userProfile } = useAuth();
+    const { user, deviceId, userProfile, isPremium } = useAuth();
 
     const [showNutriInfo, setShowNutriInfo] = useState(false);
 
     const hasSaved = useRef(false);
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
+    const isHistoryView = params.viewMode === 'history';
 
     const tempResult = TempStore.getResult();
     const data = tempResult?.data;
     const imageUri = tempResult?.image || undefined;
 
     const [currentData, setCurrentData] = useState<any>(data);
+    const [isAdLoading, setIsAdLoading] = useState(true);
 
     const [selectedMemberReport, setSelectedMemberReport] = useState<{ member: any, report: CompatibilityReport } | null>(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
@@ -190,6 +193,44 @@ export default function ProductResultScreen() {
             </View>
         );
     }
+
+    useEffect(() => {
+        if (isHistoryView) {
+            setIsAdLoading(false);
+            return;
+        }
+        const handleAd = async () => {
+            if (isPremium) {
+                setIsAdLoading(false);
+                return;
+            }
+
+            if (!isInterstitialReady()) {
+                try {
+                    await loadInterstitialAd();
+                } catch (e) {
+                    console.log("Ad load failed, skipping...");
+                    setIsAdLoading(false);
+                    return;
+                }
+            }
+
+            const success = await showInterstitialAd();
+            if (success) {
+                console.log("Reklam izlendi, sonuç gösteriliyor.");
+            } else {
+                console.log("Reklam gösterilemedi veya kapatıldı.");
+            }
+
+            setIsAdLoading(false);
+        };
+
+        const timer = setTimeout(() => {
+            handleAd();
+        }, 1500);
+
+        return () => clearTimeout(timer);
+    }, [isPremium]);
 
     useEffect(() => {
         if (params.viewMode !== 'history') return;
@@ -474,6 +515,10 @@ export default function ProductResultScreen() {
         setSelectedMemberReport(item);
         setShowDetailModal(true);
     };
+
+    if (isAdLoading && !isPremium) {
+        return <ProcessingView />;
+    }
 
     return (
         <View style={styles.container}>
