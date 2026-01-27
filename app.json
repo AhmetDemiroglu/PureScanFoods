@@ -20,7 +20,7 @@
         "android": {
             "adaptiveIcon": {
                 "foregroundImage": "./assets/adaptive-icon.png",
-                "backgroundColor": "#FF6F00"
+                "backgroundColor": "#FFFFFF"
             },
             "package": "com.purescan.foods",
             "googleServicesFile": "./google-services.json"
