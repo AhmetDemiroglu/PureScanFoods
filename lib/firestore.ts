@@ -261,6 +261,49 @@ export const incrementAiChatCount = async (uid: string, deviceId: string | null)
     }
 };
 
+// --- 5c. REKLAM İZLEYİNCE LİMİT GERİ VERME ---
+export const grantBonusScan = async (uid: string, deviceId: string | null) => {
+    try {
+        const promises = [];
+
+        if (uid) {
+            const statsRef = doc(db, "users", uid, "stats", "weekly");
+            promises.push(setDoc(statsRef, { scanCount: increment(-1) }, { merge: true }));
+        }
+
+        if (deviceId) {
+            const deviceRef = doc(db, "device_limits", deviceId);
+            promises.push(setDoc(deviceRef, { scanCount: increment(-1) }, { merge: true }));
+        }
+
+        await Promise.all(promises);
+        console.log("🎁 Bonus scan hakkı verildi (+1)");
+    } catch (error) {
+        console.error("⚠️ Error granting bonus scan:", error);
+    }
+};
+
+export const grantBonusChat = async (uid: string, deviceId: string | null) => {
+    try {
+        const promises = [];
+
+        if (uid) {
+            const statsRef = doc(db, "users", uid, "stats", "weekly");
+            promises.push(setDoc(statsRef, { aiChatCount: increment(-1) }, { merge: true }));
+        }
+
+        if (deviceId) {
+            const deviceRef = doc(db, "device_limits", deviceId);
+            promises.push(setDoc(deviceRef, { aiChatCount: increment(-1) }, { merge: true }));
+        }
+
+        await Promise.all(promises);
+        console.log("🎁 Bonus chat hakkı verildi (+1)");
+    } catch (error) {
+        console.error("⚠️ Error granting bonus chat:", error);
+    }
+};
+
 // --- 6. AİLE ÜYESİ YÖNETİMİ (ALT KOLEKSİYON) ---
 
 // Aile Üyesi Ekle

@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo } from 'react';
-import { Modal, View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Modal, View, Text, Pressable, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,6 +11,10 @@ import Animated, {
     FadeInDown
 } from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
+import { showRewardedAd, isRewardedReady, loadRewardedAd } from '../../lib/admob';
+import { grantBonusScan, grantBonusChat } from '../../lib/firestore';
+import { useAuth } from '../../context/AuthContext';
+
 interface LimitWarningModalProps {
     visible: boolean;
     onClose: () => void;
@@ -18,11 +22,13 @@ interface LimitWarningModalProps {
     stats: any;
     user: any;
     limitType?: 'weekly' | 'family';
+    onRewardEarned?: () => void;
 }
+
 
 const { width } = Dimensions.get('window');
 
-const UsageRow = ({ icon, label, status, isLimitReached, isAdAvailable, delay }: any) => {
+const UsageRow = ({ icon, label, status, isLimitReached, isAdAvailable, delay, onWatchAd, isLoadingAd }: any) => {
     const { t } = useTranslation();
 
     return (
@@ -39,10 +45,20 @@ const UsageRow = ({ icon, label, status, isLimitReached, isAdAvailable, delay }:
 
             <View style={styles.usageRight}>
                 {isLimitReached && isAdAvailable ? (
-                    <View style={styles.adBadge}>
-                        <Ionicons name="play" size={10} color="#FFF" />
-                        <Text style={styles.adBadgeText}>{t('limits.watch_ad')}</Text>
-                    </View>
+                    <Pressable
+                        style={[styles.adBadge, isLoadingAd && styles.adBadgeDisabled]}
+                        onPress={onWatchAd}
+                        disabled={isLoadingAd}
+                    >
+                        {isLoadingAd ? (
+                            <ActivityIndicator size="small" color="#FFF" />
+                        ) : (
+                            <>
+                                <Ionicons name="play" size={10} color="#FFF" />
+                                <Text style={styles.adBadgeText}>{t('limits.watch_ad')}</Text>
+                            </>
+                        )}
+                    </Pressable>
                 ) : (
                     <View style={[styles.statusBadge, isLimitReached && styles.statusBadgeError]}>
                         <Text style={[styles.statusText, isLimitReached && styles.statusTextError]}>{status}</Text>
@@ -64,11 +80,14 @@ const parseDate = (input: any): Date => {
     return new Date(input);
 };
 
-export default function LimitWarningModal({ visible, onClose, onGoPremium, stats, user, limitType = 'weekly' }: LimitWarningModalProps) {
+export default function LimitWarningModal({ visible, onClose, onGoPremium, stats, user, limitType = 'weekly', onRewardEarned }: LimitWarningModalProps) {
     const { t } = useTranslation();
+    const { user: authUser, deviceId } = useAuth();
+
     const scale = useSharedValue(0.9);
     const opacity = useSharedValue(0);
 
+    const [loadingAdType, setLoadingAdType] = useState<'scan' | 'chat' | null>(null);
     const isFamilyMode = limitType === 'family';
 
     useEffect(() => {
@@ -80,6 +99,36 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium, stats
             opacity.value = 0;
         }
     }, [visible]);
+
+    useEffect(() => {
+        if (visible && !isRewardedReady()) {
+            loadRewardedAd().catch(() => { });
+        }
+    }, [visible]);
+
+    const handleWatchAd = async (type: 'scan' | 'chat') => {
+        if (!authUser?.uid) return;
+
+        setLoadingAdType(type);
+
+        try {
+            const result = await showRewardedAd(type);
+
+            if (result.success) {
+                if (type === 'scan') {
+                    await grantBonusScan(authUser.uid, deviceId);
+                } else {
+                    await grantBonusChat(authUser.uid, deviceId);
+                }
+
+                onRewardEarned?.();
+            }
+        } catch (error) {
+            console.error('Ad error:', error);
+        } finally {
+            setLoadingAdType(null);
+        }
+    };
 
     const animatedStyle = useAnimatedStyle(() => ({
         transform: [{ scale: scale.value }],
@@ -155,6 +204,8 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium, stats
                                         isLimitReached={computedData.scan.current >= computedData.scan.max}
                                         isAdAvailable={true}
                                         delay={100}
+                                        onWatchAd={() => handleWatchAd('scan')}
+                                        isLoadingAd={loadingAdType === 'scan'}
                                     />
                                     <UsageRow
                                         icon="robot-outline"
@@ -163,6 +214,8 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium, stats
                                         isLimitReached={computedData.ai.current >= computedData.ai.max}
                                         isAdAvailable={true}
                                         delay={200}
+                                        onWatchAd={() => handleWatchAd('chat')}
+                                        isLoadingAd={loadingAdType === 'chat'}
                                     />
                                 </>
                             )}
@@ -267,10 +320,15 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F43F5E',
-        paddingVertical: 5,
-        paddingHorizontal: 10,
+        paddingVertical: 6,
+        paddingHorizontal: 12,
         borderRadius: 20,
         gap: 4,
+        minWidth: 80,
+        justifyContent: 'center',
+    },
+    adBadgeDisabled: {
+        opacity: 0.7,
     },
     adBadgeText: {
         color: '#FFF',
@@ -278,4 +336,4 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         letterSpacing: 0.3,
     },
-});
+}); 
