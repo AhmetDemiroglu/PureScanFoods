@@ -25,7 +25,6 @@ import { useLocalSearchParams } from "expo-router";
 import { NutriScoreGraphic } from "../components/ui/NutriScoreAssets";
 import { getLifeStageDefinition, LifeStageType } from "../lib/lifestages";
 import { showInterstitialAd, isInterstitialReady, loadInterstitialAd } from "../lib/admob";
-import ProcessingView from "../components/ui/ProcessingView";
 
 const { width } = Dimensions.get("window");
 const IMAGE_HEIGHT = 320;
@@ -98,6 +97,8 @@ export default function ProductResultScreen() {
     const tempResult = TempStore.getResult();
     const data = tempResult?.data;
     const imageUri = tempResult?.image || undefined;
+    const source = tempResult?.meta?.source as "camera" | "barcode" | "text" | undefined;
+    const isBarcodeSource = source === "barcode";
 
     const [currentData, setCurrentData] = useState<any>(data);
     const [isAdLoading, setIsAdLoading] = useState(true);
@@ -225,11 +226,7 @@ export default function ProductResultScreen() {
             setIsAdLoading(false);
         };
 
-        const timer = setTimeout(() => {
-            handleAd();
-        }, 1500);
-
-        return () => clearTimeout(timer);
+        handleAd();
     }, [isPremium]);
 
     useEffect(() => {
@@ -508,8 +505,8 @@ export default function ProductResultScreen() {
     const displayScore = ownerAnalysis ? ownerAnalysis.report.score : (scores.compatibility?.value || 0);
     const scoreStyles = getScoreStyles(displayScore);
 
-    const displayVerdict = ownerAnalysis?.report.title || t("analysis.status.safe");
-    const displaySummary = ownerAnalysis?.report.summary || t("analysis.findings.safe_summary");
+    const displayVerdict = ownerAnalysis?.report.title || t("results.analysis.status.safe");
+    const displaySummary = ownerAnalysis?.report.summary || t("results.analysis.findings.safe_summary");
 
     const handleMemberPress = (item: { member: any, report: CompatibilityReport }) => {
         setSelectedMemberReport(item);
@@ -517,7 +514,7 @@ export default function ProductResultScreen() {
     };
 
     if (isAdLoading && !isPremium) {
-        return <ProcessingView />;
+        return <View style={{ flex: 1, backgroundColor: Colors.surface }} />;
     }
 
     return (
@@ -740,6 +737,27 @@ export default function ProductResultScreen() {
                         <Text style={styles.disclaimerText}>{t("common.disclaimer.text")}</Text>
                     </View>
                 </View>
+
+                {isBarcodeSource && (
+                    <View style={styles.offInfoBox}>
+                        <View style={styles.offInfoHeader}>
+                            <Ionicons name="barcode-outline" size={18} color={Colors.secondary} />
+                            <Text style={styles.offInfoTitle}>{t("results.openfoodfactsNotice.title")}</Text>
+                        </View>
+                        <Text style={styles.offInfoText}>
+                            {t("results.openfoodfactsNotice.body")}
+                        </Text>
+                        <TouchableOpacity
+                            style={styles.offInfoButton}
+                            onPress={() => router.replace({ pathname: "/", params: { autoStart: "true" } })}
+                        >
+                            <Ionicons name="camera-outline" size={16} color={Colors.primary} />
+                            <Text style={styles.offInfoButtonText}>
+                                {t("results.openfoodfactsNotice.cta")}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
 
                 <View style={{ height: 40 }} />
             </ScrollView>
@@ -992,6 +1010,49 @@ const styles = StyleSheet.create({
         fontSize: 11,
         color: Colors.gray[500],
         lineHeight: 16,
+    },
+    offInfoBox: {
+        marginHorizontal: 20,
+        marginTop: 14,
+        padding: 14,
+        backgroundColor: "#EFF6FF",
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: "#DBEAFE",
+        gap: 8,
+    },
+    offInfoHeader: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+    },
+    offInfoTitle: {
+        fontSize: 12,
+        fontWeight: "800",
+        color: Colors.secondary,
+    },
+    offInfoText: {
+        fontSize: 12,
+        lineHeight: 17,
+        color: "#1E3A8A",
+    },
+    offInfoButton: {
+        marginTop: 4,
+        alignSelf: "flex-start",
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        backgroundColor: "#FFFFFF",
+        borderWidth: 1,
+        borderColor: "#BFDBFE",
+        borderRadius: 10,
+        paddingVertical: 8,
+        paddingHorizontal: 10,
+    },
+    offInfoButtonText: {
+        fontSize: 12,
+        fontWeight: "700",
+        color: Colors.primary,
     },
     imageContainer: {
         height: IMAGE_HEIGHT,

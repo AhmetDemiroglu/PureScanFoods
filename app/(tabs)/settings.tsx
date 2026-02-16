@@ -32,9 +32,11 @@ import {
 import { auth } from "../../lib/firebase"
 import * as Application from "expo-application";
 import PremiumCompareModal from "../../components/ui/PremiumCompareModal";
+import HistorySidebar from "../history";
+import PaywallModal from "../../components/ui/PaywallModal";
 
 
-if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+if (Platform.OS === "android" && !(global as any).nativeFabricUIManager && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
@@ -53,7 +55,11 @@ export default function SettingsScreen() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [premiumModalVisible, setPremiumModalVisible] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [isHistoryOpen, setHistoryOpen] = useState(false);
 
   const isAnonymous = user?.isAnonymous ?? true;
   const isLoggedIn = user && !isAnonymous;
@@ -78,6 +84,8 @@ export default function SettingsScreen() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      setShowCurrentPassword(false);
+      setShowNewPassword(false);
     }
   };
 
@@ -144,6 +152,9 @@ export default function SettingsScreen() {
               <Text style={styles.headerTitle}>{t("settings.title")}</Text>
               <Text style={styles.headerSubtitle}>{t("settings.subtitle")}</Text>
             </View>
+            <TouchableOpacity style={[styles.backButton, { marginRight: 0 }]} onPress={() => setHistoryOpen(true)}>
+              <MaterialCommunityIcons name="history" size={22} color="#FFF" />
+            </TouchableOpacity>
           </View>
         </SafeAreaView>
       </LinearGradient>
@@ -302,8 +313,11 @@ export default function SettingsScreen() {
                     placeholderTextColor={Colors.gray[400]}
                     value={currentPassword}
                     onChangeText={setCurrentPassword}
-                    secureTextEntry
+                    secureTextEntry={!showCurrentPassword}
                   />
+                  <Pressable onPress={() => setShowCurrentPassword(!showCurrentPassword)} hitSlop={8}>
+                    <Ionicons name={showCurrentPassword ? "eye-off-outline" : "eye-outline"} size={20} color={Colors.gray[400]} />
+                  </Pressable>
                 </View>
                 <View style={styles.inputBox}>
                   <Ionicons name="lock-closed-outline" size={18} color={Colors.gray[400]} />
@@ -313,8 +327,11 @@ export default function SettingsScreen() {
                     placeholderTextColor={Colors.gray[400]}
                     value={newPassword}
                     onChangeText={setNewPassword}
-                    secureTextEntry
+                    secureTextEntry={!showNewPassword}
                   />
+                  <Pressable onPress={() => setShowNewPassword(!showNewPassword)} hitSlop={8}>
+                    <Ionicons name={showNewPassword ? "eye-off-outline" : "eye-outline"} size={20} color={Colors.gray[400]} />
+                  </Pressable>
                 </View>
                 <View style={styles.inputBox}>
                   <Ionicons name="checkmark-circle-outline" size={18} color={Colors.gray[400]} />
@@ -324,7 +341,7 @@ export default function SettingsScreen() {
                     placeholderTextColor={Colors.gray[400]}
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
-                    secureTextEntry
+                    secureTextEntry={!showNewPassword}
                   />
                 </View>
                 <Pressable
@@ -412,9 +429,18 @@ export default function SettingsScreen() {
         <View style={{ height: 40 }} />
       </ScrollView>
 
+      <HistorySidebar visible={isHistoryOpen} onClose={() => setHistoryOpen(false)} />
       <PremiumCompareModal
         visible={premiumModalVisible}
         onClose={() => setPremiumModalVisible(false)}
+        onSubscribe={() => {
+          setPremiumModalVisible(false);
+          setShowPaywall(true);
+        }}
+      />
+      <PaywallModal
+        visible={showPaywall}
+        onClose={() => setShowPaywall(false)}
       />
     </View>
   );
@@ -443,6 +469,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   headerTitleArea: {
+    flex: 1,
     marginLeft: 14,
   },
   headerTitle: {

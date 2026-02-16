@@ -4,413 +4,443 @@ import LottieView from "lottie-react-native";
 import { Colors } from "../../constants/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { LinearGradient } from 'expo-linear-gradient';
+import { LinearGradient } from "expo-linear-gradient";
 
 const { width, height } = Dimensions.get("window");
 
+export type ProcessingMode = "camera" | "text" | "barcode" | "ad";
+
+interface ProcessingViewProps {
+  mode?: ProcessingMode;
+}
+
 const LogoSpinner = () => {
-    const spinValue = useRef(new Animated.Value(0)).current;
+  const spinValue = useRef(new Animated.Value(0)).current;
 
-    useEffect(() => {
-        Animated.loop(
-            Animated.timing(spinValue, {
-                toValue: 1,
-                duration: 2000,
-                easing: Easing.linear,
-                useNativeDriver: true,
-            })
-        ).start();
-    }, []);
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(spinValue, {
+        toValue: 1,
+        duration: 2000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, [spinValue]);
 
-    const spin = spinValue.interpolate({
-        inputRange: [0, 1],
-        outputRange: ['0deg', '360deg']
-    });
+  const spin = spinValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "360deg"],
+  });
 
-    return (
-        <View style={styles.spinnerContainer}>
-            <Animated.View style={[styles.spinningRingContainer, { transform: [{ rotate: spin }] }]}>
-                <LinearGradient
-                    colors={[Colors.primary, Colors.secondary, Colors.primary]}
-                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                    style={styles.spinningRingGradient}
-                />
-            </Animated.View>
+  return (
+    <View style={styles.spinnerContainer}>
+      <Animated.View style={[styles.spinningRingContainer, { transform: [{ rotate: spin }] }]}>
+        <LinearGradient
+          colors={[Colors.primary, Colors.secondary, Colors.primary]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.spinningRingGradient}
+        />
+      </Animated.View>
 
-            <View style={styles.logoContainer}>
-                <LinearGradient
-                    colors={[Colors.primary, "#E65100"]}
-                    style={styles.logoGradient}
-                >
-                    <Ionicons name="scan" size={24} color={Colors.white} />
-                </LinearGradient>
-            </View>
-        </View>
-    );
+      <View style={styles.logoContainer}>
+        <LinearGradient colors={[Colors.primary, "#E65100"]} style={styles.logoGradient}>
+          <Ionicons name="scan" size={24} color={Colors.white} />
+        </LinearGradient>
+      </View>
+    </View>
+  );
 };
 
-export default function ProcessingView() {
-    const { t } = useTranslation();
+export default function ProcessingView({ mode = "camera" }: ProcessingViewProps) {
+  const { t } = useTranslation();
 
-    const STEPS = useMemo(() => [
-        { id: 1, label: t("processing.steps.1", { defaultValue: "Görüntü Taranıyor..." }), icon: "scan-outline" },
-        { id: 2, label: t("processing.steps.2", { defaultValue: "Yapay Zeka Analizi..." }), icon: "hardware-chip-outline" },
-        { id: 3, label: t("processing.steps.3", { defaultValue: "Veriler İşleniyor..." }), icon: "server-outline" },
-        { id: 4, label: t("processing.steps.4", { defaultValue: "Sonuçlar Hazırlanıyor..." }), icon: "document-text-outline" },
-    ], [t]);
+  const titleKeyByMode: Record<ProcessingMode, string> = {
+    camera: "processing.titles.camera",
+    text: "processing.titles.text",
+    barcode: "processing.titles.barcode",
+    ad: "processing.titles.ad",
+  };
 
-    const FACTS = (t("processing.facts", { returnObjects: true }) as string[]) || ["İlginç bilgi yükleniyor..."];
-    const LONG_WAIT_MESSAGES = (t("processing.waitMessages", { returnObjects: true }) as string[]) || ["Lütfen bekleyin..."];
+  const titleDefaultByMode: Record<ProcessingMode, string> = {
+    camera: "Analyzing Image...",
+    text: "Analyzing Text...",
+    barcode: "Reading Barcode...",
+    ad: "Preparing Result...",
+  };
 
-    const [currentStep, setCurrentStep] = useState(0);
-    const [factIndex, setFactIndex] = useState(0);
-    const [showLongWait, setShowLongWait] = useState(false);
-    const [longWaitIndex, setLongWaitIndex] = useState(0);
+  const steps = useMemo(() => {
+    if (mode === "text") {
+      return [
+        { id: 1, label: t("processing.textSteps.1", { defaultValue: "Text received..." }), icon: "document-text-outline" },
+        { id: 2, label: t("processing.textSteps.2", { defaultValue: "AI is analyzing..." }), icon: "hardware-chip-outline" },
+        { id: 3, label: t("processing.textSteps.3", { defaultValue: "Extracting nutrition..." }), icon: "server-outline" },
+        { id: 4, label: t("processing.textSteps.4", { defaultValue: "Preparing results..." }), icon: "checkmark-done-outline" },
+      ];
+    }
 
-    const stepProgressAnim = useRef(new Animated.Value(0)).current;
-    const factFadeAnim = useRef(new Animated.Value(1)).current;
-    const waitFadeAnim = useRef(new Animated.Value(0)).current;
+    if (mode === "barcode") {
+      return [
+        { id: 1, label: t("processing.barcodeSteps.1", { defaultValue: "Barcode detected..." }), icon: "barcode-outline" },
+        { id: 2, label: t("processing.barcodeSteps.2", { defaultValue: "Fetching product data..." }), icon: "cloud-download-outline" },
+        { id: 3, label: t("processing.barcodeSteps.3", { defaultValue: "AI validation..." }), icon: "hardware-chip-outline" },
+        { id: 4, label: t("processing.barcodeSteps.4", { defaultValue: "Preparing results..." }), icon: "checkmark-done-outline" },
+      ];
+    }
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setCurrentStep((prev) => {
-                const next = prev < STEPS.length - 1 ? prev + 1 : prev;
-                Animated.timing(stepProgressAnim, {
-                    toValue: (next / (STEPS.length - 1)),
-                    duration: 500,
-                    useNativeDriver: false,
-                }).start();
-                return next;
-            });
-        }, 2500);
-        return () => clearInterval(interval);
-    }, [STEPS.length]);
+    if (mode === "ad") {
+      return [
+        { id: 1, label: t("processing.adSteps.1", { defaultValue: "Loading ad..." }), icon: "play-circle-outline" },
+        { id: 2, label: t("processing.adSteps.2", { defaultValue: "Finalizing result..." }), icon: "hourglass-outline" },
+      ];
+    }
 
-    useEffect(() => {
-        setFactIndex(Math.floor(Math.random() * FACTS.length));
+    return [
+      { id: 1, label: t("processing.steps.1", { defaultValue: "Processing image..." }), icon: "scan-outline" },
+      { id: 2, label: t("processing.steps.2", { defaultValue: "Extracting text..." }), icon: "hardware-chip-outline" },
+      { id: 3, label: t("processing.steps.3", { defaultValue: "Analyzing nutrition..." }), icon: "server-outline" },
+      { id: 4, label: t("processing.steps.4", { defaultValue: "Preparing results..." }), icon: "document-text-outline" },
+    ];
+  }, [mode, t]);
 
-        let timer: NodeJS.Timeout;
+  const facts = useMemo(() => {
+    const raw = t("processing.facts", { returnObjects: true });
+    return Array.isArray(raw) && raw.length > 0 ? (raw as string[]) : ["Interesting fact loading..."];
+  }, [t]);
 
-        const cycleFact = () => {
-            const currentText = FACTS[factIndex] || "";
-            const wordCount = currentText.split(" ").length;
+  const longWaitMessages = useMemo(() => {
+    const raw = t("processing.waitMessages", { returnObjects: true });
+    return Array.isArray(raw) && raw.length > 0 ? (raw as string[]) : ["Please wait..."];
+  }, [t]);
 
-            const readingTime = Math.max(2500, wordCount * 100 + 1000);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [factIndex, setFactIndex] = useState(0);
+  const [showLongWait, setShowLongWait] = useState(false);
+  const [longWaitIndex, setLongWaitIndex] = useState(0);
 
-            timer = setTimeout(() => {
-                Animated.timing(factFadeAnim, {
-                    toValue: 0,
-                    duration: 300,
-                    useNativeDriver: true,
-                }).start(() => {
-                    setFactIndex(Math.floor(Math.random() * FACTS.length));
+  const stepProgressAnim = useRef(new Animated.Value(0)).current;
+  const factFadeAnim = useRef(new Animated.Value(1)).current;
+  const waitFadeAnim = useRef(new Animated.Value(0)).current;
 
-                    Animated.timing(factFadeAnim, {
-                        toValue: 1,
-                        duration: 400,
-                        useNativeDriver: true,
-                    }).start(() => {
-                        cycleFact();
-                    });
-                });
-            }, readingTime);
-        };
+  useEffect(() => {
+    setCurrentStep(0);
+    stepProgressAnim.setValue(0);
+    setShowLongWait(false);
+    setLongWaitIndex(0);
+  }, [mode, stepProgressAnim]);
 
-        cycleFact();
-        return () => clearTimeout(timer);
-    }, []);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentStep((prev) => {
+        const next = prev < steps.length - 1 ? prev + 1 : prev;
+        Animated.timing(stepProgressAnim, {
+          toValue: next / Math.max(1, steps.length - 1),
+          duration: 500,
+          useNativeDriver: false,
+        }).start();
+        return next;
+      });
+    }, 2500);
 
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setShowLongWait(true);
-            Animated.timing(waitFadeAnim, {
-                toValue: 1,
-                duration: 500,
-                useNativeDriver: true,
-            }).start();
-        }, 10000);
-        return () => clearTimeout(timer);
-    }, []);
+    return () => clearInterval(interval);
+  }, [steps.length, stepProgressAnim]);
 
-    useEffect(() => {
-        if (!showLongWait) return;
+  useEffect(() => {
+    if (facts.length <= 1) return;
 
-        let waitTimer: NodeJS.Timeout;
+    const timer = setInterval(() => {
+      Animated.timing(factFadeAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }).start(() => {
+        setFactIndex((prev) => {
+          let next = prev;
+          while (next === prev && facts.length > 1) {
+            next = Math.floor(Math.random() * facts.length);
+          }
+          return next;
+        });
+        Animated.timing(factFadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      });
+    }, 6500);
 
-        const cycleWaitMessage = () => {
-            waitTimer = setTimeout(() => {
-                Animated.timing(waitFadeAnim, {
-                    toValue: 0,
-                    duration: 300,
-                    useNativeDriver: true,
-                }).start(() => {
-                    setLongWaitIndex((prev) => (prev + 1) % LONG_WAIT_MESSAGES.length);
+    return () => clearInterval(timer);
+  }, [factFadeAnim, facts.length]);
 
-                    Animated.timing(waitFadeAnim, {
-                        toValue: 1,
-                        duration: 400,
-                        useNativeDriver: true,
-                    }).start(() => {
-                        cycleWaitMessage();
-                    });
-                });
-            }, 3000);
-        };
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowLongWait(true);
+      Animated.timing(waitFadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }).start();
+    }, 10000);
 
-        cycleWaitMessage();
-        return () => clearTimeout(waitTimer);
-    }, [showLongWait]);
+    return () => clearTimeout(timer);
+  }, [waitFadeAnim]);
 
-    const progressWidth = stepProgressAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: ['0%', '100%']
-    });
+  useEffect(() => {
+    if (!showLongWait || longWaitMessages.length <= 1) return;
 
-    return (
-        <View style={styles.container}>
-            <LinearGradient
-                colors={[Colors.surface, '#FFF8E1']}
-                style={StyleSheet.absoluteFill}
-            />
+    const waitTimer = setInterval(() => {
+      Animated.timing(waitFadeAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }).start(() => {
+        setLongWaitIndex((prev) => (prev + 1) % longWaitMessages.length);
+        Animated.timing(waitFadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      });
+    }, 3200);
 
-            <View style={styles.topSection}>
-                <LottieView
-                    source={require('../../assets/scanning-character.json')}
-                    autoPlay
-                    loop
-                    style={styles.mainAnimation}
-                />
-                <Text style={styles.title}>Analiz Ediliyor...</Text>
-            </View>
+    return () => clearInterval(waitTimer);
+  }, [longWaitMessages.length, showLongWait, waitFadeAnim]);
 
-            <View style={styles.middleSection}>
-                <View style={styles.progressBarBg}>
-                    <Animated.View style={[styles.progressBarFill, { width: progressWidth }]} />
-                </View>
+  const progressWidth = stepProgressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0%", "100%"],
+  });
 
-                <View style={styles.stepsContainer}>
-                    {STEPS.map((step, index) => {
-                        const isActive = index === currentStep;
-                        const isCompleted = index < currentStep;
+  return (
+    <View style={styles.container}>
+      <LinearGradient colors={[Colors.surface, "#FFF8E1"]} style={StyleSheet.absoluteFill} />
 
-                        return (
-                            <View key={step.id} style={styles.stepItem}>
-                                <View style={[styles.iconBox, (isActive || isCompleted) && styles.activeIconBox]}>
-                                    <Ionicons
-                                        name={isCompleted ? "checkmark" : step.icon as any}
-                                        size={18}
-                                        color={(isActive || isCompleted) ? Colors.white : Colors.gray[400]}
-                                    />
-                                </View>
-                                <Text style={[styles.stepText, isActive ? styles.activeStepText : styles.hiddenStepText]}>
-                                    {step.label}
-                                </Text>
-                            </View>
-                        );
-                    })}
-                </View>
-            </View>
+      <View style={styles.topSection}>
+        <LottieView
+          source={require("../../assets/scanning-character.json")}
+          autoPlay
+          loop
+          style={styles.mainAnimation}
+        />
+        <Text style={styles.title}>{t(titleKeyByMode[mode], { defaultValue: titleDefaultByMode[mode] })}</Text>
+      </View>
 
-            <View style={styles.bottomSection}>
-                <LogoSpinner />
-
-                <View style={styles.factContainer}>
-                    <Text style={styles.factTitle}>{t("processing.didYouKnow", { defaultValue: "BUNLARI BİLİYOR MUYDUNUZ?" })}</Text>
-                    <Animated.View style={{ opacity: factFadeAnim }}>
-                        <Text style={styles.factText}>
-                            {FACTS[factIndex]}
-                        </Text>
-                    </Animated.View>
-                </View>
-
-                {showLongWait && (
-                    <Animated.View style={[styles.waitMessageContainer, { opacity: waitFadeAnim }]}>
-                        <ActivityIndicator size="small" color="#E65100" style={{ marginRight: 8 }} />
-                        <Text style={styles.waitMessageText}>
-                            {LONG_WAIT_MESSAGES[longWaitIndex]}
-                        </Text>
-                    </Animated.View>
-                )}
-            </View>
+      <View style={styles.middleSection}>
+        <View style={styles.progressBarBg}>
+          <Animated.View style={[styles.progressBarFill, { width: progressWidth }]} />
         </View>
-    );
+
+        <View style={styles.stepsContainer}>
+          {steps.map((step, index) => {
+            const isActive = index === currentStep;
+            const isCompleted = index < currentStep;
+
+            return (
+              <View key={step.id} style={styles.stepItem}>
+                <View style={[styles.iconBox, (isActive || isCompleted) && styles.activeIconBox]}>
+                  <Ionicons
+                    name={(isCompleted ? "checkmark" : step.icon) as any}
+                    size={18}
+                    color={(isActive || isCompleted) ? Colors.white : Colors.gray[400]}
+                  />
+                </View>
+                <Text style={[styles.stepText, isActive ? styles.activeStepText : styles.hiddenStepText]}>{step.label}</Text>
+              </View>
+            );
+          })}
+        </View>
+      </View>
+
+      <View style={styles.bottomSection}>
+        <LogoSpinner />
+
+        <View style={styles.factContainer}>
+          <Text style={styles.factTitle}>{t("processing.didYouKnow", { defaultValue: "DID YOU KNOW?" })}</Text>
+          <Animated.View style={{ opacity: factFadeAnim }}>
+            <Text style={styles.factText}>{facts[factIndex]}</Text>
+          </Animated.View>
+        </View>
+
+        {showLongWait && (
+          <Animated.View style={[styles.waitMessageContainer, { opacity: waitFadeAnim }]}>
+            <ActivityIndicator size="small" color="#E65100" style={{ marginRight: 8 }} />
+            <Text style={styles.waitMessageText}>{longWaitMessages[longWaitIndex]}</Text>
+          </Animated.View>
+        )}
+      </View>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: Colors.surface,
-        paddingTop: height * 0.06,
-        paddingHorizontal: 24,
-        justifyContent: 'space-between',
-        paddingBottom: height * 0.04,
-    },
-    topSection: {
-        alignItems: 'center',
-        flex: 2,
-        justifyContent: 'flex-end',
-        marginBottom: 10,
-    },
-    mainAnimation: {
-        width: width * 0.7,
-        height: width * 0.7,
-    },
-    title: {
-        fontSize: 22,
-        fontWeight: '800',
-        color: Colors.secondary,
-        marginTop: 10,
-        letterSpacing: 0.5,
-        textAlign: 'center',
-    },
-    middleSection: {
-        flex: 1,
-        width: '100%',
-        justifyContent: 'flex-start',
-        marginTop: 10,
-    },
-    progressBarBg: {
-        height: 4,
-        backgroundColor: Colors.gray[200],
-        borderRadius: 2,
-        marginBottom: 20,
-        overflow: 'hidden',
-    },
-    progressBarFill: {
-        height: '100%',
-        backgroundColor: Colors.primary,
-        borderRadius: 2,
-    },
-    stepsContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-    },
-    stepItem: {
-        alignItems: 'center',
-        width: width / 4.5,
-    },
-    iconBox: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: Colors.gray[100],
-        alignItems: "center",
-        justifyContent: "center",
-        marginBottom: 8,
-        borderWidth: 1.5,
-        borderColor: Colors.gray[200],
-        elevation: 1,
-    },
-    activeIconBox: {
-        backgroundColor: Colors.primary,
-        borderColor: Colors.primary,
-        elevation: 4,
-        shadowColor: Colors.primary, shadowOpacity: 0.3, shadowRadius: 4,
-    },
-    stepText: {
-        fontSize: 10,
-        color: Colors.gray[500],
-        fontWeight: "600",
-        textAlign: 'center',
-        position: 'absolute',
-        top: 45,
-        width: 100,
-    },
-    activeStepText: {
-        color: Colors.secondary,
-        fontWeight: "700",
-        opacity: 1,
-    },
-    hiddenStepText: {
-        opacity: 0,
-    },
-    bottomSection: {
-        flex: 1.8,
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-        gap: 12,
-    },
-    spinnerContainer: {
-        width: 60,
-        height: 60,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 4,
-    },
-    spinningRingContainer: {
-        position: 'absolute',
-        width: '100%',
-        height: '100%',
-        borderRadius: 30,
-        overflow: 'hidden',
-        padding: 3,
-    },
-    spinningRingGradient: {
-        flex: 1,
-        borderRadius: 30,
-    },
-    logoContainer: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-        backgroundColor: Colors.surface,
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 2,
-        elevation: 3,
-    },
-    logoGradient: {
-        width: 42,
-        height: 42,
-        borderRadius: 21,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    factContainer: {
-        backgroundColor: 'rgba(255,255,255,0.95)',
-        paddingVertical: 12,
-        paddingHorizontal: 20,
-        borderRadius: 16,
-        alignItems: 'center',
-        width: '100%',
-        borderWidth: 1,
-        borderColor: Colors.gray[200],
-        shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
-        minHeight: 80,
-        justifyContent: 'center',
-    },
-    factTitle: {
-        fontSize: 10,
-        fontWeight: "800",
-        color: Colors.primary,
-        marginBottom: 4,
-        letterSpacing: 1,
-        opacity: 0.8,
-    },
-    factText: {
-        fontSize: 13,
-        color: Colors.secondary,
-        fontWeight: "600",
-        textAlign: 'center',
-        lineHeight: 18,
-    },
-    waitMessageContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#FFF3E0',
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: '#FFE0B2',
-        marginTop: 4,
-        width: '90%',
-    },
-    waitMessageText: {
-        fontSize: 11,
-        color: '#E65100',
-        fontWeight: '700',
-    }
+  container: {
+    flex: 1,
+    backgroundColor: Colors.surface,
+    paddingTop: height * 0.06,
+    paddingHorizontal: 24,
+    justifyContent: "space-between",
+    paddingBottom: height * 0.04,
+  },
+  topSection: {
+    alignItems: "center",
+    flex: 2,
+    justifyContent: "flex-end",
+    marginBottom: 10,
+  },
+  mainAnimation: {
+    width: width * 0.7,
+    height: width * 0.7,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: Colors.secondary,
+    marginTop: 10,
+    letterSpacing: 0.5,
+    textAlign: "center",
+  },
+  middleSection: {
+    flex: 1,
+    width: "100%",
+    justifyContent: "flex-start",
+    marginTop: 10,
+  },
+  progressBarBg: {
+    height: 4,
+    backgroundColor: Colors.gray[200],
+    borderRadius: 2,
+    marginBottom: 20,
+    overflow: "hidden",
+  },
+  progressBarFill: {
+    height: "100%",
+    backgroundColor: Colors.primary,
+    borderRadius: 2,
+  },
+  stepsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  stepItem: {
+    alignItems: "center",
+    width: width / 4.5,
+  },
+  iconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.gray[100],
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+    borderWidth: 1.5,
+    borderColor: Colors.gray[200],
+    elevation: 1,
+  },
+  activeIconBox: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+    elevation: 4,
+    shadowColor: Colors.primary,
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  stepText: {
+    fontSize: 10,
+    color: Colors.gray[500],
+    fontWeight: "600",
+    textAlign: "center",
+    position: "absolute",
+    top: 45,
+    width: 100,
+  },
+  activeStepText: {
+    color: Colors.secondary,
+    fontWeight: "700",
+    opacity: 1,
+  },
+  hiddenStepText: {
+    opacity: 0,
+  },
+  bottomSection: {
+    flex: 1.8,
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 12,
+  },
+  spinnerContainer: {
+    width: 60,
+    height: 60,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  spinningRingContainer: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    borderRadius: 30,
+    overflow: "hidden",
+    padding: 3,
+  },
+  spinningRingGradient: {
+    flex: 1,
+    borderRadius: 30,
+  },
+  logoContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: Colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 2,
+  },
+  logoGradient: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  factContainer: {
+    width: "100%",
+    backgroundColor: "rgba(255,255,255,0.8)",
+    borderRadius: 16,
+    padding: 16,
+    minHeight: 100,
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: Colors.gray[100],
+  },
+  factTitle: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: Colors.primary,
+    letterSpacing: 0.4,
+    marginBottom: 8,
+    textTransform: "uppercase",
+  },
+  factText: {
+    fontSize: 14,
+    color: Colors.gray[700],
+    lineHeight: 20,
+    fontWeight: "500",
+  },
+  waitMessageContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+    backgroundColor: "rgba(255,255,255,0.75)",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  waitMessageText: {
+    fontSize: 12,
+    color: Colors.gray[600],
+    fontWeight: "600",
+  },
 });

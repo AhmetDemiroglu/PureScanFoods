@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { showRewardedAd, isRewardedReady, loadRewardedAd } from '../../lib/admob';
 import { grantBonusScan, grantBonusChat } from '../../lib/firestore';
 import { useAuth } from '../../context/AuthContext';
+import { useUser } from '../../context/UserContext';
 
 interface LimitWarningModalProps {
     visible: boolean;
@@ -83,6 +84,7 @@ const parseDate = (input: any): Date => {
 export default function LimitWarningModal({ visible, onClose, onGoPremium, stats, user, limitType = 'weekly', onRewardEarned }: LimitWarningModalProps) {
     const { t } = useTranslation();
     const { user: authUser, deviceId } = useAuth();
+    const { familyMembers } = useUser();
 
     const scale = useSharedValue(0.9);
     const opacity = useSharedValue(0);
@@ -139,15 +141,18 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium, stats
         const s = stats || { scanCount: 0, scanLimit: 3, aiChatCount: 0, aiChatLimit: 5 };
         const u = user || { familyMembers: [] };
 
-        const rawFamilyCount = u.familyMembers?.length || 0;
-        const adjustedFamilyCount = rawFamilyCount > 0 ? rawFamilyCount - 1 : 0;
+        // Source of truth: UserContext (main_user excluded). Fallback to modal user prop.
+        const contextFamilyCount = (familyMembers || []).filter((m: any) => m.id !== 'main_user').length;
+        const fallbackRawFamilyCount = u.familyMembers?.length || 0;
+        const fallbackAdjustedFamilyCount = fallbackRawFamilyCount > 0 ? fallbackRawFamilyCount - 1 : 0;
+        const adjustedFamilyCount = contextFamilyCount > 0 ? contextFamilyCount : fallbackAdjustedFamilyCount;
 
         return {
             scan: { current: s.scanCount || 0, max: s.scanLimit || 3 },
             ai: { current: s.aiChatCount || 0, max: s.aiChatLimit || 5 },
             family: { current: adjustedFamilyCount, max: 1 }
         };
-    }, [stats, user]);
+    }, [stats, user, familyMembers]);
 
     const renewalDateText = useMemo(() => {
         if (isFamilyMode) return "";
@@ -270,7 +275,14 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium, stats
                             style={styles.ctaGradient}
                         >
                             <MaterialCommunityIcons name="crown-outline" size={20} color="#FFF" />
-                            <Text style={styles.ctaText}>{t('limits.go_premium_caps', 'PREMIUM\'A GEÇ')}</Text>
+                            <Text
+                                style={styles.ctaText}
+                                numberOfLines={1}
+                                adjustsFontSizeToFit
+                                minimumFontScale={0.72}
+                            >
+                                {t('limits.go_premium_caps', 'PREMIUM\'A GEÇ')}
+                            </Text>
                             <Ionicons name="arrow-forward" size={18} color="#FFF" />
                         </LinearGradient>
                     </Pressable>
@@ -312,8 +324,8 @@ const styles = StyleSheet.create({
     infoTitle: { fontSize: 11, fontWeight: '800', color: '#1E40AF', marginBottom: 2 },
     infoDesc: { fontSize: 11, color: '#3B82F6', lineHeight: 14, fontWeight: '500' },
     ctaButton: { width: '100%', marginBottom: 16 },
-    ctaGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 18, gap: 8 },
-    ctaText: { color: '#FFF', fontSize: 15, fontWeight: '700', letterSpacing: 0.3 },
+    ctaGradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, paddingHorizontal: 12, borderRadius: 18, gap: 8 },
+    ctaText: { color: '#FFF', fontSize: 15, fontWeight: '700', letterSpacing: 0.3, flexShrink: 1, textAlign: 'center' },
     secondaryButton: { paddingVertical: 4 },
     secondaryText: { fontSize: 11, fontWeight: '700', color: '#94A3B8', letterSpacing: 0.5 },
     adBadge: {

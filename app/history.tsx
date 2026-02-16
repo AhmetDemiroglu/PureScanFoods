@@ -14,10 +14,10 @@ import { TempStore } from '../lib/tempStore';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { BrandLoader } from '../components/ui/BrandLoader';
+import { useTranslation } from 'react-i18next';
 
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SIDEBAR_WIDTH = SCREEN_WIDTH * 0.80;
 
 interface HistorySidebarProps {
@@ -38,7 +38,11 @@ const getScoreBg = (score: number): string => {
   return "#FEF2F2";
 };
 
-const formatDate = (timestamp: any): string => {
+const formatDate = (
+  timestamp: any,
+  t: (key: string, options?: Record<string, any>) => string,
+  language: string
+): string => {
   if (!timestamp) return "";
   const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
   const now = new Date();
@@ -47,15 +51,17 @@ const formatDate = (timestamp: any): string => {
   const hours = Math.floor(diff / (1000 * 60 * 60));
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-  if (mins < 60) return `${mins}dk`;
-  if (hours < 24) return `${hours}sa`;
-  if (days === 0) return "Bugün";
-  if (days === 1) return "Dün";
-  if (days < 7) return `${days}g`;
-  return date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+  if (mins <= 0) return t("history.now");
+  if (mins < 60) return t("history.minutesShort", { count: mins });
+  if (hours < 24) return t("history.hoursShort", { count: hours });
+  if (days === 0) return t("history.today");
+  if (days === 1) return t("history.yesterday");
+  if (days < 7) return t("history.daysShort", { count: days });
+  return date.toLocaleDateString(language.startsWith("tr") ? "tr-TR" : "en-US", { day: "numeric", month: "short" });
 };
 
 export default function HistorySidebar({ visible, onClose }: HistorySidebarProps) {
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -263,7 +269,7 @@ export default function HistorySidebar({ visible, onClose }: HistorySidebarProps
 
           {/* Date - Overlay */}
           <View style={styles.dateBadge}>
-            <Text style={styles.dateBadgeText}>{formatDate(item.createdAt)}</Text>
+            <Text style={styles.dateBadgeText}>{formatDate(item.createdAt, t, i18n.language)}</Text>
           </View>
         </View>
 
@@ -310,7 +316,7 @@ export default function HistorySidebar({ visible, onClose }: HistorySidebarProps
       <View style={styles.emptyIcon}>
         <Ionicons name="scan" size={28} color={Colors.gray[300]} />
       </View>
-      <Text style={styles.emptyText}>Henüz tarama yok</Text>
+      <Text style={styles.emptyText}>{t("history.empty")}</Text>
     </View>
   );
 
@@ -347,7 +353,7 @@ export default function HistorySidebar({ visible, onClose }: HistorySidebarProps
               onPress={onClose}
               disabled={loading}
             >
-              <Text style={styles.modalBtnCancelText}>İptal</Text>
+              <Text style={styles.modalBtnCancelText}>{t("common.cancel")}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.modalBtnConfirm}
@@ -392,7 +398,7 @@ export default function HistorySidebar({ visible, onClose }: HistorySidebarProps
         >
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Geçmiş</Text>
+            <Text style={styles.headerTitle}>{t("history.title")}</Text>
             <TouchableOpacity style={styles.closeBtn} onPress={closeWithAnimation}>
               <Ionicons name="close" size={18} color={Colors.gray[600]} />
             </TouchableOpacity>
@@ -420,7 +426,7 @@ export default function HistorySidebar({ visible, onClose }: HistorySidebarProps
 
           {/* Hint */}
           {history.length > 0 && (
-            <Text style={styles.hintText}>Silmek için basılı tut</Text>
+            <Text style={styles.hintText}>{t("history.hintLongPress")}</Text>
           )}
 
           {/* Footer */}
@@ -430,7 +436,7 @@ export default function HistorySidebar({ visible, onClose }: HistorySidebarProps
               onPress={() => setShowClearModal(true)}
             >
               <Ionicons name="trash-outline" size={14} color={Colors.gray[500]} />
-              <Text style={styles.clearBtnText}>Temizle</Text>
+              <Text style={styles.clearBtnText}>{t("history.clear")}</Text>
             </TouchableOpacity>
           )}
         </Animated.View>
@@ -440,9 +446,9 @@ export default function HistorySidebar({ visible, onClose }: HistorySidebarProps
           visible={deleteTarget !== null}
           onClose={() => setDeleteTarget(null)}
           onConfirm={confirmDelete}
-          title="Taramayı Sil"
-          message={`"${deleteTarget?.productName}" silinecek.`}
-          confirmText="Sil"
+          title={t("history.deleteTitle")}
+          message={t("history.deleteMessage", { name: deleteTarget?.productName || t("results.unknownProduct") })}
+          confirmText={t("common.delete")}
         />
 
         {/* Clear All Modal */}
@@ -450,9 +456,9 @@ export default function HistorySidebar({ visible, onClose }: HistorySidebarProps
           visible={showClearModal}
           onClose={() => setShowClearModal(false)}
           onConfirm={confirmClearAll}
-          title="Geçmişi Temizle"
-          message={`${history.length} tarama kalıcı olarak silinecek.`}
-          confirmText="Temizle"
+          title={t("history.clearTitle")}
+          message={t("history.clearMessage", { count: history.length })}
+          confirmText={t("history.clear")}
           loading={clearing}
         />
       </View>
@@ -726,3 +732,9 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
 });
+
+
+
+
+
+

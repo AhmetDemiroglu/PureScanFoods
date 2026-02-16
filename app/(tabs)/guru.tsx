@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getScanHistoryFromDB } from '../../lib/firestore';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
@@ -29,7 +29,8 @@ import { TypingIndicator } from "../../components/guru/TypingIndicator";
 import { ChatInput } from "../../components/guru/ChatInput";
 import { ScanSelector } from "../../components/guru/ScanSelector";
 import LimitWarningModal from "../../components/ui/LimitWarningModal";
-import { BrandLoader } from "../../components/ui/BrandLoader";
+import HistorySidebar from "../history";
+import PaywallModal from "../../components/ui/PaywallModal";
 
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -60,8 +61,9 @@ export default function GuruScreen() {
     // --- STATE ---
     const [inputText, setInputText] = useState("");
     const [showLimitModal, setShowLimitModal] = useState(false);
-    const [isPageLoading, setIsPageLoading] = useState(true);
+    const [showPaywall, setShowPaywall] = useState(false);
     const [showOnboarding, setShowOnboarding] = useState(false);
+    const [isHistoryOpen, setHistoryOpen] = useState(false);
 
     const flatListRef = useRef<FlatList>(null);
     const showTyping = isLoading;
@@ -69,8 +71,6 @@ export default function GuruScreen() {
 
     // --- EFFECTS ---
     useEffect(() => {
-        setTimeout(() => setIsPageLoading(false), 500);
-
         AsyncStorage.getItem("@guru_onboarding_shown_v2").then(shown => {
             if (shown !== "true") setShowOnboarding(true);
         });
@@ -106,8 +106,6 @@ export default function GuruScreen() {
 
     const handleClearHistory = async () => {
         clearHistory();
-        await AsyncStorage.removeItem("@guru_onboarding_shown_v2");
-        setShowOnboarding(true);
     };
 
     const handleSuggestion = (text: string) => setInputText(text);
@@ -140,10 +138,6 @@ export default function GuruScreen() {
         }
     };
 
-    if (isPageLoading) {
-        return <BrandLoader mode="fullscreen" />;
-    }
-
     return (
         <View style={{ flex: 1, backgroundColor: Colors.surface }}>
             {/* --- HEADER --- */}
@@ -156,7 +150,7 @@ export default function GuruScreen() {
                     style={{ paddingTop: insets.top }}
                 >
                     <View style={styles.headerContent}>
-                        <Pressable onPress={() => router.back()} style={styles.backButton}>
+                        <Pressable onPress={() => (router.canGoBack() ? router.back() : router.push("/"))} style={styles.backButton}>
                             <Ionicons name="arrow-back" size={24} color={Colors.white} />
                         </Pressable>
 
@@ -169,7 +163,13 @@ export default function GuruScreen() {
                             </Text>
                         </View>
 
-                        <Pressable onPress={handleClearHistory} style={styles.backButton}>
+                        <Pressable onPress={() => setShowOnboarding(true)} style={styles.infoButton}>
+                            <Ionicons name="information-circle-outline" size={18} color="rgba(255,255,255,0.7)" />
+                        </Pressable>
+                        <Pressable onPress={() => setHistoryOpen(true)} style={styles.backButton}>
+                            <MaterialCommunityIcons name="history" size={22} color={Colors.white} />
+                        </Pressable>
+                        <Pressable onPress={handleClearHistory} style={[styles.backButton, { marginRight: 0 }]}>
                             <Ionicons name="trash-outline" size={22} color={Colors.white} />
                         </Pressable>
                     </View>
@@ -235,16 +235,21 @@ export default function GuruScreen() {
                 visible={showOnboarding}
                 onFinish={handleOnboardingFinish}
             />
+            <HistorySidebar visible={isHistoryOpen} onClose={() => setHistoryOpen(false)} />
             <LimitWarningModal
                 visible={showLimitModal}
                 onClose={() => setShowLimitModal(false)}
                 onGoPremium={() => {
                     setShowLimitModal(false);
-                    router.push("/premium");
+                    setShowPaywall(true);
                 }}
                 stats={usageStats}
                 user={userProfile}
                 limitType="weekly"
+            />
+            <PaywallModal
+                visible={showPaywall}
+                onClose={() => setShowPaywall(false)}
             />
         </View>
     );
@@ -266,6 +271,15 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         marginRight: 12,
+    },
+    infoButton: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: "rgba(255,255,255,0.1)",
+        alignItems: "center",
+        justifyContent: "center",
+        marginRight: 8,
     },
     headerTitleArea: {
         flex: 1,

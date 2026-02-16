@@ -343,12 +343,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     useEffect(() => {
         let mounted = true;
+        let unsubscribeAuth: (() => void) | null = null;
 
         const initAuth = async () => {
             const id = await getPersistentDeviceId();
             if (mounted) setDeviceId(id);
 
-            const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
                 if (!mounted) return;
 
                 if (currentUser) {
@@ -370,13 +371,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     }
                 }
             });
-            return unsubscribe;
         };
 
         initAuth();
 
         return () => {
             mounted = false;
+            unsubscribeAuth?.();
         };
     }, []);
 

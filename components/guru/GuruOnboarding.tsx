@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { View, Text, Pressable, StyleSheet, Modal, Dimensions, Animated, Easing } from "react-native";
+import { View, Text, Pressable, StyleSheet, Modal, Dimensions, Animated, Easing, ScrollView } from "react-native";
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Circle, Rect, Path, G, Line } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/colors";
@@ -135,39 +135,45 @@ export const GuruOnboarding = ({ visible, onFinish }: Props) => {
         <Modal transparent visible={visible} animationType="fade">
             <View style={styles.overlay}>
                 <View style={styles.card}>
-                    {/* Illustration Area */}
-                    <View style={styles.illustrationContainer}>
-                        <FloatingElement>
-                            <CurrentIllustration />
-                        </FloatingElement>
-                    </View>
+                    <ScrollView
+                        contentContainerStyle={styles.cardContent}
+                        showsVerticalScrollIndicator={false}
+                        bounces={false}
+                    >
+                        {/* Illustration Area */}
+                        <View style={styles.illustrationContainer}>
+                            <FloatingElement>
+                                <CurrentIllustration />
+                            </FloatingElement>
+                        </View>
 
-                    {/* Text Area */}
-                    <Text style={styles.title}>{slides[step].title}</Text>
-                    <Text style={styles.description}>{slides[step].desc}</Text>
+                        {/* Text Area */}
+                        <Text style={styles.title}>{slides[step].title}</Text>
+                        <Text style={styles.description}>{slides[step].desc}</Text>
 
-                    {/* Dots */}
-                    <View style={styles.dotsContainer}>
-                        {slides.map((_, i) => (
-                            <View
-                                key={i}
-                                style={[
-                                    styles.dot,
-                                    i === step ? styles.activeDot : styles.inactiveDot
-                                ]}
-                            />
-                        ))}
-                    </View>
+                        {/* Dots */}
+                        <View style={styles.dotsContainer}>
+                            {slides.map((_, i) => (
+                                <View
+                                    key={i}
+                                    style={[
+                                        styles.dot,
+                                        i === step ? styles.activeDot : styles.inactiveDot
+                                    ]}
+                                />
+                            ))}
+                        </View>
 
-                    {/* Button */}
-                    <Pressable style={styles.button} onPress={handleNext}>
-                        <Text style={styles.buttonText}>
-                            {step === slides.length - 1
-                                ? t("guru.onboarding.finishBtn")
-                                : t("guru.onboarding.nextBtn")}
-                        </Text>
-                        <Ionicons name="arrow-forward" size={20} color={Colors.white} />
-                    </Pressable>
+                        {/* Button */}
+                        <Pressable style={styles.button} onPress={handleNext}>
+                            <Text style={styles.buttonText}>
+                                {step === slides.length - 1
+                                    ? t("guru.onboarding.finishBtn")
+                                    : t("guru.onboarding.nextBtn")}
+                            </Text>
+                            <Ionicons name="arrow-forward" size={20} color={Colors.white} />
+                        </Pressable>
+                    </ScrollView>
                 </View>
             </View>
         </Modal>
@@ -185,12 +191,15 @@ const styles = StyleSheet.create({
     card: {
         width: "100%",
         maxWidth: 360,
+        maxHeight: "85%",
         backgroundColor: Colors.white,
         borderRadius: 32,
-        padding: 32,
-        alignItems: "center",
         elevation: 10,
         shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 20
+    },
+    cardContent: {
+        padding: 32,
+        alignItems: "center",
     },
     illustrationContainer: {
         height: 200,
@@ -211,7 +220,7 @@ const styles = StyleSheet.create({
         textAlign: "center",
         lineHeight: 22,
         marginBottom: 32,
-        height: 44 // Fix height to prevent jump
+        minHeight: 44
     },
     dotsContainer: {
         flexDirection: "row",

@@ -91,7 +91,6 @@ export default function PremiumCompareModal({ visible, onClose, onSubscribe }: P
 
     const handleSubscribe = () => {
         onSubscribe?.();
-        // TODO: Navigate to paywall
     };
 
     if (!visible) return null;

@@ -6,6 +6,7 @@ import {
     ScrollView,
     TextInput,
     TouchableOpacity,
+    FlatList,
     Dimensions,
     StatusBar,
     LayoutAnimation,
@@ -15,10 +16,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "../../constants/colors";
-import { BrandLoader } from "../../components/ui/BrandLoader";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import HistorySidebar from "../history";
+import { OnboardingModal } from "../../components/ui/OnboardingModal";
 
 import {
     NOVA_GROUPS,
@@ -60,13 +63,42 @@ export default function AdditivesLibraryScreen() {
     const { t, i18n } = useTranslation();
     const router = useRouter();
     const isTr = i18n.language === "tr";
-    const [isLoading, setIsLoading] = useState(true);
 
-    const [activeTab, setActiveTab] = useState<TabType>("additives");
+    const [activeTab, setActiveTab] = useState<TabType>("nova");
     const [searchQuery, setSearchQuery] = useState("");
     const [riskFilter, setRiskFilter] = useState<RiskFilter>("ALL");
     const [expandedAdditive, setExpandedAdditive] = useState<string | null>(null);
     const [expandedNova, setExpandedNova] = useState<NovaGroup | null>(null);
+    const [isHistoryOpen, setHistoryOpen] = useState(false);
+    const [showOnboarding, setShowOnboarding] = useState(false);
+
+    useEffect(() => {
+        AsyncStorage.getItem("@encyclopedia_onboarding_shown_v1").then(shown => {
+            if (shown !== "true") setShowOnboarding(true);
+        });
+    }, []);
+
+    const handleOnboardingFinish = async () => {
+        await AsyncStorage.setItem("@encyclopedia_onboarding_shown_v1", "true");
+        setShowOnboarding(false);
+    };
+
+    const encyclopediaSlides = useMemo(() => [
+        {
+            title: t("encyclopedia.onboarding.slide1Title"),
+            desc: t("encyclopedia.onboarding.slide1Desc"),
+            icon: "book" as const,
+            iconColor: Colors.primary,
+            iconBg: "#FFF7ED",
+        },
+        {
+            title: t("encyclopedia.onboarding.slide2Title"),
+            desc: t("encyclopedia.onboarding.slide2Desc"),
+            icon: "search" as const,
+            iconColor: "#7C3AED",
+            iconBg: "#EDE9FE",
+        },
+    ], [t]);
 
     // Filtered additives
     const filteredAdditives = useMemo(() => {
@@ -101,10 +133,6 @@ export default function AdditivesLibraryScreen() {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setExpandedNova(expandedNova === group ? null : group);
     };
-
-    useEffect(() => {
-        setTimeout(() => setIsLoading(false), 100);
-    }, []);
 
     const renderAdditiveCard = (additive: AdditiveInfo) => {
         const isExpanded = expandedAdditive === additive.code;
@@ -293,10 +321,6 @@ export default function AdditivesLibraryScreen() {
         );
     };
 
-    if (isLoading) {
-        return <BrandLoader mode="fullscreen" />;
-    }
-
     return (
         <View style={styles.container}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
@@ -310,7 +334,7 @@ export default function AdditivesLibraryScreen() {
             >
                 <SafeAreaView edges={["top"]}>
                     <View style={styles.headerContent}>
-                        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                        <TouchableOpacity style={styles.backButton} onPress={() => (router.canGoBack() ? router.back() : router.push("/"))}>
                             <Ionicons name="arrow-back" size={24} color="#FFF" />
                         </TouchableOpacity>
                         <View style={styles.headerTitleArea}>
@@ -321,6 +345,12 @@ export default function AdditivesLibraryScreen() {
                                 {isTr ? "Katkı maddeleri ve NOVA rehberi" : "Additives & NOVA guide"}
                             </Text>
                         </View>
+                        <TouchableOpacity style={styles.infoButton} onPress={() => setShowOnboarding(true)}>
+                            <Ionicons name="information-circle-outline" size={18} color="rgba(255,255,255,0.7)" />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.backButton, { marginRight: 0 }]} onPress={() => setHistoryOpen(true)}>
+                            <MaterialCommunityIcons name="history" size={22} color="#FFF" />
+                        </TouchableOpacity>
                     </View>
 
                     {/* Tab Switcher */}
@@ -369,135 +399,153 @@ export default function AdditivesLibraryScreen() {
             </LinearGradient>
 
             {/* Content */}
-            <ScrollView
-                style={styles.content}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-            >
-                {/* ADDITIVES TAB */}
-                {activeTab === "additives" && (
-                    <>
-                        {/* Search */}
-                        <View style={styles.searchContainer}>
-                            <Ionicons name="search" size={20} color={Colors.gray[400]} />
-                            <TextInput
-                                style={styles.searchInput}
-                                placeholder={isTr ? "E kodu veya isim ara..." : "Search E-code or name..."}
-                                placeholderTextColor={Colors.gray[400]}
-                                value={searchQuery}
-                                onChangeText={setSearchQuery}
-                            />
-                            {searchQuery.length > 0 && (
-                                <TouchableOpacity onPress={() => setSearchQuery("")}>
-                                    <Ionicons name="close-circle" size={20} color={Colors.gray[400]} />
-                                </TouchableOpacity>
-                            )}
-                        </View>
+            {activeTab === "additives" ? (
+                <FlatList
+                    style={styles.content}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                    data={filteredAdditives}
+                    keyExtractor={(item) => item.code}
+                    initialNumToRender={10}
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                    renderItem={({ item }) => renderAdditiveCard(item)}
+                    ListHeaderComponent={
+                        <>
+                            {/* Search */}
+                            <View style={styles.searchContainer}>
+                                <Ionicons name="search" size={20} color={Colors.gray[400]} />
+                                <TextInput
+                                    style={styles.searchInput}
+                                    placeholder={isTr ? "E kodu veya isim ara..." : "Search E-code or name..."}
+                                    placeholderTextColor={Colors.gray[400]}
+                                    value={searchQuery}
+                                    onChangeText={setSearchQuery}
+                                />
+                                {searchQuery.length > 0 && (
+                                    <TouchableOpacity onPress={() => setSearchQuery("")}>
+                                        <Ionicons name="close-circle" size={20} color={Colors.gray[400]} />
+                                    </TouchableOpacity>
+                                )}
+                            </View>
 
-                        {/* Stats */}
-                        <View style={styles.statsRow}>
-                            <View style={[styles.statBox, { backgroundColor: "#FEF2F2" }]}>
-                                <Text style={[styles.statNumber, { color: "#DC2626" }]}>{stats.hazardous}</Text>
-                                <Text style={styles.statLabel}>{isTr ? "Tehlikeli" : "Hazardous"}</Text>
+                            {/* Stats */}
+                            <View style={styles.statsRow}>
+                                <View style={[styles.statBox, { backgroundColor: "#FEF2F2" }]}>
+                                    <Text style={[styles.statNumber, { color: "#DC2626" }]}>{stats.hazardous}</Text>
+                                    <Text style={styles.statLabel}>{isTr ? "Tehlikeli" : "Hazardous"}</Text>
+                                </View>
+                                <View style={[styles.statBox, { backgroundColor: "#FFFBEB" }]}>
+                                    <Text style={[styles.statNumber, { color: "#D97706" }]}>{stats.caution}</Text>
+                                    <Text style={styles.statLabel}>{isTr ? "Dikkatli" : "Caution"}</Text>
+                                </View>
+                                <View style={[styles.statBox, { backgroundColor: "#F0FDF4" }]}>
+                                    <Text style={[styles.statNumber, { color: "#16A34A" }]}>{stats.safe}</Text>
+                                    <Text style={styles.statLabel}>{isTr ? "Güvenli" : "Safe"}</Text>
+                                </View>
                             </View>
-                            <View style={[styles.statBox, { backgroundColor: "#FFFBEB" }]}>
-                                <Text style={[styles.statNumber, { color: "#D97706" }]}>{stats.caution}</Text>
-                                <Text style={styles.statLabel}>{isTr ? "Dikkatli" : "Caution"}</Text>
-                            </View>
-                            <View style={[styles.statBox, { backgroundColor: "#F0FDF4" }]}>
-                                <Text style={[styles.statNumber, { color: "#16A34A" }]}>{stats.safe}</Text>
-                                <Text style={styles.statLabel}>{isTr ? "Güvenli" : "Safe"}</Text>
-                            </View>
-                        </View>
 
-                        {/* Risk Filter */}
-                        <View style={styles.filterRow}>
-                            {(["ALL", "HAZARDOUS", "CAUTION", "SAFE"] as RiskFilter[]).map((filter) => (
-                                <TouchableOpacity
-                                    key={filter}
-                                    style={[
-                                        styles.filterChip,
-                                        riskFilter === filter && styles.filterChipActive,
-                                        riskFilter === filter && filter === "ALL" && { backgroundColor: Colors.secondary },
-                                        riskFilter === filter && filter === "HAZARDOUS" && { backgroundColor: "#DC2626" },
-                                        riskFilter === filter && filter === "CAUTION" && { backgroundColor: "#D97706" },
-                                        riskFilter === filter && filter === "SAFE" && { backgroundColor: "#16A34A" },
-                                    ]}
-                                    onPress={() => setRiskFilter(filter)}
-                                >
-                                    <Text
+                            {/* Risk Filter */}
+                            <View style={styles.filterRow}>
+                                {(["ALL", "HAZARDOUS", "CAUTION", "SAFE"] as RiskFilter[]).map((filter) => (
+                                    <TouchableOpacity
+                                        key={filter}
                                         style={[
-                                            styles.filterChipText,
-                                            riskFilter === filter && styles.filterChipTextActive,
+                                            styles.filterChip,
+                                            riskFilter === filter && styles.filterChipActive,
+                                            riskFilter === filter && filter === "ALL" && { backgroundColor: Colors.secondary },
+                                            riskFilter === filter && filter === "HAZARDOUS" && { backgroundColor: "#DC2626" },
+                                            riskFilter === filter && filter === "CAUTION" && { backgroundColor: "#D97706" },
+                                            riskFilter === filter && filter === "SAFE" && { backgroundColor: "#16A34A" },
                                         ]}
+                                        onPress={() => setRiskFilter(filter)}
                                     >
-                                        {filter === "ALL" && (isTr ? "Tümü" : "All")}
-                                        {filter === "HAZARDOUS" && (isTr ? "Tehlikeli" : "Hazardous")}
-                                        {filter === "CAUTION" && (isTr ? "Dikkatli" : "Caution")}
-                                        {filter === "SAFE" && (isTr ? "Güvenli" : "Safe")}
+                                        <Text
+                                            style={[
+                                                styles.filterChipText,
+                                                riskFilter === filter && styles.filterChipTextActive,
+                                            ]}
+                                        >
+                                            {filter === "ALL" && (isTr ? "Tümü" : "All")}
+                                            {filter === "HAZARDOUS" && (isTr ? "Tehlikeli" : "Hazardous")}
+                                            {filter === "CAUTION" && (isTr ? "Dikkatli" : "Caution")}
+                                            {filter === "SAFE" && (isTr ? "Güvenli" : "Safe")}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+
+                            {/* Results Count */}
+                            <Text style={styles.resultsCount}>
+                                {filteredAdditives.length} {isTr ? "sonuç" : "results"}
+                            </Text>
+                        </>
+                    }
+                    ListFooterComponent={<View style={{ height: 40 }} />}
+                />
+            ) : (
+                <ScrollView
+                    style={styles.content}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {/* NOVA TAB */}
+                    {activeTab === "nova" && (
+                        <>
+                            {/* NOVA Info Box */}
+                            <View style={styles.novaInfoBox}>
+                                <Ionicons name="information-circle" size={24} color={Colors.primary} />
+                                <View style={styles.novaInfoContent}>
+                                    <Text style={styles.novaInfoTitle}>
+                                        {isTr ? "NOVA Sınıflandırması Nedir?" : "What is NOVA Classification?"}
                                     </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-
-                        {/* Results Count */}
-                        <Text style={styles.resultsCount}>
-                            {filteredAdditives.length} {isTr ? "sonuç" : "results"}
-                        </Text>
-
-                        {/* Additive Cards */}
-                        {filteredAdditives.map(renderAdditiveCard)}
-                    </>
-                )}
-
-                {/* NOVA TAB */}
-                {activeTab === "nova" && (
-                    <>
-                        {/* NOVA Info Box */}
-                        <View style={styles.novaInfoBox}>
-                            <Ionicons name="information-circle" size={24} color={Colors.primary} />
-                            <View style={styles.novaInfoContent}>
-                                <Text style={styles.novaInfoTitle}>
-                                    {isTr ? "NOVA Sınıflandırması Nedir?" : "What is NOVA Classification?"}
-                                </Text>
-                                <Text style={styles.novaInfoText}>
-                                    {isTr
-                                        ? "NOVA, gıdaları işlenme derecelerine göre 4 gruba ayıran uluslararası bir sınıflandırma sistemidir. Düşük gruplar daha sağlıklı seçenekleri temsil eder."
-                                        : "NOVA is an international classification system that divides foods into 4 groups based on their degree of processing. Lower groups represent healthier choices."}
-                                </Text>
+                                    <Text style={styles.novaInfoText}>
+                                        {isTr
+                                            ? "NOVA, gıdaları işlenme derecelerine göre 4 gruba ayıran uluslararası bir sınıflandırma sistemidir. Düşük gruplar daha sağlıklı seçenekleri temsil eder."
+                                            : "NOVA is an international classification system that divides foods into 4 groups based on their degree of processing. Lower groups represent healthier choices."}
+                                    </Text>
+                                </View>
                             </View>
-                        </View>
 
-                        {/* NOVA Cards */}
-                        {([1, 2, 3, 4] as NovaGroup[]).map(renderNovaCard)}
-                    </>
-                )}
+                            {/* NOVA Cards */}
+                            {([1, 2, 3, 4] as NovaGroup[]).map(renderNovaCard)}
+                        </>
+                    )}
 
-                {/* NUTRI-SCORE TAB */}
-                {activeTab === "nutriscore" && (
-                    <>
-                        {/* Info Box */}
-                        <View style={styles.novaInfoBox}>
-                            <Ionicons name="information-circle" size={24} color={Colors.primary} />
-                            <View style={styles.novaInfoContent}>
-                                <Text style={styles.novaInfoTitle}>
-                                    {isTr ? "Nutri-Score Nedir?" : "What is Nutri-Score?"}
-                                </Text>
-                                <Text style={styles.novaInfoText}>
-                                    {isTr
-                                        ? "Nutri-Score, gıdaların besin değerini A'dan (en sağlıklı) E'ye (en az sağlıklı) kadar sıralayan 5 renkli bir etiketleme sistemidir."
-                                        : "Nutri-Score is a 5-color nutrition label that ranks foods from A (best) to E (poorest) nutritional quality."}
-                                </Text>
+                    {/* NUTRI-SCORE TAB */}
+                    {activeTab === "nutriscore" && (
+                        <>
+                            {/* Info Box */}
+                            <View style={styles.novaInfoBox}>
+                                <Ionicons name="information-circle" size={24} color={Colors.primary} />
+                                <View style={styles.novaInfoContent}>
+                                    <Text style={styles.novaInfoTitle}>
+                                        {isTr ? "Nutri-Score Nedir?" : "What is Nutri-Score?"}
+                                    </Text>
+                                    <Text style={styles.novaInfoText}>
+                                        {isTr
+                                            ? "Nutri-Score, gıdaların besin değerini A'dan (en sağlıklı) E'ye (en az sağlıklı) kadar sıralayan 5 renkli bir etiketleme sistemidir."
+                                            : "Nutri-Score is a 5-color nutrition label that ranks foods from A (best) to E (poorest) nutritional quality."}
+                                    </Text>
+                                </View>
                             </View>
-                        </View>
 
-                        {/* Cards */}
-                        {(['A', 'B', 'C', 'D', 'E'] as NutriScore[]).map(renderNutriScoreCard)}
-                    </>
-                )}
+                            {/* Cards */}
+                            {(['A', 'B', 'C', 'D', 'E'] as NutriScore[]).map(renderNutriScoreCard)}
+                        </>
+                    )}
 
-                <View style={{ height: 40 }} />
-            </ScrollView>
+                    <View style={{ height: 40 }} />
+                </ScrollView>
+            )}
+            <HistorySidebar visible={isHistoryOpen} onClose={() => setHistoryOpen(false)} />
+            <OnboardingModal
+                visible={showOnboarding}
+                onFinish={handleOnboardingFinish}
+                slides={encyclopediaSlides}
+                nextLabel={t("encyclopedia.onboarding.nextBtn")}
+                finishLabel={t("encyclopedia.onboarding.finishBtn")}
+            />
         </View>
     );
 }
@@ -524,7 +572,17 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
     },
+    infoButton: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: "rgba(255,255,255,0.1)",
+        alignItems: "center",
+        justifyContent: "center",
+        marginRight: 8,
+    },
     headerTitleArea: {
+        flex: 1,
         marginLeft: 16,
     },
     headerTitle: {

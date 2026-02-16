@@ -110,14 +110,16 @@ export const GuruProvider = ({ children }: { children: React.ReactNode }) => {
             timestamp: Date.now()
         };
 
-        setMessages(prev => [...prev, userMessage]);
+        const activeProfile = getActiveProfile();
+        const nextMessages = [...messages, userMessage];
+        setMessages(nextMessages);
 
         try {
             const guruContext = {
                 userProfile: {
-                    allergens: getActiveProfile()?.allergens || [],
-                    dietaryPreferences: getActiveProfile()?.diet ? [getActiveProfile()!.diet!] : [],
-                    lifeStage: getActiveProfile()?.lifeStage || null
+                    allergens: activeProfile?.allergens || [],
+                    dietaryPreferences: activeProfile?.diet ? [activeProfile.diet] : [],
+                    lifeStage: activeProfile?.lifeStage || null
                 },
                 userName,
                 familyMembers: memberList,
@@ -128,7 +130,7 @@ export const GuruProvider = ({ children }: { children: React.ReactNode }) => {
             const response = await sendGuruMessage(
                 text,
                 guruContext,
-                [...messages, userMessage],
+                nextMessages,
                 i18n.language
             );
 
@@ -139,13 +141,15 @@ export const GuruProvider = ({ children }: { children: React.ReactNode }) => {
                 timestamp: Date.now()
             };
 
-            setMessages(prev => [...prev, assistantMessage]);
+            setMessages(prev => {
+                const updated = [...prev, assistantMessage];
+                saveToStorage(updated);
+                return updated;
+            });
 
             if (user?.uid) {
                 await incrementAiChatCount(user.uid, deviceId);
             }
-
-            saveToStorage([...messages, userMessage, assistantMessage]);
 
             return true;
 

@@ -34,10 +34,10 @@
             "What are gluten-free products?"
         ],
         "onboarding": {
-            "slide1Title": "Smart Nutrition Guide",
-            "slide1Desc": "Get personalized food analysis and recommendations aligned with your goals.",
-            "slide2Title": "Safety & Limitations",
-            "slide2Desc": "Guru is not medical advice. Always consult a doctor before making health decisions.",
+            "slide1Title": "Meet PureScan Guru",
+            "slide1Desc": "Your AI food expert. Ask about any ingredient, compare products, or get diet-specific advice - all based on science, personalized for you.",
+            "slide2Title": "Smart, Not Medical",
+            "slide2Desc": "Guru analyzes food and nutrition with scientific accuracy, but doesn't replace your doctor. Health decisions should always involve a professional.",
             "nextBtn": "Next",
             "finishBtn": "Start"
         },
@@ -49,6 +49,31 @@
         "premium_subtitle": "Premium Assistant",
         "recentScans": "Recent Scans",
         "activeProduct": "Active Product"
+    },
+    "appOnboarding": {
+        "slide1Title": "Know What You Eat",
+        "slide1Desc": "Point your camera at any product label. PureScan identifies every ingredient, flags harmful additives, and gives you a clear safety score - in seconds.",
+        "slide2Title": "Your Personal AI Nutritionist",
+        "slide2Desc": "Ask anything about food and nutrition. PureScan Guru analyzes products based on your diet, allergens, and health goals - like having a food scientist in your pocket.",
+        "slide3Title": "Built for Your Whole Family",
+        "slide3Desc": "Create individual profiles for each family member with their own diets and allergens. Every scan result is automatically personalized for whoever needs it.",
+        "slide4Title": "One Last Thing",
+        "slide4Desc": "PureScan is a powerful tool - but it works best alongside professional advice. Please review our transparency notice below.",
+        "skipBtn": "Skip",
+        "nextBtn": "Continue",
+        "finishBtn": "I Accept & Get Started",
+        "disclaimer": {
+            "title": "Transparency Notice",
+            "body": "PureScan uses AI and optical recognition to analyze food labels. While we strive for accuracy, results may vary due to label quality, database coverage, or model limitations.",
+            "points": [
+                "This is not medical diagnosis, treatment, or personalized medical advice.",
+                "Always double-check allergens and critical ingredients on the physical label.",
+                "Consult your doctor or dietitian for health-related decisions.",
+                "By continuing, you acknowledge these limitations."
+            ],
+            "acceptLabel": "I've read and accept the transparency notice.",
+            "requiredHint": "Please accept the notice above to continue."
+        }
     },
     "library": {
         "title": "Food Library",
@@ -98,11 +123,34 @@
         }
     },
     "processing": {
+        "didYouKnow": "DID YOU KNOW?",
+        "titles": {
+            "camera": "Analyzing Image...",
+            "text": "Analyzing Text...",
+            "barcode": "Reading Barcode...",
+            "ad": "Preparing Result..."
+        },
         "steps": {
             "1": "Processing Image...",
             "2": "Extracting Text...",
             "3": "Analyzing Nutrition...",
             "4": "Preparing Results..."
+        },
+        "textSteps": {
+            "1": "Text received...",
+            "2": "AI is analyzing...",
+            "3": "Extracting nutrition...",
+            "4": "Preparing results..."
+        },
+        "barcodeSteps": {
+            "1": "Barcode detected...",
+            "2": "Fetching product data...",
+            "3": "AI validation...",
+            "4": "Preparing results..."
+        },
+        "adSteps": {
+            "1": "Loading ad...",
+            "2": "Finalizing result..."
         },
         "facts": [
             "An apple can help you wake up better than coffee.",
@@ -366,6 +414,11 @@
                 "e": "Poor nutritional quality. Consume sparingly.",
                 "unknown": "Data is missing to calculate Nutri-Score for this product."
             }
+        },
+        "openfoodfactsNotice": {
+            "title": "OpenFoodFacts Data Note",
+            "body": "Some product fields are provided by OpenFoodFacts. If data looks missing or incorrect, scan the ingredient label with your camera for a full AI analysis.",
+            "cta": "Scan with Camera"
         }
     },
     "common": {
@@ -381,6 +434,7 @@
         "refreshing": "Refreshing...",
         "saved_to_history": "Saved to history",
         "cancel": "Cancel",
+        "delete": "Delete",
         "ok": "OK",
         "or": "OR",
         "tryAgain": "Try Again"
@@ -425,7 +479,47 @@
                 "friend": "Friend",
                 "other": "Other"
             }
+        },
+        "onboarding": {
+            "slide1Title": "Your Nutrition Hub",
+            "slide1Desc": "This is where PureScan gets personal. Set your diet, mark your allergens, and every scan result adapts to you - flagging what matters, ignoring what doesn't.",
+            "slide2Title": "One App, Whole Family",
+            "slide2Desc": "Add profiles for your kids, partner, or parents - each with their own diet and allergen settings. Scan once, get safety results for everyone.",
+            "slide3Title": "Smarter With Every Detail",
+            "slide3Desc": "The more you tell us, the better we protect you. Choose your diet type, mark allergens, and set your life stage - PureScan does the rest.",
+            "nextBtn": "Next",
+            "finishBtn": "Got It"
+        },
+        "hints": {
+            "longPressEdit": "Long press to edit"
+        },
+        "clearDiet": "Clear Selection"
+    },
+    "encyclopedia": {
+        "onboarding": {
+            "slide1Title": "Your Food Knowledge Base",
+            "slide1Desc": "Explore 300+ food additives, understand NOVA processing levels, and decode Nutri-Score ratings - all the science behind your food labels, in plain language.",
+            "slide2Title": "Search, Filter, Learn",
+            "slide2Desc": "Look up any additive by E-code or name, filter by risk level, and tap any card for the full story. Knowledge is your best ingredient.",
+            "nextBtn": "Next",
+            "finishBtn": "Got It"
         }
+    },
+    "history": {
+        "title": "History",
+        "empty": "No scans yet",
+        "hintLongPress": "Long press to delete",
+        "clear": "Clear",
+        "deleteTitle": "Delete Scan",
+        "deleteMessage": "\"{{name}}\" will be deleted.",
+        "clearTitle": "Clear History",
+        "clearMessage": "{{count}} scans will be permanently deleted.",
+        "now": "now",
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "minutesShort": "{{count}}m",
+        "hoursShort": "{{count}}h",
+        "daysShort": "{{count}}d"
     },
     "scan": {
         "rotateHint": "Rotate phone for better results",
@@ -604,5 +698,27 @@
         "feat_priority": "Priority Support",
         "upgrade_now": "Go Premium",
         "maybe_later": "Maybe Later"
+    },
+    "paywall": {
+        "title": "Upgrade to Premium",
+        "subtitle": "Unlock unlimited scans, AI chat, and family profiles - everything you need for healthier choices.",
+        "yearly": "Yearly",
+        "monthly": "Monthly",
+        "per_month": "/mo",
+        "per_year": "/yr",
+        "save_percent": "SAVE 43%",
+        "includes": "Everything included",
+        "feat_unlimited_scan": "Unlimited Product Scans",
+        "feat_unlimited_ai": "Unlimited AI Assistant",
+        "feat_unlimited_family": "Unlimited Family Profiles",
+        "feat_no_ads": "Ad-Free Experience",
+        "feat_priority": "Priority Support",
+        "subscribe_now": "Subscribe Now",
+        "restore": "Restore Purchase",
+        "terms": "Terms & Privacy",
+        "maybe_later": "Maybe Later",
+        "dev_notice_title": "Coming Soon",
+        "dev_notice_desc": "The subscription system is currently under development. For premium access requests, please contact the developer.",
+        "dev_notice_ok": "Got It"
     }
 }

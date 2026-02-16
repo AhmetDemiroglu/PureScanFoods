@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "purescan-foods"
-  }
+    "default": "purescan-foods",
+    "firebase functions:secrets:set GLM_API_KEY": "purescan-foods"
+  },
+  "targets": {},
+  "etags": {}
 }

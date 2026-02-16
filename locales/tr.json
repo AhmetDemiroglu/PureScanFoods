@@ -24,10 +24,10 @@
             "accept": "Anladım, Başla"
         },
         "onboarding": {
-            "slide1Title": "Akıllı Beslenme Rehberi",
-            "slide1Desc": "Beslenme hedeflerinize uygun, kişiselleştirilmiş gıda analizleri ve öneriler alın.",
-            "slide2Title": "Güvenlik & Sınırlamalar",
-            "slide2Desc": "Guru tıbbi tavsiye vermez. Sağlık kararları almadan önce mutlaka uzman bir doktora danışın.",
+            "slide1Title": "PureScan Guru ile Tanış",
+            "slide1Desc": "Yapay zeka destekli gıda uzmanın. Herhangi bir içerik hakkında sor, ürünleri karşılaştır veya diyetine özel tavsiyeler al - bilime dayalı, sana özel.",
+            "slide2Title": "Akıllı, Ama Doktor Değil",
+            "slide2Desc": "Guru gıda ve beslenmeyi bilimsel doğrulukla analiz eder, ancak doktorunun yerini almaz. Sağlık kararlarında mutlaka bir uzmana danışın.",
             "nextBtn": "İlerle",
             "finishBtn": "Başla"
         },
@@ -49,6 +49,31 @@
         "premium_subtitle": "Premium Asistan",
         "recentScans": "Son Taramalar",
         "activeProduct": "Aktif Ürün"
+    },
+    "appOnboarding": {
+        "slide1Title": "Ne Yediğini Bil",
+        "slide1Desc": "Kameranı herhangi bir ürün etiketine doğrult. PureScan tüm içerikleri analiz eder, zararlı katkıları işaretler ve sana net bir güvenlik puanı verir - saniyeler içinde.",
+        "slide2Title": "Kişisel AI Beslenme Danışmanın",
+        "slide2Desc": "Gıda ve beslenme hakkında her şeyi sor. PureScan Guru, diyetine, alerjenlerine ve sağlık hedeflerine göre ürünleri analiz eder - cebinde bir gıda bilimci gibi.",
+        "slide3Title": "Tüm Aile İçin Tasarlandı",
+        "slide3Desc": "Her aile üyesi için kendi diyet ve alerjen ayarlarıyla ayrı profiller oluştur. Her tarama sonucu, kimin için yapıldıysa ona göre otomatik kişiselleştirilir.",
+        "slide4Title": "Son Bir Adım",
+        "slide4Desc": "PureScan güçlü bir araç - ama en iyi sonucu profesyonel tavsiyeyle birlikte verir. Lütfen aşağıdaki şeffaflık bildirimini inceleyin.",
+        "skipBtn": "Atla",
+        "nextBtn": "Devam Et",
+        "finishBtn": "Kabul Ediyorum ve Başlıyorum",
+        "disclaimer": {
+            "title": "Şeffaflık Bildirimi",
+            "body": "PureScan, gıda etiketlerini analiz etmek için yapay zeka ve optik tanıma teknolojisi kullanır. Doğruluk için çalışsak da sonuçlar etiket kalitesi, veri tabanı kapsamı veya model sınırlamaları nedeniyle değişiklik gösterebilir.",
+            "points": [
+                "Bu içerik tıbbi teşhis, tedavi veya kişiselleştirilmiş tıbbi tavsiye değildir.",
+                "Alerjen ve kritik bileşenleri mutlaka ürünün fiziksel etiketinden doğrulayın.",
+                "Sağlığınızla ilgili kararlar için doktorunuza veya diyetisyeninize danışın.",
+                "Devam ederek bu sınırlamaları kabul etmiş olursunuz."
+            ],
+            "acceptLabel": "Şeffaflık bildirimini okudum ve kabul ediyorum.",
+            "requiredHint": "Devam etmek için lütfen yukarıdaki bildirimi onaylayın."
+        }
     },
     "library": {
         "title": "Gıda Kütüphanesi",
@@ -98,11 +123,34 @@
         }
     },
     "processing": {
+        "didYouKnow": "BUNLARI BİLİYOR MUYDUNUZ?",
+        "titles": {
+            "camera": "Görüntü Analiz Ediliyor...",
+            "text": "Metin Analiz Ediliyor...",
+            "barcode": "Barkod Okunuyor...",
+            "ad": "Sonuç Hazırlanıyor..."
+        },
         "steps": {
             "1": "Görüntü İşleniyor...",
             "2": "Metin Ayrıştırılıyor...",
             "3": "Besin Değerleri Taranıyor...",
             "4": "Sonuçlar Hazırlanıyor..."
+        },
+        "textSteps": {
+            "1": "Metin alındı...",
+            "2": "Yapay zeka analiz ediyor...",
+            "3": "Besin verileri çıkarılıyor...",
+            "4": "Sonuçlar hazırlanıyor..."
+        },
+        "barcodeSteps": {
+            "1": "Barkod algılandı...",
+            "2": "Ürün verisi getiriliyor...",
+            "3": "Yapay zeka doğruluyor...",
+            "4": "Sonuçlar hazırlanıyor..."
+        },
+        "adSteps": {
+            "1": "Reklam yükleniyor...",
+            "2": "Sonuç tamamlanıyor..."
         },
         "facts": [
             "Bir elma, sabahları uyanmanıza kahveden daha fazla yardımcı olabilir.",
@@ -366,6 +414,11 @@
                 "e": "Düşük besin değeri. Nadiren tüketin.",
                 "unknown": "Bu ürünün Nutri-Score değerini hesaplamak için verileri eksiktir."
             }
+        },
+        "openfoodfactsNotice": {
+            "title": "OpenFoodFacts Veri Notu",
+            "body": "Bazı ürün alanları OpenFoodFacts veritabanından gelir. Veri eksik veya hatalı görünüyorsa, tam AI analizi için içerik etiketini kamerayla tarayın.",
+            "cta": "Kamerayla Tara"
         }
     },
     "common": {
@@ -381,6 +434,7 @@
         "refreshing": "Yenileniyor...",
         "saved_to_history": "Geçmişe Kaydedildi",
         "cancel": "Vazgeç",
+        "delete": "Sil",
         "ok": "Tamam",
         "or": "VEYA",
         "tryAgain": "Tekrar Deneyin"
@@ -425,7 +479,47 @@
                 "friend": "Arkadaş",
                 "other": "Diğer"
             }
+        },
+        "onboarding": {
+            "slide1Title": "Beslenme Merkezin",
+            "slide1Desc": "PureScan burada kişiselleşiyor. Diyetini belirle, alerjenlerini işaretle - her tarama sonucu sana göre şekillenir, önemli olanları vurgular.",
+            "slide2Title": "Bir Uygulama, Tüm Aile",
+            "slide2Desc": "Çocukların, eşin veya ailen için profiller ekle - her birinin kendi diyet ve alerjen ayarları olsun. Bir kez tara, herkes için sonuç al.",
+            "slide3Title": "Her Detayda Daha Akıllı",
+            "slide3Desc": "Bize ne kadar çok bilgi verirsen, seni o kadar iyi koruruz. Diyet tipini seç, alerjenlerini işaretle, yaş grubunu belirle - gerisini PureScan halleder.",
+            "nextBtn": "İlerle",
+            "finishBtn": "Anladım"
+        },
+        "hints": {
+            "longPressEdit": "Düzenlemek için basılı tutun"
+        },
+        "clearDiet": "Seçimi Kaldır"
+    },
+    "encyclopedia": {
+        "onboarding": {
+            "slide1Title": "Gıda Bilgi Bankası",
+            "slide1Desc": "300'den fazla katkı maddesini incele, NOVA işleme seviyelerini anla ve Nutri-Score puanlarını çöz - etiketlerin arkasındaki bilimi sade bir dille keşfet.",
+            "slide2Title": "Ara, Filtrele, Öğren",
+            "slide2Desc": "Herhangi bir katkı maddesini E kodu veya isimle ara, risk seviyesine göre filtrele ve kartlara dokunarak tüm detayları gör. Bilgi, en iyi bileşenindir.",
+            "nextBtn": "İlerle",
+            "finishBtn": "Anladım"
         }
+    },
+    "history": {
+        "title": "Geçmiş",
+        "empty": "Henüz tarama yok",
+        "hintLongPress": "Silmek için basılı tut",
+        "clear": "Temizle",
+        "deleteTitle": "Taramayı Sil",
+        "deleteMessage": "\"{{name}}\" silinecek.",
+        "clearTitle": "Geçmişi Temizle",
+        "clearMessage": "{{count}} tarama kalıcı olarak silinecek.",
+        "now": "şimdi",
+        "today": "Bugün",
+        "yesterday": "Dün",
+        "minutesShort": "{{count}} dk",
+        "hoursShort": "{{count}} sa",
+        "daysShort": "{{count}} g"
     },
     "scan": {
         "rotateHint": "Daha iyi sonuç için telefonu yatay çevirin",
@@ -604,5 +698,27 @@
         "feat_priority": "Öncelikli Destek",
         "upgrade_now": "Premium'a Geç",
         "maybe_later": "Daha Sonra"
+    },
+    "paywall": {
+        "title": "Premium'a Yükselt",
+        "subtitle": "Sınırsız tarama, AI sohbet ve aile profilleri - daha sağlıklı seçimler için ihtiyacın olan her şey.",
+        "yearly": "Yıllık",
+        "monthly": "Aylık",
+        "per_month": "/ay",
+        "per_year": "/yıl",
+        "save_percent": "%43 TASARRUF",
+        "includes": "Dahil olan özellikler",
+        "feat_unlimited_scan": "Sınırsız Ürün Taraması",
+        "feat_unlimited_ai": "Sınırsız AI Asistan",
+        "feat_unlimited_family": "Sınırsız Aile Profili",
+        "feat_no_ads": "Reklamsız Deneyim",
+        "feat_priority": "Öncelikli Destek",
+        "subscribe_now": "Abone Ol",
+        "restore": "Satın Almayı Geri Yükle",
+        "terms": "Şartlar ve Gizlilik",
+        "maybe_later": "Daha Sonra",
+        "dev_notice_title": "Çok Yakında",
+        "dev_notice_desc": "Abonelik sistemi şu anda geliştirme aşamasındadır. Premium erişim talepleriniz için lütfen geliştirici ile iletişime geçin.",
+        "dev_notice_ok": "Anladım"
     }
 }

@@ -52,10 +52,14 @@ import {
 import * as Haptics from "expo-haptics";
 import { useAuth } from "../../context/AuthContext";
 import LimitWarningModal from "../../components/ui/LimitWarningModal";
+import HistorySidebar from "../history";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { OnboardingModal } from "../../components/ui/OnboardingModal";
+import PaywallModal from "../../components/ui/PaywallModal";
 
 const getSafeIcon = (iconName: string): any => iconName === "person" ? "account" : iconName;
 
-if (Platform.OS === 'android') {
+if (Platform.OS === 'android' && !(global as any).nativeFabricUIManager) {
   if (UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
   }
@@ -162,6 +166,44 @@ export default function NutritionScreen() {
 
   // Limit Warning Modal State
   const [showLimitModal, setShowLimitModal] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [isHistoryOpen, setHistoryOpen] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  React.useEffect(() => {
+    AsyncStorage.getItem("@nutrition_onboarding_shown_v1").then(shown => {
+      if (shown !== "true") setShowOnboarding(true);
+    });
+  }, []);
+
+  const handleOnboardingFinish = async () => {
+    await AsyncStorage.setItem("@nutrition_onboarding_shown_v1", "true");
+    setShowOnboarding(false);
+  };
+
+  const nutritionSlides = React.useMemo(() => [
+    {
+      title: t("nutrition.onboarding.slide1Title"),
+      desc: t("nutrition.onboarding.slide1Desc"),
+      icon: "heart" as const,
+      iconColor: Colors.primary,
+      iconBg: "#FFF7ED",
+    },
+    {
+      title: t("nutrition.onboarding.slide2Title"),
+      desc: t("nutrition.onboarding.slide2Desc"),
+      icon: "people" as const,
+      iconColor: "#0284C7",
+      iconBg: "#E0F2FE",
+    },
+    {
+      title: t("nutrition.onboarding.slide3Title"),
+      desc: t("nutrition.onboarding.slide3Desc"),
+      icon: "shield-checkmark" as const,
+      iconColor: "#16A34A",
+      iconBg: "#F0FDF4",
+    },
+  ], [t]);
 
   React.useEffect(() => {
     if (showFamilyModal || showDietModal || showAllergenModal || showAvatarModal) {
@@ -249,7 +291,7 @@ export default function NutritionScreen() {
       setEditingAvatarId(editingMemberId);
       setShowAvatarModal(true);
     } else {
-      alert("Avatarı üye oluşturulduktan sonra değiştirebilirsiniz.");
+      return;
     }
   };
 
@@ -425,6 +467,12 @@ export default function NutritionScreen() {
               <Text style={styles.headerTitle}>{t("navigation.nutrition")}</Text>
               <Text style={styles.headerSubtitle}>{t("nutrition.subtitle")}</Text>
             </View>
+            <TouchableOpacity style={styles.infoButton} onPress={() => setShowOnboarding(true)}>
+              <Ionicons name="information-circle-outline" size={18} color="rgba(255,255,255,0.7)" />
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.backButton, { marginRight: 0 }]} onPress={() => setHistoryOpen(true)}>
+              <MaterialCommunityIcons name="history" size={22} color="#FFF" />
+            </TouchableOpacity>
           </View>
 
           {/* Profile Card */}
@@ -519,6 +567,12 @@ export default function NutritionScreen() {
               );
             })}
           </ScrollView>
+          {familyMembers.length > 1 && (
+            <View style={styles.hintRow}>
+              <Ionicons name="information-circle-outline" size={14} color={Colors.gray[400]} />
+              <Text style={styles.hintText}>{t("nutrition.hints.longPressEdit")}</Text>
+            </View>
+          )}
         </View>
 
         {/* DIET SECTION */}
@@ -765,6 +819,18 @@ export default function NutritionScreen() {
               keyExtractor={(item) => item}
               contentContainerStyle={{ paddingHorizontal: 20 }}
               showsVerticalScrollIndicator={false}
+              ListHeaderComponent={selectedDiet ? (
+                <TouchableOpacity
+                  style={styles.clearDietButton}
+                  onPress={() => {
+                    contextUpdateData(activeProfileId, "diet", null);
+                    setShowDietModal(false);
+                  }}
+                >
+                  <Ionicons name="close-circle-outline" size={20} color={Colors.error} />
+                  <Text style={styles.clearDietText}>{t("nutrition.clearDiet")}</Text>
+                </TouchableOpacity>
+              ) : null}
               renderItem={({ item }) => {
                 const def = DIET_DEFINITIONS[item];
                 const isSelected = selectedDiet === item;
@@ -1016,12 +1082,20 @@ export default function NutritionScreen() {
           </Animated.View>
         </View>
       </Modal >
+      <HistorySidebar visible={isHistoryOpen} onClose={() => setHistoryOpen(false)} />
+      <OnboardingModal
+        visible={showOnboarding}
+        onFinish={handleOnboardingFinish}
+        slides={nutritionSlides}
+        nextLabel={t("nutrition.onboarding.nextBtn")}
+        finishLabel={t("nutrition.onboarding.finishBtn")}
+      />
       <LimitWarningModal
         visible={showLimitModal}
         onClose={() => setShowLimitModal(false)}
         onGoPremium={() => {
           setShowLimitModal(false);
-          router.push("/paywall");
+          setShowPaywall(true);
         }}
         stats={usageStats}
         user={{
@@ -1029,6 +1103,10 @@ export default function NutritionScreen() {
           familyMembers: familyMembers
         }}
         limitType="family"
+      />
+      <PaywallModal
+        visible={showPaywall}
+        onClose={() => setShowPaywall(false)}
       />
     </View >
   );
@@ -1039,6 +1117,7 @@ const styles = StyleSheet.create({
   header: { paddingBottom: 20 },
   headerContent: { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingTop: 10, marginBottom: 16 },
   backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center", marginRight: 12 },
+  infoButton: { width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center", marginRight: 8 },
   headerTitleArea: { flex: 1 },
   headerTitle: { fontSize: 22, fontWeight: "800", color: "#FFF" },
   headerSubtitle: { fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 2 },
@@ -1062,6 +1141,10 @@ const styles = StyleSheet.create({
   memberName: { fontSize: 13, fontWeight: '600', color: "#334155", textAlign: 'center' },
   memberRole: { fontSize: 11, color: "#94A3B8" },
   activeIndicator: { position: 'absolute', top: 8, right: 8, backgroundColor: Colors.primary, width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  hintRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, paddingLeft: 4 },
+  hintText: { fontSize: 11, color: Colors.gray[400] },
+  clearDietButton: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 14, paddingHorizontal: 4, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  clearDietText: { fontSize: 15, fontWeight: '600', color: Colors.error },
 
   emptyBox: { padding: 24, backgroundColor: "#FFF", borderRadius: 16, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#E2E8F0", borderStyle: "dashed" },
   emptyText: { color: "#94A3B8", fontSize: 14, fontWeight: "500" },

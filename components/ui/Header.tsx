@@ -1,10 +1,12 @@
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet, Image } from "react-native";
 import { useState } from "react";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { Colors } from "../../constants/colors";
 import { useAuth } from "../../context/AuthContext";
 import AuthModal from "../profile/AuthModal";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LANGUAGE_STORAGE_KEY } from "../../lib/i18n";
 
 interface HeaderProps {
     onHistoryPress?: () => void;
@@ -16,7 +18,15 @@ export default function Header({ onHistoryPress }: HeaderProps) {
     const [showAuth, setShowAuth] = useState(false);
 
     const toggleLanguage = () => {
-        const newLang = i18n.language === "tr" ? "en" : "tr";
+        const current = i18n.language?.startsWith("tr")
+            ? "tr"
+            : i18n.language?.startsWith("es")
+                ? "es"
+                : "en";
+        const order = ["en", "tr", "es"] as const;
+        const nextIndex = (order.indexOf(current as any) + 1) % order.length;
+        const newLang = order[nextIndex];
+        AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, newLang).catch(() => {});
         i18n.changeLanguage(newLang);
     };
 
@@ -75,9 +85,22 @@ export default function Header({ onHistoryPress }: HeaderProps) {
                     style={({ pressed }) => [styles.langButton, pressed && styles.buttonPressed]}
                     onPress={toggleLanguage}
                 >
-                    <Text style={styles.flagEmoji}>
-                        {i18n.language === "tr" ? "🇹🇷" : "🇺🇸"}
-                    </Text>
+                    {i18n.language.startsWith("tr") ? (
+                        <Image
+                            source={require("../../assets/turkey-flag-round.png")}
+                            style={styles.flagImage}
+                        />
+                    ) : i18n.language.startsWith("es") ? (
+                        <Image
+                            source={require("../../assets/spain-flag-round.png")}
+                            style={styles.flagImage}
+                        />
+                    ) : (
+                        <Image
+                            source={require("../../assets/us-flag-round.png")}
+                            style={styles.flagImage}
+                        />
+                    )}
                 </Pressable>
             </View>
 
@@ -188,18 +211,12 @@ const styles = StyleSheet.create({
     langButton: {
         width: 30,
         height: 30,
-        borderRadius: 20,
-        backgroundColor: "#FFF",
-        alignItems: "center",
-        justifyContent: "center",
-        borderWidth: 1,
-        borderColor: Colors.gray[200],
+        borderRadius: 15,
         overflow: "hidden",
     },
-    flagEmoji: {
-        fontSize: 47,
-        height: 59,
-        width: 100,
-        left: 31
+    flagImage: {
+        width: 30,
+        height: 30,
+        borderRadius: 15,
     },
 });

@@ -11,7 +11,6 @@ import { Colors } from "../../constants/colors";
 import Header from "../../components/ui/Header";
 import Hero from "../../components/ui/Hero";
 import { callGemini } from "../../lib/api";
-import ProcessingView from "../../components/ui/ProcessingView";
 import { TempStore } from "../../lib/tempStore";
 import { generateAnalysisPrompt, generateBarcodeDataPrompt } from "../../lib/prompt";
 import { getIngredientsByBarcode } from "../../lib/openFoodFacts";
@@ -22,6 +21,8 @@ import { useLocalSearchParams } from "expo-router";
 import HistorySidebar from '../history';
 import LimitWarningModal from "../../components/ui/LimitWarningModal";
 import { ScanFailGraphic } from "../../components/ui/ScanFailGraphic";
+import PaywallModal from "../../components/ui/PaywallModal";
+import ProcessingView, { ProcessingMode } from "../../components/ui/ProcessingView";
 
 type ScanTab = "camera" | "barcode" | "text";
 
@@ -40,6 +41,7 @@ export default function ScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [processingMode, setProcessingMode] = useState<ProcessingMode>("camera");
   const router = useRouter();
 
   const [showCamera, setShowCamera] = useState(false);
@@ -51,7 +53,11 @@ export default function ScanScreen() {
   const [isHistoryOpen, setHistoryOpen] = useState(false);
   const [showNotFoundModal, setShowNotFoundModal] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
   const [showInvalidScanModal, setShowInvalidScanModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorTitle, setErrorTitle] = useState("");
+  const [errorDescription, setErrorDescription] = useState("");
   const params = useLocalSearchParams();
 
   const { getActiveData } = useUser();
@@ -64,14 +70,24 @@ export default function ScanScreen() {
     return true;
   };
 
+  const openErrorModal = (title: string, description: string) => {
+    setErrorTitle(title);
+    setErrorDescription(description);
+    setShowErrorModal(true);
+  };
+
   const handleBarcodeSearch = async () => {
     if (!checkLimit()) return; // EKLENDİ
 
     if (!barcodeInput || barcodeInput.length < 3) {
-      alert(t("scan.enterValidBarcode"));
+      openErrorModal(
+        t("common.tryAgain", { defaultValue: "Tekrar Deneyin" }),
+        t("scan.enterValidBarcode")
+      );
       return;
     }
 
+    setProcessingMode("barcode");
     setIsScanning(true);
     try {
       const productData = await getIngredientsByBarcode(barcodeInput);
@@ -102,7 +118,10 @@ export default function ScanScreen() {
 
     } catch (error) {
       console.error("Barcode Scan Error:", error);
-      alert(t("errors.generic", { defaultValue: "Bir hata oluştu, lütfen tekrar deneyin." }));
+      openErrorModal(
+        t("errors.generic", { defaultValue: "Bir hata oluştu, lütfen tekrar deneyin." }),
+        t("scan.invalidScanDesc", { defaultValue: "Görüntüde okunabilir bir gıda içeriği tespit edilemedi veya bu bir gıda ürünü değil." })
+      );
       setIsScanning(false);
     }
   };
@@ -112,6 +131,7 @@ export default function ScanScreen() {
 
     setShowCamera(false);
     setBarcodeInput(data);
+    setProcessingMode("barcode");
     setIsScanning(true);
 
     try {
@@ -141,7 +161,10 @@ export default function ScanScreen() {
 
     } catch (error) {
       console.error("Camera Barcode Error:", error);
-      alert(t("errors.barcodeProcessing"));
+      openErrorModal(
+        t("errors.barcodeProcessing"),
+        t("scan.invalidScanDesc", { defaultValue: "Görüntüde okunabilir bir gıda içeriği tespit edilemedi veya bu bir gıda ürünü değil." })
+      );
       setIsScanning(false);
     }
   };
@@ -150,10 +173,14 @@ export default function ScanScreen() {
     if (!checkLimit()) return;
 
     if (!textInput || textInput.length < 10) {
-      alert(t("scan.textTooShort", { defaultValue: "Lütfen analiz için yeterli içerik girin." }));
+      openErrorModal(
+        t("common.tryAgain", { defaultValue: "Tekrar Deneyin" }),
+        t("scan.textTooShort", { defaultValue: "Lütfen analiz için yeterli içerik girin." })
+      );
       return;
     }
 
+    setProcessingMode("text");
     setIsScanning(true);
     try {
       const currentLang = i18n.language;
@@ -177,7 +204,10 @@ export default function ScanScreen() {
 
     } catch (error) {
       console.error("Text Analyze Error:", error);
-      alert(t("errors.generic", { defaultValue: "Bir hata oluştu." }));
+      openErrorModal(
+        t("errors.generic", { defaultValue: "Bir hata oluştu." }),
+        t("scan.invalidScanDesc", { defaultValue: "Görüntüde okunabilir bir gıda içeriği tespit edilemedi veya bu bir gıda ürünü değil." })
+      );
       setIsScanning(false);
     }
   };
@@ -214,16 +244,44 @@ export default function ScanScreen() {
         }
       }
 
-      TempStore.setResult(parsedData, imageUri || "");
+      TempStore.setResult(parsedData, imageUri || "", {
+        source: offData ? "barcode" : (activeTab === "text" ? "text" : "camera")
+      });
       router.push("/product-result");
 
       setTimeout(() => setIsScanning(false), 500);
 
     } catch (e) {
       console.error("Parsing Error:", e);
-      alert(t("errors.analysisFailed"));
+      openErrorModal(
+        t("errors.analysisFailed"),
+        t("scan.invalidScanDesc", { defaultValue: "Görüntüde okunabilir bir gıda içeriği tespit edilemedi veya bu bir gıda ürünü değil." })
+      );
       setIsScanning(false);
     }
+  };
+
+  const analyzeImageWithGemini = async (base64Image: string, imageUri?: string) => {
+    const currentLang = i18n.language;
+    const profileData = getActiveData();
+
+    const promptProfile = {
+      allergens: profileData.allergens,
+      dietaryPreferences: profileData.diet ? [profileData.diet] : []
+    };
+
+    const systemPrompt = generateAnalysisPrompt(currentLang, promptProfile);
+
+    const apiResult = await callGemini("gemini-2.5-flash-preview-09-2025:generateContent", {
+      contents: [{
+        parts: [
+          { text: systemPrompt },
+          { inlineData: { mimeType: "image/jpeg", data: base64Image } }
+        ]
+      }]
+    });
+
+    processGeminiResult(apiResult, imageUri, undefined);
   };
 
   const handleGalleryPick = async () => {
@@ -237,33 +295,18 @@ export default function ScanScreen() {
       });
 
       if (!result.canceled && result.assets[0].base64) {
+        setProcessingMode("camera");
         setIsScanning(true);
         setShowCamera(false); // Modal açıksa kapat
 
-        const currentLang = i18n.language;
-        const profileData = getActiveData();
-
-        const promptProfile = {
-          allergens: profileData.allergens,
-          dietaryPreferences: profileData.diet ? [profileData.diet] : []
-        };
-
-        const systemPrompt = generateAnalysisPrompt(currentLang, promptProfile);
-
-        const apiResult = await callGemini("gemini-2.5-flash-preview-09-2025:generateContent", {
-          contents: [{
-            parts: [
-              { text: systemPrompt },
-              { inlineData: { mimeType: "image/jpeg", data: result.assets[0].base64 } }
-            ]
-          }]
-        });
-
-        processGeminiResult(apiResult, result.assets[0].uri);
+        await analyzeImageWithGemini(result.assets[0].base64, result.assets[0].uri);
       }
     } catch (err) {
       console.error("Galeri Hatası:", err);
-      alert(t("errors.imageLoad"));
+      openErrorModal(
+        t("errors.imageLoad"),
+        t("scan.invalidScanDesc", { defaultValue: "Görüntüde okunabilir bir gıda içeriği tespit edilemedi veya bu bir gıda ürünü değil." })
+      );
       setIsScanning(false);
     }
   };
@@ -278,21 +321,33 @@ export default function ScanScreen() {
   }, [params.autoStart]);
 
   useEffect(() => {
+    let scanLoop: Animated.CompositeAnimation | null = null;
+    let pulseLoop: Animated.CompositeAnimation | null = null;
+
     if (showCamera) {
-      Animated.loop(
+      scanLoop = Animated.loop(
         Animated.sequence([
           Animated.timing(scanLineAnim, { toValue: 1, duration: 2000, useNativeDriver: true }),
           Animated.timing(scanLineAnim, { toValue: 0, duration: 2000, useNativeDriver: true }),
         ])
-      ).start();
+      );
+      scanLoop.start();
 
-      Animated.loop(
+      pulseLoop = Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, { toValue: 1.1, duration: 1000, useNativeDriver: true }),
           Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
         ])
-      ).start();
+      );
+      pulseLoop.start();
     }
+
+    return () => {
+      scanLoop?.stop();
+      pulseLoop?.stop();
+      scanLineAnim.stopAnimation();
+      pulseAnim.stopAnimation();
+    };
   }, [showCamera]);
 
   useEffect(() => {
@@ -304,7 +359,7 @@ export default function ScanScreen() {
   }, [showCamera]);
 
   if (isScanning) {
-    return <ProcessingView />;
+    return <ProcessingView mode={processingMode} />;
   }
 
   return (
@@ -379,7 +434,7 @@ export default function ScanScreen() {
                     >
                       <Ionicons name="scan" size={32} color={Colors.white} />
                       <Text style={styles.mainButtonText}>
-                        {permission?.granted ? t("home.actions.scanIngredients") : t("permissions.request", { defaultValue: "Kamera İzni Ver" })}
+                        {permission?.granted ? t("home.actions.scanIngredients") : t("home.permissions.request", { defaultValue: "Kamera İzni Ver" })}
                       </Text>
                     </LinearGradient>
                   </Pressable>
@@ -624,31 +679,19 @@ export default function ScanScreen() {
                             shutterSound: false
                           });
 
+                          setProcessingMode("camera");
                           setIsScanning(true);
                           setShowCamera(false);
 
                           if (photo.base64) {
-                            const currentLang = i18n.language;
-                            const profileData = getActiveData();
-                            const promptProfile = {
-                              allergens: profileData.allergens,
-                              dietaryPreferences: profileData.diet ? [profileData.diet] : []
-                            };
-                            const systemPrompt = generateAnalysisPrompt(currentLang, promptProfile);
-
-                            const apiResult = await callGemini("gemini-2.5-flash-preview-09-2025:generateContent", {
-                              contents: [{
-                                parts: [
-                                  { text: systemPrompt },
-                                  { inlineData: { mimeType: "image/jpeg", data: photo.base64 } }
-                                ]
-                              }]
-                            });
-                            processGeminiResult(apiResult, photo.uri, undefined);
+                            await analyzeImageWithGemini(photo.base64, photo.uri);
                           }
                         } catch (e) {
                           console.error("❌ Hata:", e);
-                          alert("Hata oluştu.");
+                          openErrorModal(
+                            t("errors.generic", { defaultValue: "Bir hata oluştu." }),
+                            t("scan.invalidScanDesc", { defaultValue: "Görüntüde okunabilir bir gıda içeriği tespit edilemedi veya bu bir gıda ürünü değil." })
+                          );
                           setIsScanning(false);
                         }
                       }
@@ -737,13 +780,17 @@ export default function ScanScreen() {
         onClose={() => setShowLimitModal(false)}
         onGoPremium={() => {
           setShowLimitModal(false);
-          router.push("/paywall");
+          setShowPaywall(true);
         }}
         stats={usageStats}
         user={{
           ...userProfile,
           familyMembers: familyMembers
         }}
+      />
+      <PaywallModal
+        visible={showPaywall}
+        onClose={() => setShowPaywall(false)}
       />
       <Modal
         visible={showInvalidScanModal}
@@ -793,6 +840,30 @@ export default function ScanScreen() {
               </Pressable>
             </View>
 
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        visible={showErrorModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowErrorModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalIconContainer}>
+              <Ionicons name="alert-circle" size={48} color={Colors.warning} />
+            </View>
+            <Text style={styles.modalTitle}>{errorTitle}</Text>
+            <Text style={styles.modalText}>{errorDescription}</Text>
+            <View style={styles.modalButtons}>
+              <Pressable
+                style={[styles.modalButton, styles.modalButtonPrimary]}
+                onPress={() => setShowErrorModal(false)}
+              >
+                <Text style={styles.modalButtonTextPrimary}>{t("common.ok", { defaultValue: "Tamam" })}</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       </Modal>

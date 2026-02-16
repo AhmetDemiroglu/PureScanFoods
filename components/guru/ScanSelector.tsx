@@ -21,11 +21,6 @@ export const ScanSelector = ({ scans, onSelect, isLoading }: ScanSelectorProps) 
         return Colors.error;
     };
 
-    const getInitials = (name?: string) => {
-        if (!name || name.trim() === "") return "??";
-        return name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
-    };
-
     const getDisplayName = (scan: ScanResult) => {
         return scan.productName?.trim() || scan.brand?.trim() || "Bilinmeyen Ürün";
     };
@@ -50,16 +45,11 @@ export const ScanSelector = ({ scans, onSelect, isLoading }: ScanSelectorProps) 
                             style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
                             onPress={() => onSelect(scan)}
                         >
-                            {/* Resim veya Avatar */}
-                            {scan.imageUrl ? (
-                                <Image source={{ uri: scan.imageUrl }} style={styles.image} />
-                            ) : (
-                                <View style={[styles.avatar, { backgroundColor: scoreColor + "15" }]}>
-                                    <Text style={[styles.avatarText, { color: scoreColor }]}>
-                                        {getInitials(displayName)}
-                                    </Text>
-                                </View>
-                            )}
+                            {/* Resim veya Placeholder */}
+                            <Image
+                                source={scan.imageUrl ? { uri: scan.imageUrl } : require("../../assets/placeholder.png")}
+                                style={styles.image}
+                            />
 
                             {/* İsim + Brand + Score */}
                             <View style={styles.info}>
@@ -117,17 +107,6 @@ const styles = StyleSheet.create({
         height: 44,
         borderRadius: 10,
         backgroundColor: Colors.gray[100],
-    },
-    avatar: {
-        width: 44,
-        height: 44,
-        borderRadius: 10,
-        alignItems: "center",
-        justifyContent: "center",
-    },
-    avatarText: {
-        fontSize: 14,
-        fontWeight: "700",
     },
     info: {
         flex: 1,

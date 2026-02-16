@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../../lib/firebase";
 import PremiumCompareModal from "../ui/PremiumCompareModal";
+import LottieView from "lottie-react-native";
 
 interface AuthModalProps {
     visible: boolean;
@@ -54,6 +55,8 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
     const [showAllAllergens, setShowAllAllergens] = useState(false);
     const [showPremiumModal, setShowPremiumModal] = useState(false);
     const [profileUnlocked, setProfileUnlocked] = useState(false);
+    const [forgotLoading, setForgotLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     const isLoggedIn = user && !user.isAnonymous;
 
@@ -73,6 +76,8 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
             setToast(prev => ({ ...prev, visible: false }));
             setShowPremiumModal(false);
             setProfileUnlocked(false);
+            setForgotLoading(false);
+            setShowPassword(false);
         }
     }, [visible]);
 
@@ -102,7 +107,7 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
             showToast(t("auth.enter_email_first"), "error");
             return;
         }
-        setLoading(true);
+        setForgotLoading(true);
         sendPasswordResetEmail(auth, email)
             .then(() => {
                 showToast(t("auth.reset_email_sent"), "success");
@@ -113,7 +118,7 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
                     : t("auth.reset_email_error");
                 showToast(errorMsg, "error");
             })
-            .finally(() => setLoading(false));
+            .finally(() => setForgotLoading(false));
     };
 
     const handleLogout = () => {
@@ -291,7 +296,12 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
             {/* Header */}
             <View style={styles.authHeader}>
                 <View style={styles.authIcon}>
-                    <MaterialCommunityIcons name={isRegister ? "account-plus" : "login"} size={28} color={Colors.primary} />
+                    <LottieView
+                        source={require("../../assets/login-signup.json")}
+                        autoPlay
+                        loop
+                        style={styles.authLottie}
+                    />
                 </View>
                 <Text style={styles.authTitle}>{isRegister ? t("auth.join_us") : t("auth.welcome_back")}</Text>
                 <Text style={styles.authSubtitle}>{isRegister ? t("auth.register_subtitle") : t("auth.login_subtitle")}</Text>
@@ -319,8 +329,11 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
                     placeholderTextColor={Colors.gray[400]}
                     value={password}
                     onChangeText={setPassword}
-                    secureTextEntry
+                    secureTextEntry={!showPassword}
                 />
+                <Pressable onPress={() => setShowPassword(!showPassword)} hitSlop={8}>
+                    <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={Colors.gray[400]} />
+                </Pressable>
             </View>
 
             {/* Forgot Password - Sadece Login modunda */}
@@ -328,9 +341,13 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
                 <Pressable
                     style={styles.forgotPasswordBtn}
                     onPress={handleForgotPassword}
-                    disabled={loading}
+                    disabled={forgotLoading}
                 >
-                    <Text style={styles.forgotPasswordText}>{t("auth.forgot_password")}</Text>
+                    {forgotLoading ? (
+                        <ActivityIndicator color={Colors.primary} size="small" />
+                    ) : (
+                        <Text style={styles.forgotPasswordText}>{t("auth.forgot_password")}</Text>
+                    )}
                 </Pressable>
             )}
 
@@ -459,7 +476,8 @@ const styles = StyleSheet.create({
 
     // Auth
     authHeader: { alignItems: "center", marginBottom: 24 },
-    authIcon: { width: 56, height: 56, borderRadius: 16, backgroundColor: `${Colors.primary}15`, alignItems: "center", justifyContent: "center", marginBottom: 16 },
+    authIcon: { height: 82, borderRadius: 16, alignItems: "center", justifyContent: "center", marginBottom: 16 },
+    authLottie: { width: 162, height: 162 },
     authTitle: { fontSize: 22, fontWeight: "700", color: Colors.secondary, marginBottom: 4 },
     authSubtitle: { fontSize: 14, color: Colors.gray[500], textAlign: "center" },
 

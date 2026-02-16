@@ -13,6 +13,7 @@ import { AllergenType } from '../lib/allergens';
 import { LifeStageType } from '../lib/lifestages';
 import { updateUserPreferences } from '../lib/firestore';
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import i18n from '../lib/i18n';
 
 // --- TİPLER ---
 export type FamilyRole = "spouse" | "child" | "mother" | "father" | "sibling" | "friend" | "other" | "self";
@@ -201,7 +202,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
         } catch (error) {
             console.error("Aile üyeleri çekilemedi:", error);
-            Alert.alert("Hata", "Aile bilgileri yüklenemedi.");
+            Alert.alert(i18n.t("settings.error"), i18n.t("errors.generic"));
         } finally {
             setIsLoading(false);
         }
@@ -241,7 +242,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
         } catch (error) {
             console.error("Üye eklenemedi:", error);
-            Alert.alert("Hata", "Yeni üye eklenirken sorun oluştu.");
+            Alert.alert(i18n.t("settings.error"), i18n.t("errors.generic"));
         }
     };
 
@@ -254,7 +255,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
             setFamilyMembers(prev => prev.filter(m => m.id !== id));
         } catch (error) {
             console.error("Üye silinemedi:", error);
-            Alert.alert("Hata", "Üye silinemedi.");
+            Alert.alert(i18n.t("settings.error"), i18n.t("errors.generic"));
         }
     };
 
