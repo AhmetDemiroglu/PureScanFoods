@@ -7,3 +7,16 @@ expo-env.d.ts
 # @end expo-cli
 .env
 google-services.json
+
+# Android build/release artifacts
+android/.gradle/
+android/build/
+android/app/build/
+android/app/release/
+*.apk
+*.aab
+
+# Android signing/secrets
+android/key.properties
+*.jks
+*.keystore
