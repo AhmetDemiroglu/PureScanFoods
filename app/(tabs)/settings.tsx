@@ -41,7 +41,7 @@ if (Platform.OS === "android" && !(global as any).nativeFabricUIManager && UIMan
 }
 
 const APP_VERSION = Application.nativeApplicationVersion || "1.0.0";
-const PRIVACY_URL = "https://ahmetdemiroglu.github.io/pure_scan_cosmetics/";
+const PRIVACY_URL = "http://purescan-foods.septimuslab.com/privacy-policy/";
 const SUPPORT_EMAIL = "septimus.labb@gmail.com";
 
 export default function SettingsScreen() {
