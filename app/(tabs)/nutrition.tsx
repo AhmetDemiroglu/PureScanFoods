@@ -73,6 +73,7 @@ export default function NutritionScreen() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const isTr = i18n.language === "tr";
+  const isEs = i18n.language?.startsWith("es");
   const insets = useSafeAreaInsets();
 
   // --- ANIMATED PAN RESPONDER ---
@@ -120,10 +121,12 @@ export default function NutritionScreen() {
   } = useUser();
 
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   const mainUserRef = familyMembers.find(m => m.id === "main_user");
 
   React.useEffect(() => {
+    if (isEditingProfile) return;
     if (user?.displayName && mainUserRef && user?.email) {
       const currentName = mainUserRef.name || "";
       const emailPrefix = user.email.split('@')[0];
@@ -137,7 +140,7 @@ export default function NutritionScreen() {
         updateMemberInfo("main_user", { name: user.displayName });
       }
     }
-  }, [user?.displayName, mainUserRef?.name, user?.email]);
+  }, [user?.displayName, mainUserRef?.name, user?.email, isEditingProfile]);
 
   const [tempName, setTempName] = useState("");
   const [tempRole, setTempRole] = useState<FamilyRole>("child");
@@ -145,8 +148,6 @@ export default function NutritionScreen() {
   const [tempIcon, setTempIcon] = useState<string>("account");
   const [tempLifeStage, setTempLifeStage] = useState<LifeStageType>("ADULT");
 
-  // --- UI STATE  
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isDietExpanded, setIsDietExpanded] = useState(false);
 
   const [avatarTab, setAvatarTab] = useState<'colors' | 'icons'>('colors');
@@ -496,21 +497,10 @@ export default function NutritionScreen() {
                   </TouchableOpacity>
 
                   <View style={{ flex: 1, justifyContent: 'center' }}>
-                    {isEditingProfile ? (
-                      <TextInput
-                        style={styles.profileInput}
-                        value={mainUser?.name}
-                        onChangeText={handleNameChange}
-                        onBlur={() => setIsEditingProfile(false)}
-                        autoFocus
-                        selectionColor="#FFF"
-                      />
-                    ) : (
-                      <TouchableOpacity onPress={() => setIsEditingProfile(true)} style={styles.nameRow}>
-                        <Text style={styles.profileName}>{mainUser?.name}</Text>
-                        <Ionicons name="pencil" size={14} color="rgba(255,255,255,0.7)" />
-                      </TouchableOpacity>
-                    )}
+                    <TouchableOpacity onPress={() => openEditModal(mainUser)} style={styles.nameRow}>
+                      <Text style={styles.profileName}>{mainUser?.name}</Text>
+                      <Ionicons name="pencil" size={14} color="rgba(255,255,255,0.7)" />
+                    </TouchableOpacity>
                     {/* Üyelik Metni */}
                     <Text style={styles.profileRole}>
                       {isPremium ? t("nutrition.premium_member") : t("nutrition.standard_member")}
@@ -739,7 +729,7 @@ export default function NutritionScreen() {
                         activeOpacity={0.7}
                       >
                         <Text style={[styles.lifeStageText, isSelected && { color: activeText, fontWeight: '700' }]}>
-                          {isTr ? def.nameTr : def.name}
+                          {isTr ? def.nameTr : isEs ? def.nameEs : def.name}
                         </Text>
                         {isVulnerable && (
                           <Ionicons name="warning" size={10} color="#F59E0B" style={{ position: 'absolute', top: 4, right: 4 }} />

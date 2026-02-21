@@ -104,6 +104,12 @@ export const GuruOnboarding = ({ visible, onFinish }: Props) => {
     const { t } = useTranslation();
     const [step, setStep] = useState(0);
 
+    useEffect(() => {
+        if (visible) {
+            setStep(0);
+        }
+    }, [visible]);
+
     const slides = [
         {
             id: 1,

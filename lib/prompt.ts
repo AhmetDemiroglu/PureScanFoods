@@ -1,5 +1,5 @@
 export function generateAnalysisPrompt(lang: string, userProfile: { allergens: string[]; dietaryPreferences: string[]; lifeStage?: string | null } | null): string {
-    const targetLang = lang === "tr" ? "TURKISH" : "ENGLISH";
+    const targetLang = lang === "tr" ? "TURKISH" : lang?.startsWith("es") ? "SPANISH" : "ENGLISH";
 
     const diet = userProfile?.dietaryPreferences?.join(", ") || "None";
     const allergens = userProfile?.allergens?.join(", ") || "None";
@@ -16,7 +16,7 @@ USER PROFILE:
 - Life Stage: ${lifeStage}
 
 LIFE STAGE CONTEXT:
-${getLifeStageContext(lifeStage)}
+${getLifeStageContext(lifeStage, lang)}
 
 TASK: 
 0. CRITICAL VALIDATION (FIRST STEP):
@@ -176,17 +176,54 @@ Use this data to enhance your analysis. Apply the same scoring rules.
 `.trim();
 }
 
-function getLifeStageContext(lifeStage: string): string {
-    const contexts: Record<string, string> = {
-        INFANT_0_6: "Baby 0-6 months. ONLY breast milk or formula. Flag ALL solid food ingredients as inappropriate.",
-        INFANT_6_12: "Baby 6-12 months. No honey (botulism risk), limit salt/sugar, no whole nuts, no raw eggs/fish, no caffeine.",
-        TODDLER_1_3: "Toddler 1-3 years. Choking hazards (whole nuts, popcorn, hard candy). Limit artificial sweeteners, no energy drinks.",
-        CHILD_3_12: "Child 3-12 years. No alcohol, limit caffeine, avoid energy drinks.",
-        TEEN: "Teenager 12-18 years. No alcohol, limit energy drinks and excessive caffeine.",
-        ADULT: "Adult. Standard analysis, no age-specific restrictions.",
-        ELDERLY: "Senior 65+. Caution with high sodium, raw foods, unpasteurized products.",
-        PREGNANT: "Pregnant woman. No alcohol, raw fish/eggs, unpasteurized dairy, high-mercury fish, limit caffeine to 200mg/day.",
-        BREASTFEEDING: "Breastfeeding mother. Limit alcohol and caffeine, avoid high-mercury fish.",
+function getLifeStageContext(lifeStage: string, lang: string): string {
+    const contexts: Record<string, Record<string, string>> = {
+        INFANT_0_6: {
+            en: "Baby 0-6 months. ONLY breast milk or formula. Flag ALL solid food ingredients as inappropriate.",
+            tr: "Bebek 0-6 ay. SADECE anne sütü veya mama. Tüm katı gıda içeriklerini uygunsuz olarak işaretle.",
+            es: "Bebé 0-6 meses. SOLO leche materna o fórmula. Marque TODOS los ingredientes de alimentos sólidos como inapropiados."
+        },
+        INFANT_6_12: {
+            en: "Baby 6-12 months. No honey (botulism risk), limit salt/sugar, no whole nuts, no raw eggs/fish, no caffeine.",
+            tr: "Bebek 6-12 ay. Bal yok (botulizm riski), tuz/şekeri sınırla, bütün fındık yok, çiğ yumurta/balık yok, kafein yok.",
+            es: "Bebé 6-12 meses. Sin miel (riesgo de botulismo), limitar sal/azúcar, sin frutos secos enteros, sin huevos/pescado crudos, sin cafeína."
+        },
+        TODDLER_1_3: {
+            en: "Toddler 1-3 years. Choking hazards (whole nuts, popcorn, hard candy). Limit artificial sweeteners, no energy drinks.",
+            tr: "Küçük çocuk 1-3 yaş. Boğulma riski (bütün fındık, patlamış mısır, sert şeker). Yapay tatlandırıcıları sınırla, enerji içeceği yok.",
+            es: "Niño pequeño 1-3 años. Riesgo de asfixia (frutos secos enteros, palomitas, caramelos duros). Limitar edulcorantes artificiales, sin bebidas energéticas."
+        },
+        CHILD_3_12: {
+            en: "Child 3-12 years. No alcohol, limit caffeine, avoid energy drinks.",
+            tr: "Çocuk 3-12 yaş. Alkol yok, kafeini sınırla, enerji içeceklerinden kaçın.",
+            es: "Niño 3-12 años. Sin alcohol, limitar cafeína, evitar bebidas energéticas."
+        },
+        TEEN: {
+            en: "Teenager 12-18 years. No alcohol, limit energy drinks and excessive caffeine.",
+            tr: "Genç 12-18 yaş. Alkol yok, enerji içeceklerini ve aşırı kafeini sınırla.",
+            es: "Adolescente 12-18 años. Sin alcohol, limitar bebidas energéticas y cafeína excesiva."
+        },
+        ADULT: {
+            en: "Adult. Standard analysis, no age-specific restrictions.",
+            tr: "Yetişkin. Standart analiz, yaş grubuna özel kısıtlama yok.",
+            es: "Adulto. Análisis estándar, sin restricciones específicas de edad."
+        },
+        ELDERLY: {
+            en: "Senior 65+. Caution with high sodium, raw foods, unpasteurized products.",
+            tr: "Yaşlı 65+. Yüksek sodyum, çiğ gıdalar, pastörize edilmemiş ürünlerde dikkatli ol.",
+            es: "Adulto mayor 65+. Precaución con alto sodio, alimentos crudos, productos no pasteurizados."
+        },
+        PREGNANT: {
+            en: "Pregnant woman. No alcohol, raw fish/eggs, unpasteurized dairy, high-mercury fish, limit caffeine to 200mg/day.",
+            tr: "Hamile kadın. Alkol, çiğ balık/yumurta, pastörize edilmemiş süt ürünleri, yüksek cıvalı balık yok, kafeini günde 200mg ile sınırla.",
+            es: "Mujer embarazada. Sin alcohol, pescado/huevos crudos, lácteos no pasteurizados, pescado con alto mercurio, limitar cafeína a 200mg/día."
+        },
+        BREASTFEEDING: {
+            en: "Breastfeeding mother. Limit alcohol and caffeine, avoid high-mercury fish.",
+            tr: "Emziren anne. Alkol ve kafeini sınırla, yüksek cıvalı balıktan kaçın.",
+            es: "Madre lactante. Limitar alcohol y cafeína, evitar pescado con alto mercurio."
+        },
     };
-    return contexts[lifeStage] || contexts.ADULT;
+    const langKey = lang === "tr" ? "tr" : lang?.startsWith("es") ? "es" : "en";
+    return contexts[lifeStage]?.[langKey] || contexts.ADULT[langKey];
 }

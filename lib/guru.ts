@@ -154,7 +154,7 @@ ${
     }));
 
     try {
-        const responseRaw = await callGemini("gemini-2.5-flash-preview-09-2025:generateContent", {
+        const responseRaw = await callGemini("gemini-2.5-flash:generateContent", {
             contents: [{ role: "user", parts: [{ text: systemPrompt }] }, ...recentMessages, { role: "user", parts: [{ text: message }] }],
         });
         const response = responseRaw as any;

@@ -62,10 +62,10 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
 
     // Premium modal kontrolü - giriş yapan kullanıcı premium değilse göster
     useEffect(() => {
-        if (visible && isLoggedIn && !isPremium && !profileUnlocked) {
+        if (visible && isLoggedIn && userProfile && isPremium === false && !profileUnlocked) {
             setShowPremiumModal(true);
         }
-    }, [visible, isLoggedIn, isPremium, profileUnlocked]);
+    }, [visible, isLoggedIn, isPremium, profileUnlocked, userProfile]);
 
     useEffect(() => {
         if (!visible) {
@@ -86,6 +86,28 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
         setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 2500);
     };
 
+    const getErrorMessage = (err: any) => {
+        const code = err?.code;
+        switch (code) {
+            case "auth/invalid-credential":
+            case "auth/user-not-found":
+            case "auth/wrong-password":
+                return t("auth.errors.invalid_credentials", { defaultValue: "E-posta veya şifre hatalı." });
+            case "auth/invalid-email":
+                return t("auth.errors.invalid_email", { defaultValue: "Geçersiz e-posta formatı." });
+            case "auth/email-already-in-use":
+                return t("auth.errors.email_in_use", { defaultValue: "Bu e-posta adresi zaten kullanımda." });
+            case "auth/weak-password":
+                return t("auth.errors.weak_password", { defaultValue: "Şifre çok zayıf (en az 6 karakter olmalı)." });
+            case "auth/network-request-failed":
+                return t("auth.errors.network", { defaultValue: "Ağ bağlantısı hatası. Lütfen internetinizi kontrol edin." });
+            case "auth/too-many-requests":
+                return t("auth.errors.too_many_requests", { defaultValue: "Çok fazla deneme yaptınız. Lütfen daha sonra tekrar deneyin." });
+            default:
+                return err?.message || t("auth.generic_error", { defaultValue: "Bir hata oluştu, lütfen tekrar deneyin." });
+        }
+    };
+
     const handleSubmit = () => {
         if (!email || !password) {
             showToast(t("auth.fill_all"), "error");
@@ -97,8 +119,9 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
         action
             .then(() => {
                 if (isRegister) showToast(t("auth.register_success"), "success");
+                setProfileUnlocked(true);
             })
-            .catch((err: any) => showToast(err.message || t("auth.generic_error"), "error"))
+            .catch((err: any) => showToast(getErrorMessage(err), "error"))
             .finally(() => setLoading(false));
     };
 

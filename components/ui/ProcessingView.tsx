@@ -286,7 +286,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 2,
     justifyContent: "flex-end",
-    marginBottom: 10,
+    marginBottom: 5,
+    marginTop: 30,
   },
   mainAnimation: {
     width: width * 0.7,

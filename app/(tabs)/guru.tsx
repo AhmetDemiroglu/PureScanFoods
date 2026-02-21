@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
 import {
     View,
     Text,
@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getScanHistoryFromDB } from '../../lib/firestore';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -68,6 +69,7 @@ export default function GuruScreen() {
     const flatListRef = useRef<FlatList>(null);
     const showTyping = isLoading;
     const isTr = i18n.language === "tr";
+    const isEs = i18n.language?.startsWith("es");
 
     // --- EFFECTS ---
     useEffect(() => {
@@ -98,6 +100,28 @@ export default function GuruScreen() {
         loadScans();
     }, [user]);
 
+    const refreshScansOnFocus = useCallback(async () => {
+        if (!user?.uid) {
+            setRecentScans([]);
+            return;
+        }
+        setLoadingScans(true);
+        try {
+            const { data } = await getScanHistoryFromDB(user.uid, null, 10);
+            setRecentScans(data);
+        } catch (error) {
+            console.error("Geçmiş çekilemedi:", error);
+        } finally {
+            setLoadingScans(false);
+        }
+    }, [user?.uid]);
+
+    useFocusEffect(
+        useCallback(() => {
+            refreshScansOnFocus();
+        }, [refreshScansOnFocus])
+    );
+
     // --- HANDLERS ---
     const handleOnboardingFinish = async () => {
         await AsyncStorage.setItem("@guru_onboarding_shown_v2", "true");
@@ -108,7 +132,19 @@ export default function GuruScreen() {
         clearHistory();
     };
 
-    const handleSuggestion = (text: string) => setInputText(text);
+    const handleSuggestion = async (text: string) => {
+        if (isLoading) return;
+
+        if (!isPremium && remainingMessages <= 0) {
+            setShowLimitModal(true);
+            return;
+        }
+
+        const success = await sendMessage(text);
+        if (success === false && !isPremium) {
+            setShowLimitModal(true);
+        }
+    };
 
     const handleSelectProduct = (scan: any) => {
         setActiveProduct({

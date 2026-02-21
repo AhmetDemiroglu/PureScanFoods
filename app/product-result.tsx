@@ -81,6 +81,7 @@ const getScoreStyles = (score: number) => ({
 export default function ProductResultScreen() {
     const { t, i18n } = useTranslation();
     const isTr = i18n.language === "tr";
+    const isEs = i18n.language?.startsWith("es");
 
     const router = useRouter();
 
@@ -850,7 +851,7 @@ export default function ProductResultScreen() {
                                                             <View style={[styles.infoChip, { backgroundColor: bgColor, borderColor: borderColor }]}>
                                                                 <Ionicons name={iconName as any} size={14} color={textColor} />
                                                                 <Text style={[styles.infoChipText, { color: textColor }]}>
-                                                                    {isTr ? lifeStageDef.nameTr : lifeStageDef.name}
+                                                                    {isTr ? lifeStageDef.nameTr : isEs ? lifeStageDef.nameEs : lifeStageDef.name}
                                                                 </Text>
                                                             </View>
                                                         );
@@ -861,7 +862,7 @@ export default function ProductResultScreen() {
                                                         <View style={[styles.infoChip, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
                                                             <Ionicons name="restaurant" size={14} color="#2563EB" />
                                                             <Text style={[styles.infoChipText, { color: '#1E40AF' }]}>
-                                                                {isTr ? dietDef.nameTr : dietDef.name}
+                                                                {isTr ? dietDef.nameTr : isEs ? dietDef.nameEs : dietDef.name}
                                                             </Text>
                                                         </View>
                                                     )}
@@ -874,7 +875,7 @@ export default function ProductResultScreen() {
                                                             <View key={alg} style={[styles.infoChip, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
                                                                 <Ionicons name="hand-left" size={14} color="#DC2626" />
                                                                 <Text style={[styles.infoChipText, { color: '#991B1B' }]}>
-                                                                    {isTr ? algDef.nameTr : algDef.name}
+                                                                    {isTr ? algDef.nameTr : isEs ? algDef.nameEs : algDef.name}
                                                                 </Text>
                                                             </View>
                                                         );

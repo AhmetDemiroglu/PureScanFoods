@@ -57,16 +57,48 @@ export default function Hero() {
     return (
         <View style={styles.container}>
             {/* 1. Animasyonlu Logo */}
-            <Animated.View style={[styles.logoWrapper, { transform: [{ rotate: rotate }] }]}>
-                <View style={styles.tiltedBox}>
+            <View style={styles.logoWrapper}>
+                <View style={[styles.tiltedBox, { transform: [{ rotate: "0deg" }] }]}>
                     <LinearGradient
                         colors={[Colors.secondary, "#0F172A"]}
                         style={styles.gradientBox}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
                     >
-                        <Ionicons name="scan" size={48} color={Colors.white} />
+                        <Animated.View style={{ transform: [{ rotate: rotate }] }}>
+                            <Ionicons name="scan" size={48} color={Colors.white} />
+                        </Animated.View>
+
+                        {/* Tarama Çizgisi Animasyonu */}
+                        <Animated.View
+                            style={[
+                                styles.scanLine,
+                                {
+                                    transform: [
+                                        {
+                                            translateY: swayAnim.interpolate({
+                                                inputRange: [-1, 0, 1],
+                                                outputRange: [-34, 0, 34],
+                                            }),
+                                        },
+                                    ],
+                                    opacity: swayAnim.interpolate({
+                                        inputRange: [-1, -0.8, 0, 0.8, 1],
+                                        outputRange: [0, 1, 1, 1, 0],
+                                    }),
+                                },
+                            ]}
+                        >
+                            <LinearGradient
+                                colors={["transparent", Colors.primary, "transparent"]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={{ flex: 1 }}
+                            />
+                        </Animated.View>
                     </LinearGradient>
                 </View>
-            </Animated.View>
+            </View>
 
             {/* 2. Marka İsmi */}
             <View style={styles.textWrapper}>
@@ -164,5 +196,19 @@ const styles = StyleSheet.create({
         marginTop: 6,
         letterSpacing: 0.5,
         textAlign: "center",
+    },
+    scanLine: {
+        position: "absolute",
+        width: "85%",
+        left: "7.5%",
+        height: 3,
+        backgroundColor: Colors.primary,
+        shadowColor: Colors.primary,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.9,
+        shadowRadius: 12,
+        elevation: 8,
+        zIndex: 10,
+        borderRadius: 2,
     },
 });

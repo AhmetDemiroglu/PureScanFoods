@@ -52,17 +52,18 @@ const RISK_CONFIG: Record<AdditiveRisk, { color: string; bg: string; icon: keyof
 };
 
 const STATUS_CONFIG = {
-    BANNED: { color: "#DC2626", label: "Banned", labelTr: "Yasaklı" },
-    RESTRICTED: { color: "#D97706", label: "Restricted", labelTr: "Kısıtlı" },
-    ALLOWED: { color: "#16A34A", label: "Allowed", labelTr: "İzinli" },
-    WARNING: { color: "#D97706", label: "Warning", labelTr: "Uyarılı" },
-    GRAS: { color: "#16A34A", label: "GRAS", labelTr: "Güvenli" },
+    BANNED: { color: "#DC2626", label: "Banned", labelTr: "Yasaklı", labelEs: "Prohibido" },
+    RESTRICTED: { color: "#D97706", label: "Restricted", labelTr: "Kısıtlı", labelEs: "Restringido" },
+    ALLOWED: { color: "#16A34A", label: "Allowed", labelTr: "İzinli", labelEs: "Permitido" },
+    WARNING: { color: "#D97706", label: "Warning", labelTr: "Uyarılı", labelEs: "Advertencia" },
+    GRAS: { color: "#16A34A", label: "GRAS", labelTr: "Güvenli", labelEs: "Seguro" },
 };
 
 export default function AdditivesLibraryScreen() {
     const { t, i18n } = useTranslation();
     const router = useRouter();
     const isTr = i18n.language === "tr";
+    const isEs = i18n.language?.startsWith("es");
 
     const [activeTab, setActiveTab] = useState<TabType>("nova");
     const [searchQuery, setSearchQuery] = useState("");
@@ -153,7 +154,7 @@ export default function AdditivesLibraryScreen() {
                     <View style={styles.cardTitleArea}>
                         <Text style={styles.cardCode}>{additive.code}</Text>
                         <Text style={styles.cardName} numberOfLines={1}>
-                            {isTr ? additive.nameTr : additive.name}
+                            {isTr ? additive.nameTr : isEs ? additive.nameEs : additive.name}
                         </Text>
                     </View>
                     <Ionicons
@@ -168,21 +169,21 @@ export default function AdditivesLibraryScreen() {
                     <View style={styles.statusItem}>
                         <Text style={styles.statusLabel}>EU</Text>
                         <Text style={[styles.statusValue, { color: STATUS_CONFIG[additive.euStatus].color }]}>
-                            {isTr ? STATUS_CONFIG[additive.euStatus].labelTr : STATUS_CONFIG[additive.euStatus].label}
+                            {isTr ? STATUS_CONFIG[additive.euStatus].labelTr : isEs ? STATUS_CONFIG[additive.euStatus].labelEs : STATUS_CONFIG[additive.euStatus].label}
                         </Text>
                     </View>
                     <View style={styles.statusDivider} />
                     <View style={styles.statusItem}>
                         <Text style={styles.statusLabel}>FDA</Text>
                         <Text style={[styles.statusValue, { color: STATUS_CONFIG[additive.fdaStatus].color }]}>
-                            {isTr ? STATUS_CONFIG[additive.fdaStatus].labelTr : STATUS_CONFIG[additive.fdaStatus].label}
+                            {isTr ? STATUS_CONFIG[additive.fdaStatus].labelTr : isEs ? STATUS_CONFIG[additive.fdaStatus].labelEs : STATUS_CONFIG[additive.fdaStatus].label}
                         </Text>
                     </View>
                     <View style={styles.statusDivider} />
                     <View style={styles.statusItem}>
-                        <Text style={styles.statusLabel}>{isTr ? "Kategori" : "Category"}</Text>
+                        <Text style={styles.statusLabel}>{isTr ? "Kategori" : isEs ? "Categoría" : "Category"}</Text>
                         <Text style={styles.statusValueSmall} numberOfLines={1}>
-                            {additive.categoryTr}
+                            {isTr ? additive.categoryTr : isEs ? additive.categoryEs : additive.category}
                         </Text>
                     </View>
                 </View>
@@ -193,13 +194,13 @@ export default function AdditivesLibraryScreen() {
                         <View style={[styles.riskIndicator, { backgroundColor: config.bg, borderColor: config.color }]}>
                             <Ionicons name={config.icon} size={20} color={config.color} />
                             <Text style={[styles.riskText, { color: config.color }]}>
-                                {additive.risk === "HAZARDOUS" && (isTr ? "Tehlikeli" : "Hazardous")}
-                                {additive.risk === "CAUTION" && (isTr ? "Dikkatli Tüketilmeli" : "Use with Caution")}
-                                {additive.risk === "SAFE" && (isTr ? "Güvenli" : "Safe")}
+                                {additive.risk === "HAZARDOUS" && (isTr ? "Tehlikeli" : isEs ? "Peligroso" : "Hazardous")}
+                                {additive.risk === "CAUTION" && (isTr ? "Dikkatli Tüketilmeli" : isEs ? "Precaución" : "Use with Caution")}
+                                {additive.risk === "SAFE" && (isTr ? "Güvenli" : isEs ? "Seguro" : "Safe")}
                             </Text>
                         </View>
                         <Text style={styles.reasonText}>
-                            {isTr ? additive.reasonTr : additive.reason}
+                            {isTr ? additive.reasonTr : isEs ? additive.reasonEs : additive.reason}
                         </Text>
                     </View>
                 )}
@@ -225,7 +226,7 @@ export default function AdditivesLibraryScreen() {
                     </View>
                     <View style={styles.novaTitleArea}>
                         <Text style={styles.novaTitle}>
-                            {isTr ? nova.labelTr : nova.label}
+                            {isTr ? nova.labelTr : isEs ? nova.labelEs : nova.label}
                         </Text>
                     </View>
                     <Ionicons
@@ -238,7 +239,7 @@ export default function AdditivesLibraryScreen() {
                 {/* Short Description */}
                 {!isExpanded && (
                     <Text style={styles.novaShortDesc} numberOfLines={2}>
-                        {isTr ? nova.descriptionTr : nova.description}
+                        {isTr ? nova.descriptionTr : isEs ? nova.descriptionEs : nova.description}
                     </Text>
                 )}
 
@@ -246,17 +247,17 @@ export default function AdditivesLibraryScreen() {
                 {isExpanded && (
                     <View style={styles.novaExpandedContent}>
                         <Text style={styles.novaDescription}>
-                            {isTr ? nova.descriptionTr : nova.description}
+                            {isTr ? nova.descriptionTr : isEs ? nova.descriptionEs : nova.description}
                         </Text>
 
                         {/* Examples */}
                         <View style={styles.novaSection}>
                             <Text style={styles.novaSectionTitle}>
                                 <Ionicons name="list" size={14} color={Colors.gray[600]} />
-                                {"  "}{isTr ? "Örnekler" : "Examples"}
+                                {"  "}{isTr ? "Örnekler" : isEs ? "Ejemplos" : "Examples"}
                             </Text>
                             <View style={styles.examplesContainer}>
-                                {(isTr ? nova.examplesTr : nova.examples).map((example, idx) => (
+                                {(isTr ? nova.examplesTr : isEs ? nova.examplesEs : nova.examples).map((example, idx) => (
                                     <View key={idx} style={styles.exampleTag}>
                                         <Text style={styles.exampleText}>{example}</Text>
                                     </View>
@@ -268,9 +269,9 @@ export default function AdditivesLibraryScreen() {
                         <View style={styles.novaSection}>
                             <Text style={styles.novaSectionTitle}>
                                 <Ionicons name="heart" size={14} color={nova.color} />
-                                {"  "}{isTr ? "Sağlık Önerileri" : "Health Tips"}
+                                {"  "}{isTr ? "Sağlık Önerileri" : isEs ? "Consejos de Salud" : "Health Tips"}
                             </Text>
-                            {(isTr ? nova.healthTipsTr : nova.healthTips).map((tip, idx) => (
+                            {(isTr ? nova.healthTipsTr : isEs ? nova.healthTipsEs : nova.healthTips).map((tip, idx) => (
                                 <View key={idx} style={styles.tipRow}>
                                     <Ionicons name="checkmark-circle" size={16} color={nova.color} />
                                     <Text style={styles.tipText}>{tip}</Text>
@@ -292,10 +293,10 @@ export default function AdditivesLibraryScreen() {
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                     <View style={{ flex: 1, marginRight: 12 }}>
                         <Text style={[styles.novaTitle, { fontSize: 18, color: info.color, marginBottom: 4 }]}>
-                            {isTr ? info.labelTr : info.label}
+                            {isTr ? info.labelTr : isEs ? info.labelEs : info.label}
                         </Text>
                         <Text style={styles.novaDescription}>
-                            {isTr ? info.descriptionTr : info.description}
+                            {isTr ? info.descriptionTr : isEs ? info.descriptionEs : info.description}
                         </Text>
                     </View>
                     <View style={{ transform: [{ scale: 0.8 }], transformOrigin: 'top right' }}>
@@ -339,10 +340,10 @@ export default function AdditivesLibraryScreen() {
                         </TouchableOpacity>
                         <View style={styles.headerTitleArea}>
                             <Text style={styles.headerTitle}>
-                                {isTr ? "Gıda Sözlüğü" : "Food Encyclopedia"}
+                                {isTr ? "Gıda Sözlüğü" : isEs ? "Enciclopedia de Alimentos" : "Food Encyclopedia"}
                             </Text>
                             <Text style={styles.headerSubtitle}>
-                                {isTr ? "Katkı maddeleri ve NOVA rehberi" : "Additives & NOVA guide"}
+                                {isTr ? "Katkı maddeleri ve NOVA rehberi" : isEs ? "Guía de aditivos y NOVA" : "Additives & NOVA guide"}
                             </Text>
                         </View>
                         <TouchableOpacity style={styles.infoButton} onPress={() => setShowOnboarding(true)}>
@@ -365,7 +366,7 @@ export default function AdditivesLibraryScreen() {
                                 color={activeTab === "additives" ? Colors.primary : "#FFF"}
                             />
                             <Text style={[styles.tabText, activeTab === "additives" && styles.tabTextActive]}>
-                                {isTr ? "Katkı Maddeleri" : "Additives"}
+                                {isTr ? "Katkı Maddeleri" : isEs ? "Aditivos" : "Additives"}
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -378,7 +379,7 @@ export default function AdditivesLibraryScreen() {
                                 color={activeTab === "nova" ? Colors.primary : "#FFF"}
                             />
                             <Text style={[styles.tabText, activeTab === "nova" && styles.tabTextActive]}>
-                                {isTr ? "NOVA Rehberi" : "NOVA Guide"}
+                                {isTr ? "NOVA Rehberi" : isEs ? "Guía NOVA" : "NOVA Guide"}
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -417,7 +418,7 @@ export default function AdditivesLibraryScreen() {
                                 <Ionicons name="search" size={20} color={Colors.gray[400]} />
                                 <TextInput
                                     style={styles.searchInput}
-                                    placeholder={isTr ? "E kodu veya isim ara..." : "Search E-code or name..."}
+                                    placeholder={isTr ? "E kodu veya isim ara..." : isEs ? "Buscar código E o nombre..." : "Search E-code or name..."}
                                     placeholderTextColor={Colors.gray[400]}
                                     value={searchQuery}
                                     onChangeText={setSearchQuery}
@@ -433,15 +434,15 @@ export default function AdditivesLibraryScreen() {
                             <View style={styles.statsRow}>
                                 <View style={[styles.statBox, { backgroundColor: "#FEF2F2" }]}>
                                     <Text style={[styles.statNumber, { color: "#DC2626" }]}>{stats.hazardous}</Text>
-                                    <Text style={styles.statLabel}>{isTr ? "Tehlikeli" : "Hazardous"}</Text>
+                                    <Text style={styles.statLabel}>{isTr ? "Tehlikeli" : isEs ? "Peligroso" : "Hazardous"}</Text>
                                 </View>
                                 <View style={[styles.statBox, { backgroundColor: "#FFFBEB" }]}>
                                     <Text style={[styles.statNumber, { color: "#D97706" }]}>{stats.caution}</Text>
-                                    <Text style={styles.statLabel}>{isTr ? "Dikkatli" : "Caution"}</Text>
+                                    <Text style={styles.statLabel}>{isTr ? "Dikkatli" : isEs ? "Precaución" : "Caution"}</Text>
                                 </View>
                                 <View style={[styles.statBox, { backgroundColor: "#F0FDF4" }]}>
                                     <Text style={[styles.statNumber, { color: "#16A34A" }]}>{stats.safe}</Text>
-                                    <Text style={styles.statLabel}>{isTr ? "Güvenli" : "Safe"}</Text>
+                                    <Text style={styles.statLabel}>{isTr ? "Güvenli" : isEs ? "Seguro" : "Safe"}</Text>
                                 </View>
                             </View>
 
@@ -466,10 +467,10 @@ export default function AdditivesLibraryScreen() {
                                                 riskFilter === filter && styles.filterChipTextActive,
                                             ]}
                                         >
-                                            {filter === "ALL" && (isTr ? "Tümü" : "All")}
-                                            {filter === "HAZARDOUS" && (isTr ? "Tehlikeli" : "Hazardous")}
-                                            {filter === "CAUTION" && (isTr ? "Dikkatli" : "Caution")}
-                                            {filter === "SAFE" && (isTr ? "Güvenli" : "Safe")}
+                                            {filter === "ALL" && (isTr ? "Tümü" : isEs ? "Todos" : "All")}
+                                            {filter === "HAZARDOUS" && (isTr ? "Tehlikeli" : isEs ? "Peligroso" : "Hazardous")}
+                                            {filter === "CAUTION" && (isTr ? "Dikkatli" : isEs ? "Precaución" : "Caution")}
+                                            {filter === "SAFE" && (isTr ? "Güvenli" : isEs ? "Seguro" : "Safe")}
                                         </Text>
                                     </TouchableOpacity>
                                 ))}
@@ -477,7 +478,7 @@ export default function AdditivesLibraryScreen() {
 
                             {/* Results Count */}
                             <Text style={styles.resultsCount}>
-                                {filteredAdditives.length} {isTr ? "sonuç" : "results"}
+                                {filteredAdditives.length} {isTr ? "sonuç" : isEs ? "resultados" : "results"}
                             </Text>
                         </>
                     }
@@ -501,7 +502,7 @@ export default function AdditivesLibraryScreen() {
                                     </Text>
                                     <Text style={styles.novaInfoText}>
                                         {isTr
-                                            ? "NOVA, gıdaları işlenme derecelerine göre 4 gruba ayıran uluslararası bir sınıflandırma sistemidir. Düşük gruplar daha sağlıklı seçenekleri temsil eder."
+                                            ? "NOVA, gıdaları işlenme derecelerine göre 4 gruba ayıran uluslararası bir sınıflandırma sistemidir. Düşük gruplar daha az işlenmiş seçenekleri temsil eder."
                                             : "NOVA is an international classification system that divides foods into 4 groups based on their degree of processing. Lower groups represent healthier choices."}
                                     </Text>
                                 </View>
