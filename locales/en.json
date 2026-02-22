@@ -704,7 +704,11 @@
         "delete_data_success": "Your data has been successfully deleted",
         "delete_account_success": "Your account has been deleted. Goodbye!",
         "delete_error": "An error occurred. Please try again.",
-        "delete_reauth_error": "You need to sign in again for security. Please log out and sign in again."
+        "delete_reauth_error": "You need to sign in again for security. Please log out and sign in again.",
+        "logout_label": "Log Out",
+        "logout_sublabel": "Sign out from your account",
+        "login_label": "Log In",
+        "login_sublabel": "Sign in to manage your data"
     },
     "premium": {
         "compare_title": "Premium Benefits",

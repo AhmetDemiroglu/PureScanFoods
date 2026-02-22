@@ -704,7 +704,11 @@
         "delete_data_success": "Verileriniz başarıyla silindi",
         "delete_account_success": "Hesabınız silindi. Güle güle!",
         "delete_error": "İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin.",
-        "delete_reauth_error": "Güvenlik nedeniyle yeniden giriş yapmanız gerekiyor. Çıkış yapıp tekrar giriş yapın."
+        "delete_reauth_error": "Güvenlik nedeniyle yeniden giriş yapmanız gerekiyor. Çıkış yapıp tekrar giriş yapın.",
+        "logout_label": "Çıkış Yap",
+        "logout_sublabel": "Hesabınızdan çıkış yapın",
+        "login_label": "Giriş Yap",
+        "login_sublabel": "Verilerinizi yönetmek için giriş yapın"
     },
     "premium": {
         "compare_title": "Premium Avantajları",

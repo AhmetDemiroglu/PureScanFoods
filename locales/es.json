@@ -704,7 +704,11 @@
         "delete_data_success": "Tus datos han sido eliminados exitosamente",
         "delete_account_success": "Tu cuenta ha sido eliminada. ¡Adiós!",
         "delete_error": "Ocurrió un error. Por favor intenta de nuevo.",
-        "delete_reauth_error": "Necesitas iniciar sesión de nuevo por seguridad. Cierra sesión e inicia sesión de nuevo."
+        "delete_reauth_error": "Necesitas iniciar sesión de nuevo por seguridad. Cierra sesión e inicia sesión de nuevo.",
+        "logout_label": "Cerrar Sesión",
+        "logout_sublabel": "Cerrar sesión de tu cuenta",
+        "login_label": "Iniciar Sesión",
+        "login_sublabel": "Inicia sesión para gestionar tus datos"
     },
     "premium": {
         "compare_title": "Beneficios Premium",

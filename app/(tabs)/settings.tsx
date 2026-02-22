@@ -35,6 +35,7 @@ import PremiumCompareModal from "../../components/ui/PremiumCompareModal";
 import HistorySidebar from "../history";
 import PaywallModal from "../../components/ui/PaywallModal";
 import ConfirmDeleteModal from "../../components/ui/ConfirmDeleteModal";
+import AuthModal from "../../components/profile/AuthModal";
 
 
 if (Platform.OS === "android" && !(global as any).nativeFabricUIManager && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -64,6 +65,7 @@ export default function SettingsScreen() {
   const [dataManagementOpen, setDataManagementOpen] = useState(false);
   const [deleteDataModalVisible, setDeleteDataModalVisible] = useState(false);
   const [deleteAccountModalVisible, setDeleteAccountModalVisible] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const isAnonymous = user?.isAnonymous ?? true;
   const isLoggedIn = user && !isAnonymous;
@@ -269,6 +271,30 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* === SECTION 1.5: Giriş Yap (Misafir için) === */}
+        {!isLoggedIn && (
+          <View style={styles.section}>
+            <Pressable
+              style={({ pressed }) => [styles.loginCard, pressed && styles.cardPressed]}
+              onPress={() => setShowAuthModal(true)}
+            >
+              <LinearGradient
+                colors={[Colors.primary, "#E65100"]}
+                style={styles.loginGradient}
+              >
+                <View style={styles.loginIconBox}>
+                  <Ionicons name="log-in-outline" size={24} color={Colors.primary} />
+                </View>
+                <View style={styles.loginContent}>
+                  <Text style={styles.loginTitle}>{t("settings.login_label")}</Text>
+                  <Text style={styles.loginDesc}>{t("settings.login_sublabel")}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#FFF" style={styles.chevronWhite} />
+              </LinearGradient>
+            </Pressable>
+          </View>
+        )}
+
         {/* === SECTION 2: Premium CTA === */}
         {!isPremium && (
           <Pressable
@@ -286,7 +312,7 @@ export default function SettingsScreen() {
                 <Text style={styles.premiumTitle}>{t("settings.premium_title")}</Text>
                 <Text style={styles.premiumDesc}>{t("settings.premium_desc")}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#F59E0B" />
+              <Ionicons name="chevron-forward" size={20} color="#F59E0B" style={styles.chevronRight} />
             </LinearGradient>
           </Pressable>
         )}
@@ -389,7 +415,7 @@ export default function SettingsScreen() {
                 <Text style={styles.menuItemSubtext}>{SUPPORT_EMAIL}</Text>
               </View>
             </View>
-            <Ionicons name="open-outline" size={18} color={Colors.gray[400]} />
+            <Ionicons name="open-outline" size={18} color={Colors.gray[400]} style={styles.chevronRight} />
           </Pressable>
         </View>
 
@@ -410,7 +436,7 @@ export default function SettingsScreen() {
                 <Text style={styles.menuItemSubtext}>{t("settings.privacy_policy_desc")}</Text>
               </View>
             </View>
-            <Ionicons name="open-outline" size={18} color={Colors.gray[400]} />
+            <Ionicons name="open-outline" size={18} color={Colors.gray[400]} style={styles.chevronRight} />
           </Pressable>
         </View>
 
@@ -424,11 +450,11 @@ export default function SettingsScreen() {
               onPress={toggleDataManagement}
             >
               <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIconBox, { backgroundColor: "#FEF2F2" }]}>
-                  <Ionicons name="server-outline" size={18} color="#DC2626" />
+                <View style={[styles.menuIconBox, { backgroundColor: "#FFF7ED" }]}>
+                  <Ionicons name="server-outline" size={18} color={Colors.primary} />
                 </View>
                 <View>
-                  <Text style={styles.menuItemText}>{t("settings.data_management_label")}</Text>
+                  <Text style={[styles.menuItemText, { color: Colors.primary }]}>{t("settings.data_management_label")}</Text>
                   <Text style={styles.menuItemSubtext}>{t("settings.data_management_desc")}</Text>
                 </View>
               </View>
@@ -441,9 +467,9 @@ export default function SettingsScreen() {
 
             {dataManagementOpen && (
               <View style={styles.dataManagementPanel}>
-                {/* Verilerimi Sil */}
+                {/* Verilerimi Sil - Amber/Sarı */}
                 <Pressable
-                  style={({ pressed }) => [styles.dangerMenuItem, pressed && styles.menuItemPressed]}
+                  style={({ pressed }) => [styles.subMenuItem, styles.subMenuItemWarning, pressed && styles.menuItemPressed]}
                   onPress={() => setDeleteDataModalVisible(true)}
                 >
                   <View style={styles.menuItemLeft}>
@@ -451,20 +477,20 @@ export default function SettingsScreen() {
                       <Ionicons name="trash-outline" size={18} color="#D97706" />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.menuItemText}>{t("settings.delete_data_label")}</Text>
+                      <Text style={[styles.menuItemText, { color: "#92400E" }]}>{t("settings.delete_data_label")}</Text>
                       <Text style={styles.menuItemSubtext}>{t("settings.delete_data_sublabel")}</Text>
                     </View>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color={Colors.gray[400]} />
+                  <Ionicons name="chevron-forward" size={18} color={Colors.gray[400]} style={styles.chevronRight} />
                 </Pressable>
 
-                {/* Hesabımı Sil */}
+                {/* Hesabımı Sil - Kırmızı */}
                 <Pressable
-                  style={({ pressed }) => [styles.dangerMenuItem, styles.dangerMenuItemLast, pressed && styles.menuItemPressed]}
+                  style={({ pressed }) => [styles.subMenuItem, styles.subMenuItemDanger, pressed && styles.menuItemPressed]}
                   onPress={() => setDeleteAccountModalVisible(true)}
                 >
                   <View style={styles.menuItemLeft}>
-                    <View style={[styles.menuIconBox, { backgroundColor: "#FEF2F2" }]}>
+                    <View style={[styles.menuIconBox, { backgroundColor: "#FEE2E2" }]}>
                       <Ionicons name="person-remove-outline" size={18} color="#DC2626" />
                     </View>
                     <View style={{ flex: 1 }}>
@@ -472,7 +498,24 @@ export default function SettingsScreen() {
                       <Text style={styles.menuItemSubtext}>{t("settings.delete_account_sublabel")}</Text>
                     </View>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color={Colors.gray[400]} />
+                  <Ionicons name="chevron-forward" size={18} color={Colors.gray[400]} style={styles.chevronRight} />
+                </Pressable>
+
+                {/* Çıkış Yap - Normal kart, mavi ikon */}
+                <Pressable
+                  style={({ pressed }) => [styles.subMenuItem, styles.subMenuItemLast, pressed && styles.menuItemPressed]}
+                  onPress={logout}
+                >
+                  <View style={styles.menuItemLeft}>
+                    <View style={[styles.menuIconBox, { backgroundColor: "#EFF6FF" }]}>
+                      <Ionicons name="log-out-outline" size={18} color="#2563EB" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.menuItemText}>{t("settings.logout_label")}</Text>
+                      <Text style={styles.menuItemSubtext}>{t("settings.logout_sublabel")}</Text>
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={Colors.gray[400]} style={styles.chevronRight} />
                 </Pressable>
               </View>
             )}
@@ -526,9 +569,12 @@ export default function SettingsScreen() {
       <ConfirmDeleteModal
         visible={deleteAccountModalVisible}
         onClose={() => setDeleteAccountModalVisible(false)}
-        onConfirm={deleteAccount}
+        onConfirm={async () => {
+          await deleteAccount();
+        }}
         type="account"
       />
+      <AuthModal visible={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </View>
   );
 }
@@ -765,7 +811,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     backgroundColor: "#FFF",
-    padding: 14,
+    paddingVertical: 14,
+    paddingLeft: 14,
+    paddingRight: 22,
     borderRadius: 14,
     marginBottom: 8,
     borderWidth: 1,
@@ -890,19 +938,70 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     gap: 8,
   },
-  dangerMenuItem: {
+  subMenuItem: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: Colors.gray[50],
-    padding: 14,
+    backgroundColor: "#FFF",
+    paddingVertical: 14,
+    paddingLeft: 14,
+    paddingRight: 22,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.gray[200],
   },
-  dangerMenuItemLast: {
-    borderColor: "#FECACA",
+  subMenuItemWarning: {
+    borderColor: "#FCD34D",
+    backgroundColor: "#FFFBEB",
+  },
+  subMenuItemDanger: {
+    borderColor: "#FCA5A5",
     backgroundColor: "#FEF2F2",
+  },
+  subMenuItemLast: {
+    borderColor: Colors.gray[200],
+    backgroundColor: "#FFF",
+  },
+  chevronRight: {
+    marginRight: 6,
+  },
+  chevronWhite: {
+    marginRight: 8,
+    marginLeft: 8,
+  },
+
+  // Login Card (Misafir için)
+  loginCard: {
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  loginGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    borderRadius: 16,
+  },
+  loginIconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: "#FFF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loginContent: {
+    flex: 1,
+    marginLeft: 14,
+  },
+  loginTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#FFF",
+  },
+  loginDesc: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.85)",
+    marginTop: 2,
   },
 
   // Disclaimer Card
