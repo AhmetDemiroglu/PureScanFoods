@@ -34,6 +34,7 @@ import * as Application from "expo-application";
 import PremiumCompareModal from "../../components/ui/PremiumCompareModal";
 import HistorySidebar from "../history";
 import PaywallModal from "../../components/ui/PaywallModal";
+import ConfirmDeleteModal from "../../components/ui/ConfirmDeleteModal";
 
 
 if (Platform.OS === "android" && !(global as any).nativeFabricUIManager && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -46,7 +47,7 @@ const SUPPORT_EMAIL = "info@septimuslab.com";
 
 export default function SettingsScreen() {
   const { t } = useTranslation();
-  const { user, userProfile, isPremium, usageStats, logout } = useAuth();
+  const { user, userProfile, isPremium, usageStats, logout, deleteUserData, deleteAccount } = useAuth();
   const { familyMembers } = useUser();
   const router = useRouter();
 
@@ -60,6 +61,9 @@ export default function SettingsScreen() {
   const [premiumModalVisible, setPremiumModalVisible] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [isHistoryOpen, setHistoryOpen] = useState(false);
+  const [dataManagementOpen, setDataManagementOpen] = useState(false);
+  const [deleteDataModalVisible, setDeleteDataModalVisible] = useState(false);
+  const [deleteAccountModalVisible, setDeleteAccountModalVisible] = useState(false);
 
   const isAnonymous = user?.isAnonymous ?? true;
   const isLoggedIn = user && !isAnonymous;
@@ -120,6 +124,12 @@ export default function SettingsScreen() {
     } finally {
       setPasswordLoading(false);
     }
+  };
+
+  // Veri yönetimi toggle
+  const toggleDataManagement = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setDataManagementOpen(!dataManagementOpen);
   };
 
   // Mail gönderme
@@ -404,6 +414,71 @@ export default function SettingsScreen() {
           </Pressable>
         </View>
 
+        {/* === SECTION 5.5: Veri Yönetimi === */}
+        {isLoggedIn && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t("settings.data_management")}</Text>
+
+            <Pressable
+              style={[styles.menuItem, dataManagementOpen && styles.menuItemActive]}
+              onPress={toggleDataManagement}
+            >
+              <View style={styles.menuItemLeft}>
+                <View style={[styles.menuIconBox, { backgroundColor: "#FEF2F2" }]}>
+                  <Ionicons name="server-outline" size={18} color="#DC2626" />
+                </View>
+                <View>
+                  <Text style={styles.menuItemText}>{t("settings.data_management_label")}</Text>
+                  <Text style={styles.menuItemSubtext}>{t("settings.data_management_desc")}</Text>
+                </View>
+              </View>
+              <Ionicons
+                name={dataManagementOpen ? "chevron-up" : "chevron-down"}
+                size={20}
+                color={Colors.gray[400]}
+              />
+            </Pressable>
+
+            {dataManagementOpen && (
+              <View style={styles.dataManagementPanel}>
+                {/* Verilerimi Sil */}
+                <Pressable
+                  style={({ pressed }) => [styles.dangerMenuItem, pressed && styles.menuItemPressed]}
+                  onPress={() => setDeleteDataModalVisible(true)}
+                >
+                  <View style={styles.menuItemLeft}>
+                    <View style={[styles.menuIconBox, { backgroundColor: "#FEF3C7" }]}>
+                      <Ionicons name="trash-outline" size={18} color="#D97706" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.menuItemText}>{t("settings.delete_data_label")}</Text>
+                      <Text style={styles.menuItemSubtext}>{t("settings.delete_data_sublabel")}</Text>
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={Colors.gray[400]} />
+                </Pressable>
+
+                {/* Hesabımı Sil */}
+                <Pressable
+                  style={({ pressed }) => [styles.dangerMenuItem, styles.dangerMenuItemLast, pressed && styles.menuItemPressed]}
+                  onPress={() => setDeleteAccountModalVisible(true)}
+                >
+                  <View style={styles.menuItemLeft}>
+                    <View style={[styles.menuIconBox, { backgroundColor: "#FEF2F2" }]}>
+                      <Ionicons name="person-remove-outline" size={18} color="#DC2626" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.menuItemText, { color: "#DC2626" }]}>{t("settings.delete_account_label")}</Text>
+                      <Text style={styles.menuItemSubtext}>{t("settings.delete_account_sublabel")}</Text>
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={Colors.gray[400]} />
+                </Pressable>
+              </View>
+            )}
+          </View>
+        )}
+
         {/* === SECTION 6: Disclaimer === */}
         <View style={styles.disclaimerCard}>
           <View style={styles.disclaimerHeader}>
@@ -441,6 +516,18 @@ export default function SettingsScreen() {
       <PaywallModal
         visible={showPaywall}
         onClose={() => setShowPaywall(false)}
+      />
+      <ConfirmDeleteModal
+        visible={deleteDataModalVisible}
+        onClose={() => setDeleteDataModalVisible(false)}
+        onConfirm={deleteUserData}
+        type="data"
+      />
+      <ConfirmDeleteModal
+        visible={deleteAccountModalVisible}
+        onClose={() => setDeleteAccountModalVisible(false)}
+        onConfirm={deleteAccount}
+        type="account"
       />
     </View>
   );
@@ -789,6 +876,33 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "600",
     color: Colors.gray[500],
+  },
+
+  // Data Management Panel
+  dataManagementPanel: {
+    backgroundColor: "#FFF",
+    padding: 12,
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderColor: Colors.primary,
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 14,
+    marginBottom: 8,
+    gap: 8,
+  },
+  dangerMenuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: Colors.gray[50],
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.gray[200],
+  },
+  dangerMenuItemLast: {
+    borderColor: "#FECACA",
+    backgroundColor: "#FEF2F2",
   },
 
   // Disclaimer Card

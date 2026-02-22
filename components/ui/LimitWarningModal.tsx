@@ -90,6 +90,7 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium, stats
     const opacity = useSharedValue(0);
 
     const [loadingAdType, setLoadingAdType] = useState<'scan' | 'chat' | null>(null);
+    const [adAvailable, setAdAvailable] = useState(false);
     const isFamilyMode = limitType === 'family';
 
     useEffect(() => {
@@ -103,18 +104,27 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium, stats
     }, [visible]);
 
     useEffect(() => {
-        if (visible && !isRewardedReady()) {
-            loadRewardedAd().catch(() => { });
+        if (visible) {
+            if (isRewardedReady()) {
+                setAdAvailable(true);
+            } else {
+                setAdAvailable(false);
+                loadRewardedAd()
+                    .then(() => setAdAvailable(true))
+                    .catch(() => setAdAvailable(false));
+            }
         }
     }, [visible]);
 
     const handleWatchAd = async (type: 'scan' | 'chat') => {
         if (!authUser?.uid) return;
 
+        console.log("📺 handleWatchAd START - type:", type, "uid:", authUser.uid, "deviceId:", deviceId);
         setLoadingAdType(type);
 
         try {
             const result = await showRewardedAd(type);
+            console.log("📺 showRewardedAd result:", result);
 
             if (result.success) {
                 if (type === 'scan') {
@@ -124,11 +134,20 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium, stats
                 }
 
                 onRewardEarned?.();
+                // Reward verildikten sonra modalı kapat
+                onClose();
             }
         } catch (error) {
             console.error('Ad error:', error);
         } finally {
             setLoadingAdType(null);
+            // Reklam gösterildikten sonra yeni reklam yüklenene kadar butonu devre dışı bırak
+            setAdAvailable(isRewardedReady());
+            if (!isRewardedReady()) {
+                loadRewardedAd()
+                    .then(() => setAdAvailable(true))
+                    .catch(() => setAdAvailable(false));
+            }
         }
     };
 
@@ -207,7 +226,7 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium, stats
                                         label={t('limits.feat_analysis', 'Ürün Analizi')}
                                         status={`${computedData.scan.current}/${computedData.scan.max}`}
                                         isLimitReached={computedData.scan.current >= computedData.scan.max}
-                                        isAdAvailable={true}
+                                        isAdAvailable={adAvailable}
                                         delay={100}
                                         onWatchAd={() => handleWatchAd('scan')}
                                         isLoadingAd={loadingAdType === 'scan'}
@@ -217,7 +236,7 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium, stats
                                         label={t('limits.feat_chat', 'AI Asistan')}
                                         status={`${computedData.ai.current}/${computedData.ai.max}`}
                                         isLimitReached={computedData.ai.current >= computedData.ai.max}
-                                        isAdAvailable={true}
+                                        isAdAvailable={adAvailable}
                                         delay={200}
                                         onWatchAd={() => handleWatchAd('chat')}
                                         isLoadingAd={loadingAdType === 'chat'}

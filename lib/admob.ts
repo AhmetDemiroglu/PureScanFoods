@@ -75,8 +75,16 @@ export const isInterstitialReady = (): boolean => {
 // --- REWARDED AD (Limit Artırma) ---
 let rewardedAd: RewardedAd | null = null;
 let isRewardedLoaded = false;
+let isRewardedLoading = false;
 
 export const loadRewardedAd = (): Promise<void> => {
+    // Zaten yüklüyse veya yükleniyorsa tekrar yükleme
+    if (isRewardedLoaded || isRewardedLoading) {
+        return Promise.resolve();
+    }
+
+    isRewardedLoading = true;
+
     return new Promise((resolve, reject) => {
         try {
             rewardedAd = RewardedAd.createForAdRequest(AD_UNITS.REWARDED, {
@@ -86,6 +94,7 @@ export const loadRewardedAd = (): Promise<void> => {
             const unsubscribeLoaded = rewardedAd.addAdEventListener(RewardedAdEventType.LOADED, () => {
                 console.log("✅ Rewarded Ad Loaded");
                 isRewardedLoaded = true;
+                isRewardedLoading = false;
                 unsubscribeLoaded();
                 resolve();
             });
@@ -93,6 +102,7 @@ export const loadRewardedAd = (): Promise<void> => {
             const unsubscribeError = rewardedAd.addAdEventListener(AdEventType.ERROR, (error) => {
                 console.error("❌ Rewarded Ad Error:", error);
                 isRewardedLoaded = false;
+                isRewardedLoading = false;
                 unsubscribeError();
                 reject(error);
             });
@@ -100,6 +110,7 @@ export const loadRewardedAd = (): Promise<void> => {
             rewardedAd.load();
         } catch (error) {
             console.error("❌ Rewarded Ad Creation Error:", error);
+            isRewardedLoading = false;
             reject(error);
         }
     });
@@ -116,28 +127,31 @@ export const showRewardedAd = (rewardType: RewardType): Promise<{ success: boole
         }
 
         let rewarded = false;
+        // Gösterilecek ad instance'ını yakala, closure içinde kullan
+        const currentAd = rewardedAd;
 
-        const unsubscribeEarned = rewardedAd.addAdEventListener(RewardedAdEventType.EARNED_REWARD, (reward) => {
+        const unsubscribeEarned = currentAd.addAdEventListener(RewardedAdEventType.EARNED_REWARD, (reward) => {
             console.log("🎁 Reward Earned:", reward);
             rewarded = true;
             unsubscribeEarned();
         });
 
-        const unsubscribeClosed = rewardedAd.addAdEventListener(AdEventType.CLOSED, () => {
+        const unsubscribeClosed = currentAd.addAdEventListener(AdEventType.CLOSED, () => {
             console.log("✅ Rewarded Ad Closed, Rewarded:", rewarded);
             isRewardedLoaded = false;
             unsubscribeClosed();
+            // Sonraki reklam için önceden yükle
             loadRewardedAd().catch(() => {});
             resolve({ success: rewarded, rewardType });
         });
 
-        const unsubscribeError = rewardedAd.addAdEventListener(AdEventType.ERROR, (error) => {
+        const unsubscribeError = currentAd.addAdEventListener(AdEventType.ERROR, (error) => {
             console.error("❌ Rewarded Ad Show Error:", error);
             unsubscribeError();
             resolve({ success: false, rewardType });
         });
 
-        rewardedAd.show().catch((error) => {
+        currentAd.show().catch((error) => {
             console.error("❌ Rewarded Ad Show Failed:", error);
             resolve({ success: false, rewardType });
         });

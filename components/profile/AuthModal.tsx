@@ -64,6 +64,8 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
     useEffect(() => {
         if (visible && isLoggedIn && userProfile && isPremium === false && !profileUnlocked) {
             setShowPremiumModal(true);
+        } else if (isPremium) {
+            setShowPremiumModal(false);
         }
     }, [visible, isLoggedIn, isPremium, profileUnlocked, userProfile]);
 

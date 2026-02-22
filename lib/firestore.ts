@@ -1,5 +1,5 @@
 import { db } from "./firebase";
-import { doc, setDoc, getDoc, updateDoc, serverTimestamp, increment, collection, addDoc, getDocs, query, orderBy, limit, deleteDoc, startAfter } from "firebase/firestore";
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp, increment, collection, addDoc, getDocs, query, orderBy, limit, deleteDoc, startAfter, runTransaction } from "firebase/firestore";
 
 export interface UserProfile {
     uid: string;
@@ -262,21 +262,63 @@ export const incrementAiChatCount = async (uid: string, deviceId: string | null)
 };
 
 // --- 5c. REKLAM İZLEYİNCE LİMİT GERİ VERME ---
+const DEVICE_SCAN_LIMIT = 3;
+const USER_SCAN_LIMIT = 5;
+const DEVICE_CHAT_LIMIT = 5;
+const USER_CHAT_LIMIT = 5;
+
 export const grantBonusScan = async (uid: string, deviceId: string | null) => {
     try {
-        const promises = [];
+        console.log("🎯 grantBonusScan called - uid:", uid, "deviceId:", deviceId);
 
-        if (uid) {
-            const statsRef = doc(db, "users", uid, "stats", "weekly");
-            promises.push(setDoc(statsRef, { scanCount: increment(-1) }, { merge: true }));
-        }
+        await runTransaction(db, async (transaction) => {
+            // === 1. ÖNCE TÜM OKUMALARI YAP ===
+            const statsRef = uid ? doc(db, "users", uid, "stats", "weekly") : null;
+            const deviceRef = deviceId ? doc(db, "device_limits", deviceId) : null;
+            
+            const statsSnap = statsRef ? await transaction.get(statsRef) : null;
+            const deviceSnap = deviceRef ? await transaction.get(deviceRef) : null;
 
-        if (deviceId) {
-            const deviceRef = doc(db, "device_limits", deviceId);
-            promises.push(setDoc(deviceRef, { scanCount: increment(-1) }, { merge: true }));
-        }
+            // === 2. SONRA TÜM YAZMALARI YAP ===
+            if (uid && statsRef && statsSnap) {
+                if (!statsSnap.exists()) {
+                    console.log(`📊 User stats yok, oluşturuluyor. scanCount: 0 → 0 (limit: ${USER_SCAN_LIMIT})`);
+                    transaction.set(statsRef, { 
+                        scanCount: 0, 
+                        weekStartDate: serverTimestamp() 
+                    });
+                } else {
+                    const currentVal = statsSnap.data()?.scanCount || 0;
+                    const newVal = currentVal >= USER_SCAN_LIMIT
+                        ? USER_SCAN_LIMIT - 1
+                        : Math.max(0, currentVal - 1);
+                    console.log(`📊 User scanCount: ${currentVal} → ${newVal} (limit: ${USER_SCAN_LIMIT})`);
+                    transaction.update(statsRef, { scanCount: newVal });
+                }
+            }
 
-        await Promise.all(promises);
+            if (deviceId && deviceRef && deviceSnap) {
+                if (!deviceSnap.exists()) {
+                    console.log(`📊 Device stats yok, oluşturuluyor. scanCount: 0 → 0 (limit: ${DEVICE_SCAN_LIMIT})`);
+                    transaction.set(deviceRef, { 
+                        scanCount: 0, 
+                        aiChatCount: 0,
+                        weekStartDate: serverTimestamp(),
+                        firstSeenAt: serverTimestamp()
+                    });
+                } else {
+                    const currentVal = deviceSnap.data()?.scanCount || 0;
+                    const newVal = currentVal >= DEVICE_SCAN_LIMIT
+                        ? DEVICE_SCAN_LIMIT - 1
+                        : Math.max(0, currentVal - 1);
+                    console.log(`📊 Device scanCount: ${currentVal} → ${newVal} (limit: ${DEVICE_SCAN_LIMIT})`);
+                    transaction.update(deviceRef, { scanCount: newVal });
+                }
+            } else if (!deviceId) {
+                console.warn("⚠️ grantBonusScan: deviceId is NULL!");
+            }
+        });
+
         console.log("🎁 Bonus scan hakkı verildi (+1)");
     } catch (error) {
         console.error("⚠️ Error granting bonus scan:", error);
@@ -285,19 +327,56 @@ export const grantBonusScan = async (uid: string, deviceId: string | null) => {
 
 export const grantBonusChat = async (uid: string, deviceId: string | null) => {
     try {
-        const promises = [];
+        console.log("🎯 grantBonusChat called - uid:", uid, "deviceId:", deviceId);
 
-        if (uid) {
-            const statsRef = doc(db, "users", uid, "stats", "weekly");
-            promises.push(setDoc(statsRef, { aiChatCount: increment(-1) }, { merge: true }));
-        }
+        await runTransaction(db, async (transaction) => {
+            // === 1. ÖNCE TÜM OKUMALARI YAP ===
+            const statsRef = uid ? doc(db, "users", uid, "stats", "weekly") : null;
+            const deviceRef = deviceId ? doc(db, "device_limits", deviceId) : null;
+            
+            const statsSnap = statsRef ? await transaction.get(statsRef) : null;
+            const deviceSnap = deviceRef ? await transaction.get(deviceRef) : null;
 
-        if (deviceId) {
-            const deviceRef = doc(db, "device_limits", deviceId);
-            promises.push(setDoc(deviceRef, { aiChatCount: increment(-1) }, { merge: true }));
-        }
+            // === 2. SONRA TÜM YAZMALARI YAP ===
+            if (uid && statsRef && statsSnap) {
+                if (!statsSnap.exists()) {
+                    console.log(`📊 User stats yok, oluşturuluyor. aiChatCount: 0 → 0 (limit: ${USER_CHAT_LIMIT})`);
+                    transaction.set(statsRef, { 
+                        aiChatCount: 0, 
+                        weekStartDate: serverTimestamp() 
+                    });
+                } else {
+                    const currentVal = statsSnap.data()?.aiChatCount || 0;
+                    const newVal = currentVal >= USER_CHAT_LIMIT
+                        ? USER_CHAT_LIMIT - 1
+                        : Math.max(0, currentVal - 1);
+                    console.log(`📊 User aiChatCount: ${currentVal} → ${newVal} (limit: ${USER_CHAT_LIMIT})`);
+                    transaction.update(statsRef, { aiChatCount: newVal });
+                }
+            }
 
-        await Promise.all(promises);
+            if (deviceId && deviceRef && deviceSnap) {
+                if (!deviceSnap.exists()) {
+                    console.log(`📊 Device stats yok, oluşturuluyor. aiChatCount: 0 → 0 (limit: ${DEVICE_CHAT_LIMIT})`);
+                    transaction.set(deviceRef, { 
+                        scanCount: 0, 
+                        aiChatCount: 0,
+                        weekStartDate: serverTimestamp(),
+                        firstSeenAt: serverTimestamp()
+                    });
+                } else {
+                    const currentVal = deviceSnap.data()?.aiChatCount || 0;
+                    const newVal = currentVal >= DEVICE_CHAT_LIMIT
+                        ? DEVICE_CHAT_LIMIT - 1
+                        : Math.max(0, currentVal - 1);
+                    console.log(`📊 Device aiChatCount: ${currentVal} → ${newVal} (limit: ${DEVICE_CHAT_LIMIT})`);
+                    transaction.update(deviceRef, { aiChatCount: newVal });
+                }
+            } else if (!deviceId) {
+                console.warn("⚠️ grantBonusChat: deviceId is NULL!");
+            }
+        });
+
         console.log("🎁 Bonus chat hakkı verildi (+1)");
     } catch (error) {
         console.error("⚠️ Error granting bonus chat:", error);

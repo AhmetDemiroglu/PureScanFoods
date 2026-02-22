@@ -289,7 +289,7 @@ export default function ScanScreen() {
 
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ImagePicker.MediaType.Images,
         base64: true,
         quality: 0.3,
       });

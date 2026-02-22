@@ -16,8 +16,9 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import * as Crypto from "expo-crypto";
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { doc, onSnapshot, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, serverTimestamp, deleteDoc, collection, getDocs, writeBatch } from "firebase/firestore";
 import { db } from "../lib/firebase";
+import { deleteUser } from "firebase/auth";
 
 interface AuthContextType {
     user: User | null;
@@ -30,6 +31,8 @@ interface AuthContextType {
     register: (email: string, pass: string) => Promise<void>;
     loginWithGoogle: () => Promise<void>;
     logout: () => Promise<void>;
+    deleteUserData: () => Promise<void>;
+    deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -132,6 +135,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const unsubDevice = onSnapshot(doc(db, "device_limits", deviceId), async (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
+                console.log("📡 Device snapshot fired - scanCount:", data.scanCount, "aiChatCount:", data.aiChatCount, "fromCache:", docSnap.metadata.fromCache, "hasPendingWrites:", docSnap.metadata.hasPendingWrites);
 
                 if (isWeekExpired(data.weekStartDate)) {
                     await resetDeviceLimits(deviceId);
@@ -178,6 +182,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const unsubStats = onSnapshot(doc(db, "users", user.uid, "stats", "weekly"), async (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
+                console.log("📡 User stats snapshot fired - scanCount:", data.scanCount, "aiChatCount:", data.aiChatCount, "fromCache:", docSnap.metadata.fromCache, "hasPendingWrites:", docSnap.metadata.hasPendingWrites);
 
                 // Hafta geçtiyse sıfırla
                 if (isWeekExpired(data.weekStartDate)) {
@@ -251,6 +256,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const userChatRemaining = userChatLimit - userChatCount;
 
         // Scan için hangisi daha kısıtlayıcı?
+        console.log("📊 LIMIT ENGINE - Device scan:", deviceScanCount, "/", deviceScanLimit, "remaining:", deviceScanRemaining, "| User scan:", userScanCount, "/", userScanLimit, "remaining:", userScanRemaining);
         let finalScanCount: number;
         let finalScanLimit: number;
         if (deviceScanRemaining < userScanRemaining) {
@@ -329,6 +335,67 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
+    // Kullanıcı verilerini sil (hesap kalır)
+    const deleteUserData = async () => {
+        if (!user) throw new Error("No user");
+        const uid = user.uid;
+
+        const batch = writeBatch(db);
+
+        // family_members subcollection
+        const familySnap = await getDocs(collection(db, "users", uid, "family_members"));
+        familySnap.forEach((d) => batch.delete(d.ref));
+
+        // scans subcollection
+        const scansSnap = await getDocs(collection(db, "users", uid, "scans"));
+        scansSnap.forEach((d) => batch.delete(d.ref));
+
+        // stats/weekly doc
+        batch.delete(doc(db, "users", uid, "stats", "weekly"));
+
+        await batch.commit();
+
+        // Reset user profile fields (keep the doc itself)
+        await updateDoc(doc(db, "users", uid), {
+            dietType: null,
+            allergens: [],
+            lifeStage: null,
+            displayName: null,
+            avatarIcon: "account",
+            color: null,
+        });
+    };
+
+    // Hesabı tamamen sil
+    const deleteAccount = async () => {
+        if (!user) throw new Error("No user");
+        const uid = user.uid;
+
+        const batch = writeBatch(db);
+
+        // family_members
+        const familySnap = await getDocs(collection(db, "users", uid, "family_members"));
+        familySnap.forEach((d) => batch.delete(d.ref));
+
+        // scans
+        const scansSnap = await getDocs(collection(db, "users", uid, "scans"));
+        scansSnap.forEach((d) => batch.delete(d.ref));
+
+        // stats/weekly
+        batch.delete(doc(db, "users", uid, "stats", "weekly"));
+
+        // user doc itself
+        batch.delete(doc(db, "users", uid));
+
+        await batch.commit();
+
+        // Delete Firebase Auth user
+        await deleteUser(auth.currentUser!);
+
+        setUser(null);
+        setUserProfile(null);
+    };
+
     const logout = async () => {
         setLoading(true);
         try {
@@ -392,6 +459,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         register,
         loginWithGoogle,
         logout,
+        deleteUserData,
+        deleteAccount,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
