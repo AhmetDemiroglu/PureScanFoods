@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { CameraView, useCameraPermissions } from "expo-camera";
@@ -7,7 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { Colors } from "../../constants/colors";
+import { AppColors } from "../../constants/colors";
 import Header from "../../components/ui/Header";
 import Hero from "../../components/ui/Hero";
 import { callGemini } from "../../lib/api";
@@ -23,6 +23,7 @@ import LimitWarningModal from "../../components/ui/LimitWarningModal";
 import { ScanFailGraphic } from "../../components/ui/ScanFailGraphic";
 import PaywallModal from "../../components/ui/PaywallModal";
 import ProcessingView, { ProcessingMode } from "../../components/ui/ProcessingView";
+import { useTheme } from "../../context/ThemeContext";
 
 type ScanTab = "camera" | "barcode" | "text";
 
@@ -30,6 +31,8 @@ const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 export default function ScanScreen() {
   const { t, i18n } = useTranslation();
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const [activeTab, setActiveTab] = useState<ScanTab>("barcode");
   const { userProfile, usageStats, isPremium } = useAuth();
   const { familyMembers } = useUser();
@@ -289,7 +292,7 @@ export default function ScanScreen() {
 
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaType.Images,
+        mediaTypes: ["images"],
         base64: true,
         quality: 0.3,
       });
@@ -383,7 +386,7 @@ export default function ScanScreen() {
                 <Ionicons
                   name={activeTab === "camera" ? "camera" : "camera-outline"}
                   size={18}
-                  color={activeTab === "camera" ? Colors.secondary : Colors.gray[400]}
+                  color={activeTab === "camera" ? colors.secondary : colors.gray[400]}
                 />
                 <Text style={[styles.tabText, activeTab === "camera" && styles.tabTextActive]}>
                   {t("home.tabs.camera")}
@@ -394,16 +397,28 @@ export default function ScanScreen() {
                 style={[styles.tab, activeTab === "barcode" && styles.tabActive]}
                 onPress={() => setActiveTab("barcode")}
               >
-                <Ionicons name="barcode-outline" size={18} color={Colors.gray[400]} />
-                <Text style={styles.tabText}>{t("home.tabs.barcode")}</Text>
+                <Ionicons
+                  name="barcode-outline"
+                  size={18}
+                  color={activeTab === "barcode" ? colors.secondary : colors.gray[400]}
+                />
+                <Text style={[styles.tabText, activeTab === "barcode" && styles.tabTextActive]}>
+                  {t("home.tabs.barcode")}
+                </Text>
               </Pressable>
 
               <Pressable
                 style={[styles.tab, activeTab === "text" && styles.tabActive]}
                 onPress={() => setActiveTab("text")}
               >
-                <Ionicons name="document-text-outline" size={18} color={Colors.gray[400]} />
-                <Text style={styles.tabText}>{t("home.tabs.text")}</Text>
+                <Ionicons
+                  name="document-text-outline"
+                  size={18}
+                  color={activeTab === "text" ? colors.secondary : colors.gray[400]}
+                />
+                <Text style={[styles.tabText, activeTab === "text" && styles.tabTextActive]}>
+                  {t("home.tabs.text")}
+                </Text>
               </Pressable>
             </View>
 
@@ -427,12 +442,12 @@ export default function ScanScreen() {
                     }}
                   >
                     <LinearGradient
-                      colors={[Colors.primary, "#E65100"]}
+                      colors={[colors.primary, "#E65100"]}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
                       style={styles.mainButton}
                     >
-                      <Ionicons name="scan" size={32} color={Colors.white} />
+                      <Ionicons name="scan" size={32} color={colors.white} />
                       <Text style={styles.mainButtonText}>
                         {permission?.granted ? t("home.actions.scanIngredients") : t("home.permissions.request", { defaultValue: "Kamera İzni Ver" })}
                       </Text>
@@ -447,7 +462,7 @@ export default function ScanScreen() {
                   </View>
 
                   <Pressable style={styles.secondaryButton} onPress={handleGalleryPick}>
-                    <Ionicons name="images-outline" size={20} color={Colors.gray[500]} />
+                    <Ionicons name="images-outline" size={20} color={colors.gray[500]} />
                     <Text style={styles.secondaryButtonText}>{t("home.actions.fromGallery")}</Text>
                   </Pressable>
                 </>
@@ -470,12 +485,12 @@ export default function ScanScreen() {
                     }}
                   >
                     <LinearGradient
-                      colors={[Colors.secondary, "#0F172A"]}
+                      colors={[colors.secondary, "#0F172A"]}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
                       style={styles.mainButton}
                     >
-                      <Ionicons name="barcode-outline" size={32} color={Colors.white} />
+                      <Ionicons name="barcode-outline" size={32} color={colors.white} />
                       <Text style={styles.mainButtonText}>{t("home.actions.scanBarcode")}</Text>
                     </LinearGradient>
                   </Pressable>
@@ -493,19 +508,19 @@ export default function ScanScreen() {
                       <TextInput
                         style={styles.inputWithIcon}
                         placeholder={t("home.placeholders.barcode")}
-                        placeholderTextColor={Colors.gray[400]}
+                        placeholderTextColor={colors.gray[400]}
                         keyboardType="numeric"
                         value={barcodeInput}
                         onChangeText={setBarcodeInput}
                       />
                       {barcodeInput.length > 0 && (
                         <Pressable onPress={() => setBarcodeInput("")} style={styles.clearIcon}>
-                          <Ionicons name="close-circle" size={20} color={Colors.gray[400]} />
+                          <Ionicons name="close-circle" size={20} color={colors.gray[400]} />
                         </Pressable>
                       )}
                     </View>
                     <Pressable style={styles.smallSearchButton} onPress={handleBarcodeSearch}>
-                      <Ionicons name="search" size={20} color={Colors.white} />
+                      <Ionicons name="search" size={20} color={colors.white} />
                     </Pressable>
                   </View>
 
@@ -520,7 +535,7 @@ export default function ScanScreen() {
                     <TextInput
                       style={[styles.inputField, styles.textArea, { flex: 1, borderWidth: 0 }]}
                       placeholder={t("home.actions.enterText")}
-                      placeholderTextColor={Colors.gray[400]}
+                      placeholderTextColor={colors.gray[400]}
                       multiline
                       textAlignVertical="top"
                       value={textInput}
@@ -528,14 +543,14 @@ export default function ScanScreen() {
                     />
                     {textInput.length > 0 && (
                       <Pressable onPress={() => setTextInput("")} style={styles.clearIconTopRight}>
-                        <Ionicons name="close-circle" size={22} color={Colors.gray[400]} />
+                        <Ionicons name="close-circle" size={22} color={colors.gray[400]} />
                       </Pressable>
                     )}
                   </View>
                   {/* Daha ince, tek satır buton */}
                   <Pressable style={styles.slimButton} onPress={handleTextAnalyze}>
                     <Text style={styles.slimButtonText}>{t("home.actions.analyzeText")}</Text>
-                    <Ionicons name="arrow-forward" size={18} color={Colors.white} />
+                    <Ionicons name="arrow-forward" size={18} color={colors.white} />
                   </Pressable>
                 </View>
               )}
@@ -582,10 +597,10 @@ export default function ScanScreen() {
             {/* Header */}
             <SafeAreaView style={styles.cameraHeaderNew}>
               <TouchableOpacity style={styles.closeButtonNew} onPress={() => setShowCamera(false)}>
-                <Ionicons name="close" size={24} color={Colors.white} />
+                <Ionicons name="close" size={24} color={colors.white} />
               </TouchableOpacity>
               <View style={styles.headerTitle}>
-                <Ionicons name="scan" size={20} color={Colors.primary} />
+                <Ionicons name="scan" size={20} color={colors.primary} />
                 <Text style={styles.headerTitleText}>PureScan Foods</Text>
               </View>
               <View style={{ width: 40 }} />
@@ -633,7 +648,7 @@ export default function ScanScreen() {
             <View style={styles.guidanceContainer}>
               {!isLandscape && (
                 <View style={styles.rotateWarning}>
-                  <Ionicons name="phone-landscape-outline" size={20} color={Colors.primary} />
+                  <Ionicons name="phone-landscape-outline" size={20} color={colors.primary} />
                   <Text style={styles.rotateWarningText}>
                     {t("scan.rotateHint")} {"\n"}
                     <Text style={styles.rotateWarningSubtext}>
@@ -660,7 +675,7 @@ export default function ScanScreen() {
                 <Ionicons
                   name={flashOn ? "flash" : "flash-off-outline"}
                   size={24}
-                  color={flashOn ? Colors.primary : Colors.white}
+                  color={flashOn ? colors.primary : colors.white}
                 />
               </TouchableOpacity>
 
@@ -698,10 +713,10 @@ export default function ScanScreen() {
                     }}
                   >
                     {isScanning ? (
-                      <ActivityIndicator size="large" color={Colors.primary} />
+                      <ActivityIndicator size="large" color={colors.primary} />
                     ) : (
                       <View style={styles.captureButtonInner}>
-                        <Ionicons name="scan" size={28} color={Colors.white} />
+                        <Ionicons name="scan" size={28} color={colors.white} />
                       </View>
                     )}
                   </Pressable>
@@ -722,7 +737,7 @@ export default function ScanScreen() {
                 style={styles.controlButton}
                 onPress={handleGalleryPick}
               >
-                <Ionicons name="images-outline" size={24} color={Colors.white} />
+                <Ionicons name="images-outline" size={24} color={colors.white} />
               </TouchableOpacity>
             </View>
           </View>
@@ -738,7 +753,7 @@ export default function ScanScreen() {
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
               <View style={styles.modalIconContainer}>
-                <Ionicons name="alert-circle" size={48} color={Colors.warning} />
+                <Ionicons name="alert-circle" size={48} color={colors.warning} />
               </View>
               <Text style={styles.modalTitle}>
                 {t("scan.notFoundTitle")}
@@ -764,7 +779,7 @@ export default function ScanScreen() {
                   }}
                 >
                   <Text style={styles.modalButtonTextPrimary}>{t("home.actions.scanIngredients")}</Text>
-                  <Ionicons name="camera" size={18} color={Colors.white} />
+                  <Ionicons name="camera" size={18} color={colors.white} />
                 </Pressable>
               </View>
             </View>
@@ -805,7 +820,7 @@ export default function ScanScreen() {
             <ScanFailGraphic />
 
             {/* 2. Başlık ve Açıklama */}
-            <Text style={[styles.modalTitle, { marginTop: 16, color: Colors.secondary }]}>
+            <Text style={[styles.modalTitle, { marginTop: 16, color: colors.secondary }]}>
               {t("scan.invalidScanTitle", { defaultValue: "Hmm, Gıda Bulunamadı" })}
             </Text>
 
@@ -833,7 +848,7 @@ export default function ScanScreen() {
                   }
                 }}
               >
-                <Ionicons name="refresh" size={18} color={Colors.white} style={{ marginLeft: 4 }} />
+                <Ionicons name="refresh" size={18} color={colors.white} style={{ marginLeft: 4 }} />
                 <Text style={styles.modalButtonTextPrimary}>
                   {t("common.tryAgain", { defaultValue: "Tekrar Dene" })}
                 </Text>
@@ -852,7 +867,7 @@ export default function ScanScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalIconContainer}>
-              <Ionicons name="alert-circle" size={48} color={Colors.warning} />
+              <Ionicons name="alert-circle" size={48} color={colors.warning} />
             </View>
             <Text style={styles.modalTitle}>{errorTitle}</Text>
             <Text style={styles.modalText}>{errorDescription}</Text>
@@ -871,10 +886,10 @@ export default function ScanScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
   },
   content: {
     flex: 1,
@@ -887,7 +902,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   scanCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 24,
     padding: 16,
     shadowColor: "#000",
@@ -899,7 +914,7 @@ const styles = StyleSheet.create({
   },
   tabSwitcher: {
     flexDirection: "row",
-    backgroundColor: Colors.gray[100],
+    backgroundColor: isDark ? colors.gray[200] : colors.gray[100],
     borderRadius: 12,
     padding: 4,
   },
@@ -913,20 +928,17 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   tabActive: {
-    backgroundColor: Colors.white,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: isDark ? "rgba(249, 115, 22, 0.25)" : colors.card,
+    borderWidth: isDark ? 1 : 0,
+    borderColor: isDark ? "rgba(251, 146, 60, 0.45)" : "transparent",
   },
   tabText: {
     fontSize: 12,
     fontWeight: "600",
-    color: Colors.gray[400],
+    color: colors.gray[400],
   },
   tabTextActive: {
-    color: Colors.secondary,
+    color: isDark ? "#FDE68A" : colors.secondary,
   },
   mainButtonWrapper: {
     marginTop: 16,
@@ -942,7 +954,7 @@ const styles = StyleSheet.create({
   mainButtonText: {
     fontSize: 17,
     fontWeight: "700",
-    color: Colors.white,
+    color: colors.white,
     textAlign: "center",
     width: "100%",
   },
@@ -954,12 +966,12 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: Colors.gray[200],
+    backgroundColor: colors.gray[200],
   },
   dividerText: {
     fontSize: 11,
     fontWeight: "600",
-    color: Colors.gray[400],
+    color: colors.gray[400],
     marginHorizontal: 12,
   },
   secondaryButton: {
@@ -967,33 +979,33 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: Colors.gray[100],
+    backgroundColor: colors.gray[100],
     borderRadius: 12,
     paddingVertical: 14,
   },
   secondaryButtonText: {
     fontSize: 14,
     fontWeight: "600",
-    color: Colors.gray[600],
+    color: colors.gray[600],
   },
   dynamicContent: {
     marginTop: 16,
   },
   inputField: {
-    backgroundColor: Colors.gray[100],
+    backgroundColor: colors.gray[100],
     borderRadius: 16,
     padding: 16,
     fontSize: 16,
-    color: Colors.secondary,
+    color: colors.secondary,
     borderWidth: 1,
-    borderColor: Colors.gray[200],
+    borderColor: colors.gray[200],
   },
   textArea: {
     height: 120,
   },
   disclaimerText: {
     fontSize: 11,
-    color: Colors.gray[400],
+    color: colors.gray[400],
     textAlign: "center",
     marginTop: 8,
   },
@@ -1003,25 +1015,25 @@ const styles = StyleSheet.create({
   },
   smallInput: {
     flex: 1,
-    backgroundColor: Colors.gray[100],
+    backgroundColor: colors.gray[100],
     borderRadius: 12,
     paddingHorizontal: 16,
     height: 50,
     fontSize: 15,
     borderWidth: 1,
-    borderColor: Colors.gray[200],
-    color: Colors.secondary,
+    borderColor: colors.gray[200],
+    color: colors.secondary,
   },
   smallSearchButton: {
     width: 50,
     height: 50,
     borderRadius: 12,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
   },
   slimButton: {
-    backgroundColor: Colors.secondary,
+    backgroundColor: colors.secondary,
     borderRadius: 12,
     height: 48,
     flexDirection: "row",
@@ -1030,7 +1042,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   slimButtonText: {
-    color: Colors.white,
+    color: colors.white,
     fontWeight: "600",
     fontSize: 15,
   },
@@ -1077,7 +1089,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   headerTitleText: {
-    color: Colors.white,
+    color: colors.white,
     fontSize: 14,
     fontWeight: "600",
   },
@@ -1090,7 +1102,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: 40,
     height: 40,
-    borderColor: Colors.primary,
+    borderColor: colors.primary,
   },
   cornerTL: {
     top: 0,
@@ -1125,8 +1137,8 @@ const styles = StyleSheet.create({
     left: 10,
     right: 10,
     height: 2,
-    backgroundColor: Colors.primary,
-    shadowColor: Colors.primary,
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 10,
@@ -1147,7 +1159,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   guidanceTitle: {
-    color: Colors.white,
+    color: colors.white,
     fontSize: 18,
     fontWeight: "700",
     textAlign: "center",
@@ -1181,10 +1193,10 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: Colors.primary,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 20,
@@ -1194,7 +1206,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     borderWidth: 3,
     borderColor: "rgba(255,255,255,0.3)",
     alignItems: "center",
@@ -1228,7 +1240,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255, 152, 0, 0.3)",
   },
   rotateWarningText: {
-    color: Colors.primary,
+    color: colors.primary,
     fontSize: 13,
     fontWeight: "600",
   },
@@ -1242,10 +1254,10 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.gray[100],
+    backgroundColor: colors.gray[100],
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.gray[200],
+    borderColor: colors.gray[200],
     paddingRight: 10,
   },
   inputWithIcon: {
@@ -1253,17 +1265,17 @@ const styles = StyleSheet.create({
     height: 48,
     paddingHorizontal: 16,
     fontSize: 15,
-    color: Colors.secondary,
+    color: colors.secondary,
   },
   clearIcon: {
     padding: 4,
   },
   textAreaWrapper: {
     flexDirection: 'row',
-    backgroundColor: Colors.gray[100],
+    backgroundColor: colors.gray[100],
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: Colors.gray[200],
+    borderColor: colors.gray[200],
     padding: 4,
   },
   clearIconTopRight: {
@@ -1271,20 +1283,20 @@ const styles = StyleSheet.create({
     top: 12,
     right: 12,
     zIndex: 10,
-    backgroundColor: Colors.gray[100],
+    backgroundColor: colors.gray[100],
     borderRadius: 10,
   },
 
   // Modal Stilleri
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
   },
   modalContent: {
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
     borderRadius: 24,
     padding: 18,
     width: '90%',
@@ -1299,14 +1311,14 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: Colors.secondary,
+    color: colors.secondary,
     marginBottom: 8,
     textAlign: 'center',
     letterSpacing: 0.5,
   },
   modalText: {
     fontSize: 15,
-    color: Colors.gray[500],
+    color: colors.gray[500],
     textAlign: 'center',
     lineHeight: 22,
     fontWeight: '500',
@@ -1335,19 +1347,22 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   modalButtonPrimary: {
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
   },
   modalButtonSecondary: {
-    backgroundColor: Colors.gray[100],
+    backgroundColor: colors.gray[100],
   },
   modalButtonTextPrimary: {
-    color: Colors.white,
+    color: colors.white,
     fontWeight: '600',
     fontSize: 15,
   },
   modalButtonTextSecondary: {
-    color: Colors.gray[600],
+    color: colors.gray[600],
     fontWeight: '600',
     fontSize: 15,
   },
 });
+
+
+

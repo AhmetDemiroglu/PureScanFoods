@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+﻿import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -20,8 +20,9 @@ import Svg, {
   Line,
 } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../../context/ThemeContext";
 import { useTranslation } from "react-i18next";
-import { Colors } from "../../constants/colors";
+import { AppColors } from "../../constants/colors";
 
 // --- FLOATING ANIMATION ---
 const FloatingElement = ({
@@ -60,23 +61,23 @@ const FloatingElement = ({
 // =============================================
 // ILLUSTRATION 1: SCAN - product card + corners
 // =============================================
-const ScanIllustration = () => (
+const ScanIllustration = (colors: AppColors) => (
   <View style={illustrationStyles.container}>
     <FloatingElement duration={3800}>
       <Svg width={220} height={190} viewBox="0 0 220 190">
         <Defs>
           <SvgLinearGradient id="scanCircle" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor={Colors.primary} stopOpacity="0.15" />
+            <Stop offset="0" stopColor={colors.primary} stopOpacity="0.15" />
             <Stop offset="1" stopColor="#E65100" stopOpacity="0.05" />
           </SvgLinearGradient>
           <SvgLinearGradient id="cardGrad" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#FFFFFF" />
-            <Stop offset="1" stopColor="#FFF7ED" />
+            <Stop offset="0" stopColor={colors.card} />
+            <Stop offset="1" stopColor={colors.gray[50]} />
           </SvgLinearGradient>
           <SvgLinearGradient id="scanLine" x1="0" y1="0" x2="1" y2="0">
-            <Stop offset="0" stopColor={Colors.primary} stopOpacity="0" />
-            <Stop offset="0.5" stopColor={Colors.primary} stopOpacity="1" />
-            <Stop offset="1" stopColor={Colors.primary} stopOpacity="0" />
+            <Stop offset="0" stopColor={colors.primary} stopOpacity="0" />
+            <Stop offset="0.5" stopColor={colors.primary} stopOpacity="1" />
+            <Stop offset="1" stopColor={colors.primary} stopOpacity="0" />
           </SvgLinearGradient>
         </Defs>
 
@@ -84,34 +85,34 @@ const ScanIllustration = () => (
         <Circle cx="110" cy="95" r="88" fill="url(#scanCircle)" />
 
         {/* Product card */}
-        <Rect x="55" y="22" width="110" height="146" rx="16" fill="url(#cardGrad)" stroke={Colors.gray[200]} strokeWidth="1.5" />
+        <Rect x="55" y="22" width="110" height="146" rx="16" fill="url(#cardGrad)" stroke={colors.gray[200]} strokeWidth="1.5" />
 
         {/* Product image placeholder */}
-        <Rect x="70" y="36" width="80" height="50" rx="10" fill={Colors.gray[100]} />
-        <Circle cx="110" cy="56" r="12" fill={Colors.gray[200]} />
-        <Path d="M105 56 L115 56 M110 51 L110 61" fill="none" stroke={Colors.gray[300]} strokeWidth="2" strokeLinecap="round" />
+        <Rect x="70" y="36" width="80" height="50" rx="10" fill={colors.gray[100]} />
+        <Circle cx="110" cy="56" r="12" fill={colors.gray[200]} />
+        <Path d="M105 56 L115 56 M110 51 L110 61" fill="none" stroke={colors.gray[300]} strokeWidth="2" strokeLinecap="round" />
 
         {/* Text lines */}
-        <Rect x="70" y="96" width="68" height="7" rx="3.5" fill={Colors.gray[300]} />
-        <Rect x="70" y="109" width="52" height="7" rx="3.5" fill={Colors.gray[200]} />
+        <Rect x="70" y="96" width="68" height="7" rx="3.5" fill={colors.gray[300]} />
+        <Rect x="70" y="109" width="52" height="7" rx="3.5" fill={colors.gray[200]} />
 
         {/* Score badge */}
-        <Rect x="70" y="126" width="44" height="20" rx="10" fill={Colors.success} />
-        <Rect x="120" y="126" width="26" height="20" rx="10" fill="#F0FDF4" stroke={Colors.success} strokeWidth="1" />
+        <Rect x="70" y="126" width="44" height="20" rx="10" fill={colors.success} />
+        <Rect x="120" y="126" width="26" height="20" rx="10" fill={colors.gray[50]} stroke={colors.success} strokeWidth="1" />
 
         {/* Scan corners - fill="none" prevents black triangles */}
-        <Path d="M42 50 L42 30 L62 30" fill="none" stroke={Colors.primary} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-        <Path d="M178 50 L178 30 L158 30" fill="none" stroke={Colors.primary} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-        <Path d="M42 140 L42 160 L62 160" fill="none" stroke={Colors.primary} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-        <Path d="M178 140 L178 160 L158 160" fill="none" stroke={Colors.primary} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M42 50 L42 30 L62 30" fill="none" stroke={colors.primary} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M178 50 L178 30 L158 30" fill="none" stroke={colors.primary} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M42 140 L42 160 L62 160" fill="none" stroke={colors.primary} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M178 140 L178 160 L158 160" fill="none" stroke={colors.primary} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
 
         {/* Scan line */}
         <Rect x="48" y="92" width="124" height="3" rx="1.5" fill="url(#scanLine)" opacity="0.7" />
 
         {/* Floating particles */}
-        <Circle cx="30" cy="70" r="4" fill={Colors.primary} opacity="0.2" />
-        <Circle cx="190" cy="50" r="3" fill={Colors.success} opacity="0.3" />
-        <Circle cx="185" cy="140" r="5" fill={Colors.warning} opacity="0.2" />
+        <Circle cx="30" cy="70" r="4" fill={colors.primary} opacity="0.2" />
+        <Circle cx="190" cy="50" r="3" fill={colors.success} opacity="0.3" />
+        <Circle cx="185" cy="140" r="5" fill={colors.warning} opacity="0.2" />
       </Svg>
     </FloatingElement>
   </View>
@@ -120,7 +121,7 @@ const ScanIllustration = () => (
 // =============================================
 // ILLUSTRATION 2: AI INSIGHTS - bot + bubbles
 // =============================================
-const InsightIllustration = () => (
+const InsightIllustration = (colors: AppColors) => (
   <View style={illustrationStyles.container}>
     <FloatingElement duration={4000}>
       <Svg width={220} height={190} viewBox="0 0 220 190">
@@ -130,7 +131,7 @@ const InsightIllustration = () => (
             <Stop offset="1" stopColor="#A855F7" stopOpacity="0.04" />
           </SvgLinearGradient>
           <SvgLinearGradient id="botGrad" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={Colors.primary} />
+            <Stop offset="0" stopColor={colors.primary} />
             <Stop offset="1" stopColor="#E65100" />
           </SvgLinearGradient>
         </Defs>
@@ -138,9 +139,9 @@ const InsightIllustration = () => (
         <Circle cx="110" cy="95" r="88" fill="url(#aiBg)" />
 
         {/* User message bubble */}
-        <Rect x="80" y="24" width="120" height="38" rx="14" fill="#FFFFFF" stroke={Colors.gray[200]} strokeWidth="1.5" />
-        <Rect x="92" y="37" width="70" height="6" rx="3" fill={Colors.gray[300]} />
-        <Rect x="92" y="47" width="45" height="6" rx="3" fill={Colors.gray[200]} />
+        <Rect x="80" y="24" width="120" height="38" rx="14" fill={colors.card} stroke={colors.gray[200]} strokeWidth="1.5" />
+        <Rect x="92" y="37" width="70" height="6" rx="3" fill={colors.gray[300]} />
+        <Rect x="92" y="47" width="45" height="6" rx="3" fill={colors.gray[200]} />
 
         {/* AI Bot avatar */}
         <Circle cx="38" cy="100" r="22" fill="url(#botGrad)" />
@@ -148,23 +149,23 @@ const InsightIllustration = () => (
         <Circle cx="38" cy="90" r="3" fill="#FFF" />
 
         {/* AI response bubble */}
-        <Rect x="66" y="78" width="136" height="62" rx="14" fill="#FFFFFF" stroke={Colors.primary} strokeWidth="1.5" />
+        <Rect x="66" y="78" width="136" height="62" rx="14" fill={colors.card} stroke={colors.primary} strokeWidth="1.5" />
 
         {/* Allergen warning chip */}
         <Rect x="78" y="90" width="60" height="18" rx="9" fill="#FEF2F2" stroke="#FECACA" strokeWidth="1" />
-        <Circle cx="88" cy="99" r="4" fill={Colors.error} />
+        <Circle cx="88" cy="99" r="4" fill={colors.error} />
 
         {/* Diet match chip */}
         <Rect x="144" y="90" width="48" height="18" rx="9" fill="#F0FDF4" stroke="#BBF7D0" strokeWidth="1" />
-        <Circle cx="154" cy="99" r="4" fill={Colors.success} />
+        <Circle cx="154" cy="99" r="4" fill={colors.success} />
 
         {/* Analysis lines */}
-        <Rect x="78" y="116" width="105" height="6" rx="3" fill={Colors.gray[200]} />
-        <Rect x="78" y="126" width="78" height="6" rx="3" fill={Colors.primary} opacity="0.4" />
+        <Rect x="78" y="116" width="105" height="6" rx="3" fill={colors.gray[200]} />
+        <Rect x="78" y="126" width="78" height="6" rx="3" fill={colors.primary} opacity="0.4" />
 
         {/* Checkmark badge */}
-        <Circle cx="176" cy="155" r="14" fill="#F0FDF4" stroke="#BBF7D0" strokeWidth="1" />
-        <Path d="M171 155 L175 159 L182 151" fill="none" stroke={Colors.success} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Circle cx="176" cy="155" r="14" fill={colors.gray[50]} stroke="#BBF7D0" strokeWidth="1" />
+        <Path d="M171 155 L175 159 L182 151" fill="none" stroke={colors.success} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
       </Svg>
     </FloatingElement>
   </View>
@@ -173,7 +174,7 @@ const InsightIllustration = () => (
 // =============================================
 // ILLUSTRATION 3: FAMILY - connected avatars
 // =============================================
-const FamilyIllustration = () => (
+const FamilyIllustration = (colors: AppColors) => (
   <View style={illustrationStyles.container}>
     <FloatingElement duration={3600}>
       <Svg width={220} height={190} viewBox="0 0 220 190">
@@ -187,7 +188,7 @@ const FamilyIllustration = () => (
         <Circle cx="110" cy="95" r="88" fill="url(#famBg)" />
 
         {/* Main user avatar */}
-        <Circle cx="110" cy="58" r="24" fill={Colors.primary} />
+        <Circle cx="110" cy="58" r="24" fill={colors.primary} />
         <Circle cx="110" cy="50" r="8" fill="#FFF" />
         <Path d="M100 62 Q110 72 120 62" fill="none" stroke="#FFF" strokeWidth="2" strokeLinecap="round" />
 
@@ -202,23 +203,23 @@ const FamilyIllustration = () => (
         <Path d="M157 104 Q164 111 171 104" fill="none" stroke="#FFF" strokeWidth="1.5" strokeLinecap="round" />
 
         {/* Connection lines */}
-        <Line x1="90" y1="72" x2="70" y2="88" stroke={Colors.gray[300]} strokeWidth="1.5" strokeDasharray="4,3" />
-        <Line x1="130" y1="72" x2="150" y2="88" stroke={Colors.gray[300]} strokeWidth="1.5" strokeDasharray="4,3" />
+        <Line x1="90" y1="72" x2="70" y2="88" stroke={colors.gray[300]} strokeWidth="1.5" strokeDasharray="4,3" />
+        <Line x1="130" y1="72" x2="150" y2="88" stroke={colors.gray[300]} strokeWidth="1.5" strokeDasharray="4,3" />
 
         {/* Allergen/diet tags */}
         <Rect x="30" y="126" width="52" height="20" rx="10" fill="#FEF2F2" stroke="#FECACA" strokeWidth="1" />
-        <Rect x="38" y="132" width="36" height="8" rx="4" fill={Colors.error} opacity="0.5" />
+        <Rect x="38" y="132" width="36" height="8" rx="4" fill={colors.error} opacity="0.5" />
 
         <Rect x="88" y="126" width="52" height="20" rx="10" fill="#F0FDF4" stroke="#BBF7D0" strokeWidth="1" />
-        <Rect x="96" y="132" width="36" height="8" rx="4" fill={Colors.success} opacity="0.5" />
+        <Rect x="96" y="132" width="36" height="8" rx="4" fill={colors.success} opacity="0.5" />
 
         <Rect x="146" y="126" width="52" height="20" rx="10" fill="#FFFBEB" stroke="#FDE68A" strokeWidth="1" />
-        <Rect x="154" y="132" width="36" height="8" rx="4" fill={Colors.warning} opacity="0.5" />
+        <Rect x="154" y="132" width="36" height="8" rx="4" fill={colors.warning} opacity="0.5" />
 
         {/* Shield with checkmark - using Rect+border approach for reliable rendering */}
         <G>
-          <Rect x="96" y="152" width="28" height="28" rx="6" fill="#FFF" stroke={Colors.success} strokeWidth="1.5" />
-          <Path d="M104 166 L108 170 L118 160" fill="none" stroke={Colors.success} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          <Rect x="96" y="152" width="28" height="28" rx="6" fill={colors.card} stroke={colors.success} strokeWidth="1.5" />
+          <Path d="M104 166 L108 170 L118 160" fill="none" stroke={colors.success} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
         </G>
       </Svg>
     </FloatingElement>
@@ -228,13 +229,13 @@ const FamilyIllustration = () => (
 // =============================================
 // ILLUSTRATION 4: DISCLAIMER - document + shield (compact)
 // =============================================
-const DisclaimerIllustration = () => (
+const DisclaimerIllustration = (colors: AppColors) => (
   <View style={illustrationStyles.containerSmall}>
     <FloatingElement duration={4200} range={7}>
       <Svg width={180} height={130} viewBox="0 0 180 130">
         <Defs>
           <SvgLinearGradient id="discBg" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor={Colors.primary} stopOpacity="0.10" />
+            <Stop offset="0" stopColor={colors.primary} stopOpacity="0.10" />
             <Stop offset="1" stopColor="#E65100" stopOpacity="0.03" />
           </SvgLinearGradient>
         </Defs>
@@ -242,36 +243,36 @@ const DisclaimerIllustration = () => (
         <Circle cx="90" cy="65" r="60" fill="url(#discBg)" />
 
         {/* Document */}
-        <Rect x="48" y="14" width="84" height="102" rx="12" fill="#FFFFFF" stroke={Colors.gray[200]} strokeWidth="1.5" />
+        <Rect x="48" y="14" width="84" height="102" rx="12" fill={colors.card} stroke={colors.gray[200]} strokeWidth="1.5" />
 
         {/* Header line */}
-        <Rect x="60" y="26" width="60" height="7" rx="3.5" fill={Colors.secondary} opacity="0.6" />
-        <Rect x="60" y="38" width="44" height="5" rx="2.5" fill={Colors.gray[300]} />
+        <Rect x="60" y="26" width="60" height="7" rx="3.5" fill={colors.secondary} opacity="0.6" />
+        <Rect x="60" y="38" width="44" height="5" rx="2.5" fill={colors.gray[300]} />
 
         {/* Content lines */}
-        <Rect x="60" y="50" width="60" height="4" rx="2" fill={Colors.gray[200]} />
-        <Rect x="60" y="58" width="52" height="4" rx="2" fill={Colors.gray[200]} />
-        <Rect x="60" y="66" width="56" height="4" rx="2" fill={Colors.gray[200]} />
-        <Rect x="60" y="74" width="44" height="4" rx="2" fill={Colors.gray[200]} />
+        <Rect x="60" y="50" width="60" height="4" rx="2" fill={colors.gray[200]} />
+        <Rect x="60" y="58" width="52" height="4" rx="2" fill={colors.gray[200]} />
+        <Rect x="60" y="66" width="56" height="4" rx="2" fill={colors.gray[200]} />
+        <Rect x="60" y="74" width="44" height="4" rx="2" fill={colors.gray[200]} />
 
         {/* Checkbox */}
-        <Rect x="60" y="86" width="14" height="14" rx="4" fill={Colors.primary} />
+        <Rect x="60" y="86" width="14" height="14" rx="4" fill={colors.primary} />
         <Path d="M64 93 L67 96 L71 90" fill="none" stroke="#FFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        <Rect x="80" y="90" width="40" height="5" rx="2.5" fill={Colors.gray[300]} />
+        <Rect x="80" y="90" width="40" height="5" rx="2.5" fill={colors.gray[300]} />
 
         {/* Shield overlay (right side) */}
         <G>
-          <Path d="M148 36 L162 42 L162 54 L148 64 L134 54 L134 42 Z" fill="#FFF" stroke={Colors.primary} strokeWidth="2" strokeLinejoin="round" />
-          <Circle cx="148" cy="48" r="7" fill={Colors.primary} opacity="0.12" />
-          <Path d="M144 49 L147 52 L153 45" fill="none" stroke={Colors.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          <Path d="M148 36 L162 42 L162 54 L148 64 L134 54 L134 42 Z" fill={colors.card} stroke={colors.primary} strokeWidth="2" strokeLinejoin="round" />
+          <Circle cx="148" cy="48" r="7" fill={colors.primary} opacity="0.12" />
+          <Path d="M144 49 L147 52 L153 45" fill="none" stroke={colors.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
         </G>
 
         {/* Trust check left */}
-        <Circle cx="30" cy="40" r="7" fill="#F0FDF4" stroke="#BBF7D0" strokeWidth="1" />
-        <Path d="M27 40 L29 42 L34 37" fill="none" stroke={Colors.success} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Circle cx="30" cy="40" r="7" fill={colors.gray[50]} stroke="#BBF7D0" strokeWidth="1" />
+        <Path d="M27 40 L29 42 L34 37" fill="none" stroke={colors.success} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
 
-        <Circle cx="30" cy="60" r="7" fill="#F0FDF4" stroke="#BBF7D0" strokeWidth="1" />
-        <Path d="M27 60 L29 62 L34 57" fill="none" stroke={Colors.success} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <Circle cx="30" cy="60" r="7" fill={colors.gray[50]} stroke="#BBF7D0" strokeWidth="1" />
+        <Path d="M27 60 L29 62 L34 57" fill="none" stroke={colors.success} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </Svg>
     </FloatingElement>
   </View>
@@ -298,6 +299,8 @@ interface Props {
 
 export function AppOnboardingModal({ visible, onAccept }: Props) {
   const { t } = useTranslation();
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const [step, setStep] = useState(0);
   const [accepted, setAccepted] = useState(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -313,10 +316,10 @@ export function AppOnboardingModal({ visible, onAccept }: Props) {
   }, [visible, fadeAnim, slideAnim]);
 
   const slides = [
-    { title: t("appOnboarding.slide1Title"), desc: t("appOnboarding.slide1Desc"), Illustration: ScanIllustration },
-    { title: t("appOnboarding.slide2Title"), desc: t("appOnboarding.slide2Desc"), Illustration: InsightIllustration },
-    { title: t("appOnboarding.slide3Title"), desc: t("appOnboarding.slide3Desc"), Illustration: FamilyIllustration },
-    { title: t("appOnboarding.slide4Title"), desc: t("appOnboarding.slide4Desc"), Illustration: DisclaimerIllustration },
+    { title: t("appOnboarding.slide1Title"), desc: t("appOnboarding.slide1Desc"), Illustration: () => ScanIllustration(colors) },
+    { title: t("appOnboarding.slide2Title"), desc: t("appOnboarding.slide2Desc"), Illustration: () => InsightIllustration(colors) },
+    { title: t("appOnboarding.slide3Title"), desc: t("appOnboarding.slide3Desc"), Illustration: () => FamilyIllustration(colors) },
+    { title: t("appOnboarding.slide4Title"), desc: t("appOnboarding.slide4Desc"), Illustration: () => DisclaimerIllustration(colors) },
   ];
 
   const lastStep = step === slides.length - 1;
@@ -397,7 +400,7 @@ export function AppOnboardingModal({ visible, onAccept }: Props) {
 
                 <Pressable style={styles.checkboxRow} onPress={() => setAccepted((prev) => !prev)}>
                   <View style={[styles.checkbox, accepted && styles.checkboxChecked]}>
-                    {accepted ? <Ionicons name="checkmark" size={14} color={Colors.white} /> : null}
+                    {accepted ? <Ionicons name="checkmark" size={14} color={colors.white} /> : null}
                   </View>
                   <Text style={styles.checkboxText}>{t("appOnboarding.disclaimer.acceptLabel")}</Text>
                 </Pressable>
@@ -429,7 +432,7 @@ export function AppOnboardingModal({ visible, onAccept }: Props) {
               <Text style={styles.buttonText}>
                 {lastStep ? t("appOnboarding.finishBtn") : t("appOnboarding.nextBtn")}
               </Text>
-              <Ionicons name="arrow-forward" size={20} color={Colors.white} />
+              <Ionicons name="arrow-forward" size={20} color={colors.white} />
             </Pressable>
           </ScrollView>
         </View>
@@ -438,10 +441,10 @@ export function AppOnboardingModal({ visible, onAccept }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.85)",
+    backgroundColor: colors.overlay,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 16,
@@ -451,7 +454,9 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 380,
     maxHeight: "92%",
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.gray[200],
     borderRadius: 28,
     elevation: 16,
     shadowColor: "#000",
@@ -473,7 +478,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   stepIndicator: {
-    backgroundColor: Colors.gray[100],
+    backgroundColor: colors.gray[100],
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10,
@@ -481,7 +486,7 @@ const styles = StyleSheet.create({
   stepText: {
     fontSize: 11,
     fontWeight: "700",
-    color: Colors.gray[400],
+    color: colors.gray[400],
     letterSpacing: 0.5,
   },
   skipButton: {
@@ -491,7 +496,7 @@ const styles = StyleSheet.create({
   },
   skipText: {
     fontSize: 14,
-    color: Colors.gray[400],
+    color: colors.gray[400],
     fontWeight: "600",
   },
   animatedContent: {
@@ -501,14 +506,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "800",
-    color: Colors.secondary,
+    color: colors.secondary,
     textAlign: "center",
     marginBottom: 8,
     letterSpacing: -0.3,
   },
   description: {
     fontSize: 14.5,
-    color: Colors.gray[500],
+    color: colors.gray[500],
     textAlign: "center",
     lineHeight: 22,
     marginBottom: 18,
@@ -516,18 +521,18 @@ const styles = StyleSheet.create({
   },
   disclaimerBox: {
     width: "100%",
-    backgroundColor: "#FFFBF5",
+    backgroundColor: isDark ? "rgba(245,158,11,0.14)" : "#FFFBF5",
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 12,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: "#FFE4C4",
+    borderColor: isDark ? "rgba(252,211,77,0.45)" : "#FFE4C4",
   },
   disclaimerBody: {
     fontSize: 12,
     lineHeight: 17,
-    color: Colors.gray[500],
+    color: colors.gray[500],
     marginBottom: 8,
   },
   bulletRow: {
@@ -540,7 +545,7 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     marginTop: 6,
     marginRight: 8,
   },
@@ -548,7 +553,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 11.5,
     lineHeight: 16,
-    color: Colors.gray[600],
+    color: colors.gray[600],
   },
   checkboxRow: {
     flexDirection: "row",
@@ -556,27 +561,27 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: "#FFE4C4",
+    borderTopColor: isDark ? "rgba(252,211,77,0.45)" : "#FFE4C4",
   },
   checkbox: {
     width: 22,
     height: 22,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: Colors.gray[300],
+    borderColor: colors.gray[300],
     alignItems: "center",
     justifyContent: "center",
     marginRight: 10,
-    backgroundColor: Colors.white,
+    backgroundColor: colors.card,
   },
   checkboxChecked: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   checkboxText: {
     flex: 1,
     fontSize: 12,
-    color: Colors.secondary,
+    color: colors.secondary,
     fontWeight: "600",
     lineHeight: 16,
   },
@@ -586,25 +591,25 @@ const styles = StyleSheet.create({
   },
   progressBg: {
     height: 4,
-    backgroundColor: Colors.gray[100],
+    backgroundColor: colors.gray[100],
     borderRadius: 2,
     overflow: "hidden",
   },
   progressFill: {
     height: 4,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     borderRadius: 2,
   },
   requiredHint: {
     width: "100%",
     textAlign: "center",
-    color: Colors.error,
+    color: colors.error,
     fontSize: 12,
     fontWeight: "500",
     marginBottom: 8,
   },
   button: {
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     width: "100%",
     paddingVertical: 15,
     borderRadius: 16,
@@ -612,7 +617,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    shadowColor: Colors.primary,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -628,8 +633,12 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.98 }],
   },
   buttonText: {
-    color: Colors.white,
+    color: colors.white,
     fontWeight: "700",
     fontSize: 16,
   },
 });
+
+
+
+

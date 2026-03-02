@@ -1,8 +1,9 @@
-import React, { useState, useRef, useEffect } from "react";
+﻿import React, { useMemo, useState, useRef, useEffect } from "react";
 import { View, Text, Pressable, StyleSheet, Modal, Dimensions, Animated, Easing, ScrollView } from "react-native";
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Circle, Rect, Path, G, Line } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
-import { Colors } from "../../constants/colors";
+import { useTheme } from "../../context/ThemeContext";
+import { AppColors } from "../../constants/colors";
 import { useTranslation } from "react-i18next";
 
 const { width } = Dimensions.get("window");
@@ -35,11 +36,11 @@ const FloatingElement = ({ children, duration = 4000, delay = 0 }: { children: R
 };
 
 // --- ILLUSTRATIONS ---
-const ShelfIllustration = () => (
+const ShelfIllustration = (colors: AppColors) => (
     <Svg width={200} height={200} viewBox="0 0 200 200">
         <Defs>
             <SvgLinearGradient id="shelfGrad" x1="0" y1="0" x2="1" y2="1">
-                <Stop offset="0" stopColor={Colors.primary} stopOpacity="0.2" />
+                <Stop offset="0" stopColor={colors.primary} stopOpacity="0.2" />
                 <Stop offset="1" stopColor="#E65100" stopOpacity="0.1" />
             </SvgLinearGradient>
             <SvgLinearGradient id="bottleGrad" x1="0" y1="0" x2="0" y2="1">
@@ -50,26 +51,26 @@ const ShelfIllustration = () => (
         <Circle cx="100" cy="100" r="80" fill="url(#shelfGrad)" />
 
         {/* Dolap Rafı */}
-        <Rect x="40" y="40" width="120" height="130" rx="12" fill="#FFFFFF" stroke={Colors.primary} strokeWidth="2" />
-        <Line x1="45" y1="85" x2="155" y2="85" stroke={Colors.gray[200]} strokeWidth="2" />
-        <Line x1="45" y1="130" x2="155" y2="130" stroke={Colors.gray[200]} strokeWidth="2" />
+        <Rect x="40" y="40" width="120" height="130" rx="12" fill={colors.card} stroke={colors.primary} strokeWidth="2" />
+        <Line x1="45" y1="85" x2="155" y2="85" stroke={colors.gray[200]} strokeWidth="2" />
+        <Line x1="45" y1="130" x2="155" y2="130" stroke={colors.gray[200]} strokeWidth="2" />
 
         {/* Ürünler - Hareketli Gruplar */}
         <G>
             <Rect x="55" y="55" width="20" height="30" rx="4" fill="url(#bottleGrad)" />
             <Rect x="80" y="60" width="15" height="25" rx="3" fill="#93C5FD" />
             <Circle cx="115" cy="70" r="12" fill="#FCD34D" />
-            <Rect x="135" y="50" width="12" height="35" rx="2" fill={Colors.success} />
+            <Rect x="135" y="50" width="12" height="35" rx="2" fill={colors.success} />
         </G>
 
         <G>
-            <Rect x="60" y="100" width="25" height="30" rx="6" fill={Colors.primary} opacity="0.6" />
+            <Rect x="60" y="100" width="25" height="30" rx="6" fill={colors.primary} opacity="0.6" />
             <Rect x="95" y="105" width="18" height="25" rx="3" fill="#A855F7" />
         </G>
     </Svg>
 );
 
-const SecurityIllustration = () => (
+const SecurityIllustration = (colors: AppColors) => (
     <Svg width={200} height={200} viewBox="0 0 200 200">
         <Defs>
             <SvgLinearGradient id="shieldGrad" x1="0" y1="0" x2="0" y2="1">
@@ -81,16 +82,16 @@ const SecurityIllustration = () => (
 
         {/* Kalkan ve Uyarı */}
         <G>
-            <Path d="M100 40 L140 60 V100 C140 130 100 160 100 160 C100 160 60 130 60 100 V60 L100 40 Z" fill="#FFFFFF" stroke={Colors.error} strokeWidth="3" />
-            <Path d="M100 80 V110" stroke={Colors.error} strokeWidth="4" strokeLinecap="round" />
-            <Circle cx="100" cy="125" r="3" fill={Colors.error} />
+            <Path d="M100 40 L140 60 V100 C140 130 100 160 100 160 C100 160 60 130 60 100 V60 L100 40 Z" fill={colors.card} stroke={colors.error} strokeWidth="3" />
+            <Path d="M100 80 V110" stroke={colors.error} strokeWidth="4" strokeLinecap="round" />
+            <Circle cx="100" cy="125" r="3" fill={colors.error} />
         </G>
 
         {/* Yüzen Doktor Simgeleri */}
-        <Circle cx="50" cy="80" r="4" fill={Colors.gray[300]} />
-        <Path d="M45 80 H55 M50 75 V85" stroke={Colors.gray[400]} strokeWidth="2" />
+        <Circle cx="50" cy="80" r="4" fill={colors.gray[300]} />
+        <Path d="M45 80 H55 M50 75 V85" stroke={colors.gray[400]} strokeWidth="2" />
 
-        <Circle cx="150" cy="120" r="4" fill={Colors.gray[300]} />
+        <Circle cx="150" cy="120" r="4" fill={colors.gray[300]} />
     </Svg>
 );
 
@@ -102,6 +103,8 @@ interface Props {
 
 export const GuruOnboarding = ({ visible, onFinish }: Props) => {
     const { t } = useTranslation();
+    const { colors, isDark } = useTheme();
+    const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const [step, setStep] = useState(0);
 
     useEffect(() => {
@@ -115,13 +118,13 @@ export const GuruOnboarding = ({ visible, onFinish }: Props) => {
             id: 1,
             title: t("guru.onboarding.slide1Title"),
             desc: t("guru.onboarding.slide1Desc"),
-            Illustration: ShelfIllustration,
+            Illustration: () => ShelfIllustration(colors),
         },
         {
             id: 2,
             title: t("guru.onboarding.slide2Title"),
             desc: t("guru.onboarding.slide2Desc"),
-            Illustration: SecurityIllustration,
+            Illustration: () => SecurityIllustration(colors),
         }
     ];
 
@@ -177,7 +180,7 @@ export const GuruOnboarding = ({ visible, onFinish }: Props) => {
                                     ? t("guru.onboarding.finishBtn")
                                     : t("guru.onboarding.nextBtn")}
                             </Text>
-                            <Ionicons name="arrow-forward" size={20} color={Colors.white} />
+                            <Ionicons name="arrow-forward" size={20} color={colors.white} />
                         </Pressable>
                     </ScrollView>
                 </View>
@@ -186,10 +189,10 @@ export const GuruOnboarding = ({ visible, onFinish }: Props) => {
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     overlay: {
         flex: 1,
-        backgroundColor: "rgba(0,0,0,0.8)",
+        backgroundColor: colors.overlay,
         justifyContent: "center",
         alignItems: "center",
         padding: 20
@@ -198,7 +201,9 @@ const styles = StyleSheet.create({
         width: "100%",
         maxWidth: 360,
         maxHeight: "85%",
-        backgroundColor: Colors.white,
+        backgroundColor: colors.card,
+        borderWidth: 1,
+        borderColor: colors.gray[200],
         borderRadius: 32,
         elevation: 10,
         shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 20
@@ -216,13 +221,13 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 24,
         fontWeight: "800",
-        color: Colors.secondary,
+        color: colors.secondary,
         textAlign: "center",
         marginBottom: 12
     },
     description: {
         fontSize: 15,
-        color: Colors.gray[500],
+        color: colors.gray[500],
         textAlign: "center",
         lineHeight: 22,
         marginBottom: 32,
@@ -239,14 +244,14 @@ const styles = StyleSheet.create({
     },
     activeDot: {
         width: 24,
-        backgroundColor: Colors.primary
+        backgroundColor: colors.primary
     },
     inactiveDot: {
         width: 6,
-        backgroundColor: Colors.gray[200]
+        backgroundColor: colors.gray[200]
     },
     button: {
-        backgroundColor: Colors.primary,
+        backgroundColor: colors.primary,
         width: "100%",
         paddingVertical: 16,
         borderRadius: 20,
@@ -256,8 +261,10 @@ const styles = StyleSheet.create({
         gap: 8
     },
     buttonText: {
-        color: Colors.white,
+        color: colors.white,
         fontWeight: "700",
         fontSize: 16
     }
 });
+
+

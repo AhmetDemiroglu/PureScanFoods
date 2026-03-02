@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+﻿import React, { useState, useMemo, useEffect } from "react";
 import {
     View,
     Text,
@@ -18,7 +18,7 @@ import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { Colors } from "../../constants/colors";
+import { AppColors } from "../../constants/colors";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import HistorySidebar from "../history";
 import { OnboardingModal } from "../../components/ui/OnboardingModal";
@@ -35,6 +35,7 @@ import {
     type NutriScore
 } from "../../constants/additives";
 import { NutriScoreGraphic } from "../../components/ui/NutriScoreAssets";
+import { useTheme } from "../../context/ThemeContext";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -61,6 +62,8 @@ const STATUS_CONFIG = {
 
 export default function AdditivesLibraryScreen() {
     const { t, i18n } = useTranslation();
+    const { colors, isDark } = useTheme();
+    const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const router = useRouter();
     const isTr = i18n.language === "tr";
     const isEs = i18n.language?.startsWith("es");
@@ -89,7 +92,7 @@ export default function AdditivesLibraryScreen() {
             title: t("encyclopedia.onboarding.slide1Title"),
             desc: t("encyclopedia.onboarding.slide1Desc"),
             icon: "book" as const,
-            iconColor: Colors.primary,
+            iconColor: colors.primary,
             iconBg: "#FFF7ED",
         },
         {
@@ -138,6 +141,13 @@ export default function AdditivesLibraryScreen() {
     const renderAdditiveCard = (additive: AdditiveInfo) => {
         const isExpanded = expandedAdditive === additive.code;
         const config = RISK_CONFIG[additive.risk];
+        const riskBg = isDark
+            ? (additive.risk === "HAZARDOUS"
+                ? "rgba(220,38,38,0.18)"
+                : additive.risk === "CAUTION"
+                    ? "rgba(217,119,6,0.18)"
+                    : "rgba(22,163,74,0.18)")
+            : config.bg;
 
         return (
             <TouchableOpacity
@@ -148,7 +158,7 @@ export default function AdditivesLibraryScreen() {
             >
                 {/* Header */}
                 <View style={styles.cardHeader}>
-                    <View style={[styles.riskBadge, { backgroundColor: config.bg }]}>
+                    <View style={[styles.riskBadge, { backgroundColor: riskBg }]}>
                         <Ionicons name={config.icon} size={16} color={config.color} />
                     </View>
                     <View style={styles.cardTitleArea}>
@@ -160,7 +170,7 @@ export default function AdditivesLibraryScreen() {
                     <Ionicons
                         name={isExpanded ? "chevron-up" : "chevron-down"}
                         size={20}
-                        color={Colors.gray[400]}
+                        color={colors.gray[400]}
                     />
                 </View>
 
@@ -191,7 +201,7 @@ export default function AdditivesLibraryScreen() {
                 {/* Expanded Content */}
                 {isExpanded && (
                     <View style={styles.expandedContent}>
-                        <View style={[styles.riskIndicator, { backgroundColor: config.bg, borderColor: config.color }]}>
+                        <View style={[styles.riskIndicator, { backgroundColor: riskBg, borderColor: config.color }]}>
                             <Ionicons name={config.icon} size={20} color={config.color} />
                             <Text style={[styles.riskText, { color: config.color }]}>
                                 {additive.risk === "HAZARDOUS" && (isTr ? "Tehlikeli" : isEs ? "Peligroso" : "Hazardous")}
@@ -232,7 +242,7 @@ export default function AdditivesLibraryScreen() {
                     <Ionicons
                         name={isExpanded ? "chevron-up" : "chevron-down"}
                         size={20}
-                        color={Colors.gray[400]}
+                        color={colors.gray[400]}
                     />
                 </View>
 
@@ -253,7 +263,7 @@ export default function AdditivesLibraryScreen() {
                         {/* Examples */}
                         <View style={styles.novaSection}>
                             <Text style={styles.novaSectionTitle}>
-                                <Ionicons name="list" size={14} color={Colors.gray[600]} />
+                                <Ionicons name="list" size={14} color={colors.gray[600]} />
                                 {"  "}{isTr ? "Örnekler" : isEs ? "Ejemplos" : "Examples"}
                             </Text>
                             <View style={styles.examplesContainer}>
@@ -307,7 +317,7 @@ export default function AdditivesLibraryScreen() {
                 {/* Examples */}
                 <View style={styles.novaSection}>
                     <Text style={styles.novaSectionTitle}>
-                        <Ionicons name="basket" size={14} color={Colors.gray[600]} />
+                        <Ionicons name="basket" size={14} color={colors.gray[600]} />
                         {"  "}{isTr ? "Örnek Gıdalar" : "Common Examples"}
                     </Text>
                     <View style={styles.examplesContainer}>
@@ -328,14 +338,14 @@ export default function AdditivesLibraryScreen() {
 
             {/* Header */}
             <LinearGradient
-                colors={[Colors.primary, "#E65100"]}
+                colors={isDark ? ["#B45309", "#9A3412"] : [colors.primary, "#E65100"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.header}
             >
                 <SafeAreaView edges={["top"]}>
                     <View style={styles.headerContent}>
-                        <TouchableOpacity style={styles.backButton} onPress={() => (router.canGoBack() ? router.back() : router.push("/"))}>
+                        <TouchableOpacity style={styles.backButton} onPress={() => router.replace("/")}>
                             <Ionicons name="arrow-back" size={24} color="#FFF" />
                         </TouchableOpacity>
                         <View style={styles.headerTitleArea}>
@@ -363,7 +373,7 @@ export default function AdditivesLibraryScreen() {
                             <Ionicons
                                 name="flask"
                                 size={18}
-                                color={activeTab === "additives" ? Colors.primary : "#FFF"}
+                                color={activeTab === "additives" ? colors.primary : "#FFF"}
                             />
                             <Text style={[styles.tabText, activeTab === "additives" && styles.tabTextActive]}>
                                 {isTr ? "Katkı Maddeleri" : isEs ? "Aditivos" : "Additives"}
@@ -376,7 +386,7 @@ export default function AdditivesLibraryScreen() {
                             <Ionicons
                                 name="nutrition"
                                 size={18}
-                                color={activeTab === "nova" ? Colors.primary : "#FFF"}
+                                color={activeTab === "nova" ? colors.primary : "#FFF"}
                             />
                             <Text style={[styles.tabText, activeTab === "nova" && styles.tabTextActive]}>
                                 {isTr ? "NOVA Rehberi" : isEs ? "Guía NOVA" : "NOVA Guide"}
@@ -389,7 +399,7 @@ export default function AdditivesLibraryScreen() {
                             <Ionicons
                                 name="stats-chart"
                                 size={18}
-                                color={activeTab === "nutriscore" ? Colors.primary : "#FFF"}
+                                color={activeTab === "nutriscore" ? colors.primary : "#FFF"}
                             />
                             <Text style={[styles.tabText, activeTab === "nutriscore" && styles.tabTextActive]}>
                                 Nutri-Score
@@ -415,32 +425,32 @@ export default function AdditivesLibraryScreen() {
                         <>
                             {/* Search */}
                             <View style={styles.searchContainer}>
-                                <Ionicons name="search" size={20} color={Colors.gray[400]} />
+                                <Ionicons name="search" size={20} color={colors.gray[400]} />
                                 <TextInput
                                     style={styles.searchInput}
                                     placeholder={isTr ? "E kodu veya isim ara..." : isEs ? "Buscar código E o nombre..." : "Search E-code or name..."}
-                                    placeholderTextColor={Colors.gray[400]}
+                                    placeholderTextColor={colors.gray[400]}
                                     value={searchQuery}
                                     onChangeText={setSearchQuery}
                                 />
                                 {searchQuery.length > 0 && (
                                     <TouchableOpacity onPress={() => setSearchQuery("")}>
-                                        <Ionicons name="close-circle" size={20} color={Colors.gray[400]} />
+                                        <Ionicons name="close-circle" size={20} color={colors.gray[400]} />
                                     </TouchableOpacity>
                                 )}
                             </View>
 
                             {/* Stats */}
                             <View style={styles.statsRow}>
-                                <View style={[styles.statBox, { backgroundColor: "#FEF2F2" }]}>
+                                <View style={[styles.statBox, { backgroundColor: isDark ? "rgba(220,38,38,0.18)" : "#FEF2F2" }]}>
                                     <Text style={[styles.statNumber, { color: "#DC2626" }]}>{stats.hazardous}</Text>
                                     <Text style={styles.statLabel}>{isTr ? "Tehlikeli" : isEs ? "Peligroso" : "Hazardous"}</Text>
                                 </View>
-                                <View style={[styles.statBox, { backgroundColor: "#FFFBEB" }]}>
+                                <View style={[styles.statBox, { backgroundColor: isDark ? "rgba(217,119,6,0.18)" : "#FFFBEB" }]}>
                                     <Text style={[styles.statNumber, { color: "#D97706" }]}>{stats.caution}</Text>
                                     <Text style={styles.statLabel}>{isTr ? "Dikkatli" : isEs ? "Precaución" : "Caution"}</Text>
                                 </View>
-                                <View style={[styles.statBox, { backgroundColor: "#F0FDF4" }]}>
+                                <View style={[styles.statBox, { backgroundColor: isDark ? "rgba(22,163,74,0.18)" : "#F0FDF4" }]}>
                                     <Text style={[styles.statNumber, { color: "#16A34A" }]}>{stats.safe}</Text>
                                     <Text style={styles.statLabel}>{isTr ? "Güvenli" : isEs ? "Seguro" : "Safe"}</Text>
                                 </View>
@@ -454,7 +464,7 @@ export default function AdditivesLibraryScreen() {
                                         style={[
                                             styles.filterChip,
                                             riskFilter === filter && styles.filterChipActive,
-                                            riskFilter === filter && filter === "ALL" && { backgroundColor: Colors.secondary },
+                                            riskFilter === filter && filter === "ALL" && { backgroundColor: isDark ? colors.primary : colors.secondary },
                                             riskFilter === filter && filter === "HAZARDOUS" && { backgroundColor: "#DC2626" },
                                             riskFilter === filter && filter === "CAUTION" && { backgroundColor: "#D97706" },
                                             riskFilter === filter && filter === "SAFE" && { backgroundColor: "#16A34A" },
@@ -495,15 +505,17 @@ export default function AdditivesLibraryScreen() {
                         <>
                             {/* NOVA Info Box */}
                             <View style={styles.novaInfoBox}>
-                                <Ionicons name="information-circle" size={24} color={Colors.primary} />
+                                <Ionicons name="information-circle" size={24} color={colors.primary} />
                                 <View style={styles.novaInfoContent}>
                                     <Text style={styles.novaInfoTitle}>
-                                        {isTr ? "NOVA Sınıflandırması Nedir?" : "What is NOVA Classification?"}
+                                        {isTr ? "NOVA Sınıflandırması Nedir?" : isEs ? "¿Qué es la clasificación NOVA?" : "What is NOVA Classification?"}
                                     </Text>
                                     <Text style={styles.novaInfoText}>
                                         {isTr
                                             ? "NOVA, gıdaları işlenme derecelerine göre 4 gruba ayıran uluslararası bir sınıflandırma sistemidir. Düşük gruplar daha az işlenmiş seçenekleri temsil eder."
-                                            : "NOVA is an international classification system that divides foods into 4 groups based on their degree of processing. Lower groups represent healthier choices."}
+                                            : isEs
+                                                ? "NOVA es un sistema internacional que divide los alimentos en 4 grupos según su grado de procesamiento. Los grupos más bajos representan opciones menos procesadas."
+                                                : "NOVA is an international classification system that divides foods into 4 groups based on their degree of processing. Lower groups represent healthier choices."}
                                     </Text>
                                 </View>
                             </View>
@@ -518,15 +530,17 @@ export default function AdditivesLibraryScreen() {
                         <>
                             {/* Info Box */}
                             <View style={styles.novaInfoBox}>
-                                <Ionicons name="information-circle" size={24} color={Colors.primary} />
+                                <Ionicons name="information-circle" size={24} color={colors.primary} />
                                 <View style={styles.novaInfoContent}>
                                     <Text style={styles.novaInfoTitle}>
-                                        {isTr ? "Nutri-Score Nedir?" : "What is Nutri-Score?"}
+                                        {isTr ? "Nutri-Score Nedir?" : isEs ? "¿Qué es Nutri-Score?" : "What is Nutri-Score?"}
                                     </Text>
                                     <Text style={styles.novaInfoText}>
                                         {isTr
                                             ? "Nutri-Score, gıdaların besin değerini A'dan (en sağlıklı) E'ye (en az sağlıklı) kadar sıralayan 5 renkli bir etiketleme sistemidir."
-                                            : "Nutri-Score is a 5-color nutrition label that ranks foods from A (best) to E (poorest) nutritional quality."}
+                                            : isEs
+                                                ? "Nutri-Score es un sistema de etiquetado nutricional de 5 colores que clasifica los alimentos desde A (mejor calidad) hasta E (peor calidad nutricional)."
+                                                : "Nutri-Score is a 5-color nutrition label that ranks foods from A (best) to E (poorest) nutritional quality."}
                                     </Text>
                                 </View>
                             </View>
@@ -551,10 +565,10 @@ export default function AdditivesLibraryScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#F1F5F9",
+        backgroundColor: colors.surface,
     },
     header: {
         paddingBottom: 16,
@@ -614,7 +628,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
     },
     tabActive: {
-        backgroundColor: "#FFF",
+        backgroundColor: colors.card,
     },
     tabText: {
         fontSize: 13,
@@ -622,7 +636,7 @@ const styles = StyleSheet.create({
         color: "#FFF",
     },
     tabTextActive: {
-        color: Colors.primary,
+        color: colors.primary,
     },
     content: {
         flex: 1,
@@ -633,18 +647,18 @@ const styles = StyleSheet.create({
     searchContainer: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#FFF",
+        backgroundColor: colors.card,
         borderRadius: 12,
         paddingHorizontal: 16,
         height: 50,
         gap: 12,
         borderWidth: 1,
-        borderColor: Colors.gray[200],
+        borderColor: colors.gray[200],
     },
     searchInput: {
         flex: 1,
         fontSize: 15,
-        color: Colors.secondary,
+        color: colors.secondary,
     },
     statsRow: {
         flexDirection: "row",
@@ -664,7 +678,7 @@ const styles = StyleSheet.create({
     statLabel: {
         fontSize: 11,
         fontWeight: "600",
-        color: Colors.gray[600],
+        color: colors.gray[600],
         marginTop: 4,
     },
     filterRow: {
@@ -676,9 +690,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 14,
         paddingVertical: 8,
         borderRadius: 20,
-        backgroundColor: "#FFF",
+        backgroundColor: colors.card,
         borderWidth: 1,
-        borderColor: Colors.gray[200],
+        borderColor: colors.gray[200],
     },
     filterChipActive: {
         borderColor: "transparent",
@@ -686,27 +700,25 @@ const styles = StyleSheet.create({
     filterChipText: {
         fontSize: 12,
         fontWeight: "600",
-        color: Colors.gray[600],
+        color: colors.gray[600],
     },
-    filterChipTextActive: {
-        color: "#FFF",
-    },
+    filterChipTextActive: { color: "#FFF" },
     resultsCount: {
         fontSize: 12,
-        color: Colors.gray[500],
+        color: colors.gray[500],
         marginTop: 16,
         marginBottom: 8,
     },
     card: {
-        backgroundColor: "#FFF",
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 16,
         marginBottom: 12,
         borderWidth: 1,
-        borderColor: Colors.gray[200],
+        borderColor: colors.gray[200],
     },
     cardExpanded: {
-        borderColor: Colors.primary,
+        borderColor: colors.primary,
         borderWidth: 1.5,
     },
     cardHeader: {
@@ -727,11 +739,11 @@ const styles = StyleSheet.create({
     cardCode: {
         fontSize: 15,
         fontWeight: "800",
-        color: Colors.secondary,
+        color: colors.secondary,
     },
     cardName: {
         fontSize: 12,
-        color: Colors.gray[500],
+        color: colors.gray[500],
         marginTop: 2,
     },
     statusRow: {
@@ -740,7 +752,7 @@ const styles = StyleSheet.create({
         marginTop: 12,
         paddingTop: 12,
         borderTopWidth: 1,
-        borderTopColor: Colors.gray[100],
+        borderTopColor: colors.gray[100],
     },
     statusItem: {
         flex: 1,
@@ -749,12 +761,12 @@ const styles = StyleSheet.create({
     statusDivider: {
         width: 1,
         height: 24,
-        backgroundColor: Colors.gray[200],
+        backgroundColor: colors.gray[200],
     },
     statusLabel: {
         fontSize: 10,
         fontWeight: "600",
-        color: Colors.gray[400],
+        color: colors.gray[400],
         textTransform: "uppercase",
     },
     statusValue: {
@@ -765,14 +777,14 @@ const styles = StyleSheet.create({
     statusValueSmall: {
         fontSize: 10,
         fontWeight: "600",
-        color: Colors.gray[600],
+        color: colors.gray[600],
         marginTop: 2,
     },
     expandedContent: {
         marginTop: 16,
         paddingTop: 16,
         borderTopWidth: 1,
-        borderTopColor: Colors.gray[100],
+        borderTopColor: colors.gray[100],
     },
     riskIndicator: {
         flexDirection: "row",
@@ -791,20 +803,20 @@ const styles = StyleSheet.create({
     },
     reasonText: {
         fontSize: 14,
-        color: Colors.gray[700],
+        color: colors.gray[700],
         lineHeight: 22,
     },
 
     // NOVA Styles
     novaInfoBox: {
         flexDirection: "row",
-        backgroundColor: "#FFF",
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 16,
         gap: 12,
         marginBottom: 16,
         borderWidth: 1,
-        borderColor: Colors.gray[200],
+        borderColor: colors.gray[200],
     },
     novaInfoContent: {
         flex: 1,
@@ -812,21 +824,21 @@ const styles = StyleSheet.create({
     novaInfoTitle: {
         fontSize: 14,
         fontWeight: "700",
-        color: Colors.secondary,
+        color: colors.secondary,
         marginBottom: 4,
     },
     novaInfoText: {
         fontSize: 13,
-        color: Colors.gray[600],
+        color: colors.gray[600],
         lineHeight: 20,
     },
     novaCard: {
-        backgroundColor: "#FFF",
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 16,
         marginBottom: 12,
         borderWidth: 1,
-        borderColor: Colors.gray[200],
+        borderColor: colors.gray[200],
         borderLeftWidth: 4,
     },
     novaHeader: {
@@ -852,11 +864,11 @@ const styles = StyleSheet.create({
     novaTitle: {
         fontSize: 14,
         fontWeight: "700",
-        color: Colors.secondary,
+        color: colors.secondary,
     },
     novaShortDesc: {
         fontSize: 12,
-        color: Colors.gray[500],
+        color: colors.gray[500],
         marginTop: 8,
         lineHeight: 18,
     },
@@ -865,7 +877,7 @@ const styles = StyleSheet.create({
     },
     novaDescription: {
         fontSize: 14,
-        color: Colors.gray[700],
+        color: colors.gray[700],
         lineHeight: 22,
         marginBottom: 16,
     },
@@ -875,7 +887,7 @@ const styles = StyleSheet.create({
     novaSectionTitle: {
         fontSize: 13,
         fontWeight: "700",
-        color: Colors.gray[700],
+        color: colors.gray[700],
         marginBottom: 10,
     },
     examplesContainer: {
@@ -884,14 +896,14 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     exampleTag: {
-        backgroundColor: Colors.gray[100],
+        backgroundColor: colors.gray[100],
         paddingHorizontal: 10,
         paddingVertical: 6,
         borderRadius: 8,
     },
     exampleText: {
         fontSize: 12,
-        color: Colors.gray[700],
+        color: colors.gray[700],
     },
     tipRow: {
         flexDirection: "row",
@@ -902,7 +914,10 @@ const styles = StyleSheet.create({
     tipText: {
         flex: 1,
         fontSize: 13,
-        color: Colors.gray[600],
+        color: colors.gray[600],
         lineHeight: 20,
     },
 });
+
+
+

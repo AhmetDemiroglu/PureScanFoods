@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+﻿import React, { useMemo, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, LayoutAnimation, Platform, UIManager } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Colors } from "../../constants/colors";
+import { AppColors } from "../../constants/colors";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "../../context/ThemeContext";
 
 if (Platform.OS === 'android') {
     if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -16,6 +17,8 @@ interface DetailCardsProps {
 
 export default function DetailCards({ data }: DetailCardsProps) {
     const { t } = useTranslation();
+    const { colors, isDark } = useTheme();
+    const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     if (!data || !data.details) return null;
 
     const [expandedSection, setExpandedSection] = useState<string | null>("ingredients");
@@ -40,7 +43,7 @@ export default function DetailCards({ data }: DetailCardsProps) {
         >
             <View style={styles.headerLeft}>
                 <View style={[styles.iconBox, expandedSection === sectionKey && styles.iconBoxActive]}>
-                    <Ionicons name={icon} size={20} color={expandedSection === sectionKey ? Colors.white : Colors.primary} />
+                    <Ionicons name={icon} size={20} color={expandedSection === sectionKey ? colors.white : colors.primary} />
                 </View>
                 <Text style={[styles.headerTitle, expandedSection === sectionKey && styles.headerTitleActive]}>{title}</Text>
                 {badgeCount ? (
@@ -52,7 +55,7 @@ export default function DetailCards({ data }: DetailCardsProps) {
             <Ionicons
                 name={expandedSection === sectionKey ? "chevron-up" : "chevron-down"}
                 size={20}
-                color={Colors.gray[400]}
+                color={colors.gray[400]}
             />
         </TouchableOpacity>
     );
@@ -94,8 +97,10 @@ export default function DetailCards({ data }: DetailCardsProps) {
                         <View style={styles.cardBody}>
                             {validAdditives.map((add: any, i: number) => (
                                 <View key={i} style={styles.additiveRow}>
-                                    <View style={[styles.additiveCode, add.risk === 'Hazardous' ? { backgroundColor: '#FEF2F2' } : { backgroundColor: '#FFFBEB' }]}>
-                                        <Text style={[styles.additiveCodeText, add.risk === 'Hazardous' ? { color: Colors.error } : { color: Colors.warning }]}>{add.code}</Text>
+                                    <View style={[styles.additiveCode, add.risk === 'Hazardous'
+                                        ? { backgroundColor: isDark ? "rgba(220,38,38,0.20)" : '#FEF2F2' }
+                                        : { backgroundColor: isDark ? "rgba(217,119,6,0.20)" : '#FFFBEB' }]}>
+                                        <Text style={[styles.additiveCodeText, add.risk === 'Hazardous' ? { color: colors.error } : { color: colors.warning }]}>{add.code}</Text>
                                     </View>
                                     <View style={{ flex: 1 }}>
                                         <Text style={styles.additiveName}>{add.name}</Text>
@@ -123,10 +128,10 @@ export default function DetailCards({ data }: DetailCardsProps) {
 
                         {data.details?.nutritional_highlights?.pros?.length > 0 && (
                             <>
-                                <Text style={[styles.subTitle, { color: Colors.success }]}>{t("results.pros")}</Text>
+                                <Text style={[styles.subTitle, { color: colors.success }]}>{t("results.pros")}</Text>
                                 {data.details.nutritional_highlights.pros.map((pro: string, i: number) => (
                                     <View key={i} style={styles.bulletRow}>
-                                        <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
+                                        <Ionicons name="checkmark-circle" size={16} color={colors.success} />
                                         <Text style={styles.bulletText}>{pro}</Text>
                                     </View>
                                 ))}
@@ -137,10 +142,10 @@ export default function DetailCards({ data }: DetailCardsProps) {
                         {/* DÜZELTME: Optional chaining (?.) */}
                         {data.details?.nutritional_highlights?.cons?.length > 0 && (
                             <>
-                                <Text style={[styles.subTitle, { color: Colors.error }]}>{t("results.cons")}</Text>
+                                <Text style={[styles.subTitle, { color: colors.error }]}>{t("results.cons")}</Text>
                                 {data.details.nutritional_highlights.cons.map((con: string, i: number) => (
                                     <View key={i} style={styles.bulletRow}>
-                                        <Ionicons name="warning" size={16} color={Colors.error} />
+                                        <Ionicons name="warning" size={16} color={colors.error} />
                                         <Text style={styles.bulletText}>{con}</Text>
                                     </View>
                                 ))}
@@ -154,17 +159,17 @@ export default function DetailCards({ data }: DetailCardsProps) {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     container: {
         paddingHorizontal: 20,
         gap: 16,
     },
     card: {
-        backgroundColor: Colors.white,
+        backgroundColor: colors.card,
         borderRadius: 16,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: Colors.gray[200],
+        borderColor: colors.gray[200],
         shadowColor: "#000", shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.03, shadowRadius: 3, elevation: 1,
     },
     cardHeader: {
@@ -172,10 +177,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: 16,
-        backgroundColor: Colors.white,
+        backgroundColor: colors.card,
     },
     cardHeaderActive: {
-        backgroundColor: Colors.surface,
+        backgroundColor: colors.surface,
     },
     headerLeft: {
         flexDirection: 'row',
@@ -186,23 +191,23 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 8,
-        backgroundColor: Colors.gray[100],
+        backgroundColor: colors.gray[100],
         alignItems: 'center',
         justifyContent: 'center',
     },
     iconBoxActive: {
-        backgroundColor: Colors.primary,
+        backgroundColor: colors.primary,
     },
     headerTitle: {
         fontSize: 14,
         fontWeight: '700',
-        color: Colors.secondary,
+        color: colors.secondary,
     },
     headerTitleActive: {
-        color: Colors.primary,
+        color: colors.primary,
     },
     badge: {
-        backgroundColor: Colors.gray[200],
+        backgroundColor: colors.gray[200],
         paddingHorizontal: 6,
         paddingVertical: 2,
         borderRadius: 10,
@@ -210,12 +215,12 @@ const styles = StyleSheet.create({
     badgeText: {
         fontSize: 10,
         fontWeight: '700',
-        color: Colors.gray[600],
+        color: colors.gray[600],
     },
     cardBody: {
         padding: 16,
         paddingTop: 0,
-        backgroundColor: Colors.surface,
+        backgroundColor: colors.surface,
     },
     tagsContainer: {
         flexDirection: 'row',
@@ -233,17 +238,17 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '600',
     },
-    tagSuccess: { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' },
-    tagTextSuccess: { color: '#15803D' },
-    tagWarning: { backgroundColor: '#FFFBEB', borderColor: '#FDE68A' },
-    tagTextWarning: { color: '#B45309' },
-    tagDanger: { backgroundColor: '#FEF2F2', borderColor: '#FECACA' },
-    tagTextDanger: { color: '#B91C1C' },
+    tagSuccess: { backgroundColor: isDark ? "rgba(22,163,74,0.20)" : '#F0FDF4', borderColor: isDark ? "rgba(34,197,94,0.45)" : '#BBF7D0' },
+    tagTextSuccess: { color: isDark ? '#86EFAC' : '#15803D' },
+    tagWarning: { backgroundColor: isDark ? "rgba(217,119,6,0.20)" : '#FFFBEB', borderColor: isDark ? "rgba(251,191,36,0.45)" : '#FDE68A' },
+    tagTextWarning: { color: isDark ? '#FCD34D' : '#B45309' },
+    tagDanger: { backgroundColor: isDark ? "rgba(220,38,38,0.20)" : '#FEF2F2', borderColor: isDark ? "rgba(248,113,113,0.45)" : '#FECACA' },
+    tagTextDanger: { color: isDark ? '#FCA5A5' : '#B91C1C' },
     additiveRow: {
         flexDirection: 'row',
         gap: 12,
         marginBottom: 12,
-        backgroundColor: Colors.white,
+        backgroundColor: colors.card,
         padding: 10,
         borderRadius: 10,
         marginTop: 12,
@@ -261,16 +266,16 @@ const styles = StyleSheet.create({
     additiveName: {
         fontSize: 13,
         fontWeight: '700',
-        color: Colors.secondary,
+        color: colors.secondary,
     },
     additiveDesc: {
         fontSize: 11,
-        color: Colors.gray[500],
+        color: colors.gray[500],
         marginTop: 2,
         lineHeight: 16,
     },
     infoBox: {
-        backgroundColor: Colors.white,
+        backgroundColor: colors.card,
         padding: 12,
         borderRadius: 12,
         marginBottom: 12,
@@ -278,23 +283,23 @@ const styles = StyleSheet.create({
     },
     infoLabel: {
         fontSize: 10,
-        color: Colors.gray[400],
+        color: colors.gray[400],
         textTransform: 'uppercase',
         fontWeight: '700',
     },
     infoValue: {
         fontSize: 14,
         fontWeight: '700',
-        color: Colors.secondary,
+        color: colors.secondary,
         marginVertical: 2,
     },
     infoDesc: {
         fontSize: 11,
-        color: Colors.gray[500],
+        color: colors.gray[500],
     },
     divider: {
         height: 1,
-        backgroundColor: Colors.gray[200],
+        backgroundColor: colors.gray[200],
         marginVertical: 12,
     },
     subTitle: {
@@ -311,8 +316,11 @@ const styles = StyleSheet.create({
     },
     bulletText: {
         fontSize: 13,
-        color: Colors.gray[600],
+        color: colors.gray[600],
         flex: 1,
         lineHeight: 18,
     },
 });
+
+
+

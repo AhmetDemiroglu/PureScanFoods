@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+﻿import React, { useMemo, useState, useRef, useEffect } from "react";
 import {
     View,
     Text,
@@ -19,7 +19,8 @@ import Svg, {
     G,
 } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
-import { Colors } from "../../constants/colors";
+import { useTheme } from "../../context/ThemeContext";
+import { AppColors } from "../../constants/colors";
 
 export interface OnboardingSlide {
     title: string;
@@ -162,6 +163,8 @@ const illustrationStyles = StyleSheet.create({
 
 // --- MAIN COMPONENT ---
 export const OnboardingModal = ({ visible, onFinish, slides, finishLabel, nextLabel }: Props) => {
+    const { colors, isDark } = useTheme();
+    const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const [step, setStep] = useState(0);
     const fadeAnim = useRef(new Animated.Value(1)).current;
     const slideAnim = useRef(new Animated.Value(0)).current;
@@ -282,7 +285,7 @@ export const OnboardingModal = ({ visible, onFinish, slides, finishLabel, nextLa
                             <Ionicons
                                 name={isLast ? "checkmark" : "arrow-forward"}
                                 size={20}
-                                color={Colors.white}
+                                color={colors.white}
                             />
                         </Pressable>
                     </ScrollView>
@@ -292,10 +295,10 @@ export const OnboardingModal = ({ visible, onFinish, slides, finishLabel, nextLa
     );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     overlay: {
         flex: 1,
-        backgroundColor: "rgba(0,0,0,0.82)",
+        backgroundColor: colors.overlay,
         justifyContent: "center",
         alignItems: "center",
         paddingHorizontal: 18,
@@ -305,7 +308,9 @@ const styles = StyleSheet.create({
         width: "100%",
         maxWidth: 370,
         maxHeight: "88%",
-        backgroundColor: Colors.white,
+        backgroundColor: colors.card,
+        borderWidth: 1,
+        borderColor: colors.gray[200],
         borderRadius: 28,
         elevation: 14,
         shadowColor: "#000",
@@ -327,7 +332,7 @@ const styles = StyleSheet.create({
         marginBottom: 4,
     },
     stepIndicator: {
-        backgroundColor: Colors.gray[100],
+        backgroundColor: colors.gray[100],
         paddingHorizontal: 10,
         paddingVertical: 4,
         borderRadius: 10,
@@ -335,7 +340,7 @@ const styles = StyleSheet.create({
     stepText: {
         fontSize: 11,
         fontWeight: "700",
-        color: Colors.gray[400],
+        color: colors.gray[400],
         letterSpacing: 0.5,
     },
     skipButton: {
@@ -345,7 +350,7 @@ const styles = StyleSheet.create({
     },
     skipText: {
         fontSize: 13,
-        color: Colors.gray[400],
+        color: colors.gray[400],
         fontWeight: "600",
     },
     animatedContent: {
@@ -355,14 +360,14 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 22,
         fontWeight: "800",
-        color: Colors.secondary,
+        color: colors.secondary,
         textAlign: "center",
         marginBottom: 10,
         letterSpacing: -0.3,
     },
     description: {
         fontSize: 14.5,
-        color: Colors.gray[500],
+        color: colors.gray[500],
         textAlign: "center",
         lineHeight: 22,
         marginBottom: 24,
@@ -374,7 +379,7 @@ const styles = StyleSheet.create({
     },
     progressBg: {
         height: 4,
-        backgroundColor: Colors.gray[100],
+        backgroundColor: colors.gray[100],
         borderRadius: 2,
         overflow: "hidden",
     },
@@ -401,8 +406,11 @@ const styles = StyleSheet.create({
         transform: [{ scale: 0.98 }],
     },
     buttonText: {
-        color: Colors.white,
+        color: colors.white,
         fontWeight: "700",
         fontSize: 16,
     },
 });
+
+
+

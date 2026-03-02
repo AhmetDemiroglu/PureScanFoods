@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useMemo, useState, useEffect } from "react";
 import {
     Modal, View, Text, TextInput, Pressable, StyleSheet,
     KeyboardAvoidingView, Platform, ActivityIndicator, Animated
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { Colors } from "../../constants/colors";
+import { AppColors } from "../../constants/colors";
 import { useAuth } from "../../context/AuthContext";
 import { useUser } from "../../context/UserContext";
 import { useTranslation } from "react-i18next";
@@ -12,13 +12,24 @@ import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../../lib/firebase";
 import PremiumCompareModal from "../ui/PremiumCompareModal";
 import LottieView from "lottie-react-native";
+import { useTheme } from "../../context/ThemeContext";
 
 interface AuthModalProps {
     visible: boolean;
     onClose: () => void;
 }
 
-function Toast({ message, type, visible }: { message: string; type: "success" | "error"; visible: boolean }) {
+function Toast({
+    message,
+    type,
+    visible,
+    styles,
+}: {
+    message: string;
+    type: "success" | "error";
+    visible: boolean;
+    styles: ReturnType<typeof createStyles>;
+}) {
     const translateY = useState(new Animated.Value(-100))[0];
 
     useEffect(() => {
@@ -43,6 +54,8 @@ function Toast({ message, type, visible }: { message: string; type: "success" | 
 
 export default function AuthModal({ visible, onClose }: AuthModalProps) {
     const { t } = useTranslation();
+    const { colors, isDark } = useTheme();
+    const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const { user, userProfile, login, register, loginWithGoogle, logout, usageStats, isPremium } = useAuth();
     const { familyMembers } = useUser();
     const [isRegister, setIsRegister] = useState(false);
@@ -155,16 +168,17 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
         setProfileUnlocked(true);
     };
 
-    // Haklar hesaplama
-    const scanRemaining = isPremium ? "∞" : Math.max(0, usageStats.scanLimit - usageStats.scanCount);
-    const chatRemaining = isPremium ? "∞" : Math.max(0, usageStats.aiChatLimit - usageStats.aiChatCount);
+    // Usage calculations
+    const unlimited = String.fromCharCode(8734);
+    const scanRemaining = isPremium ? unlimited : Math.max(0, usageStats.scanLimit - usageStats.scanCount);
+    const chatRemaining = isPremium ? unlimited : Math.max(0, usageStats.aiChatLimit - usageStats.aiChatCount);
     const familyCount = Math.max(0, (familyMembers?.length || 1) - 1);
-    const familyLimit = isPremium ? "∞" : 1;
+    const familyLimit = isPremium ? unlimited : 1;
 
-    // Exhausted kontrolleri
+    // Exhausted state
     const isScanExhausted = !isPremium && scanRemaining === 0;
     const isChatExhausted = !isPremium && chatRemaining === 0;
-    const isFamilyExhausted = !isPremium && familyCount >= (familyLimit as number);
+    const isFamilyExhausted = !isPremium && familyCount >= 1;
 
     // PROFILE VIEW
     const renderProfile = () => {
@@ -175,7 +189,7 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
             <View style={styles.content}>
                 {/* Avatar + Info */}
                 <View style={styles.profileHeader}>
-                    <View style={[styles.avatar, { backgroundColor: userProfile?.color || Colors.primary }]}>
+                    <View style={[styles.avatar, { backgroundColor: userProfile?.color || colors.primary }]}>
                         <MaterialCommunityIcons name={(userProfile?.avatarIcon || "account") as any} size={32} color="#FFF" />
                         {isPremium && (
                             <View style={styles.crownBadge}>
@@ -198,14 +212,14 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
                     <View style={styles.usageGrid}>
                         {/* Scan */}
                         <View style={[styles.usageCard, isScanExhausted && styles.usageCardExhausted]}>
-                            <View style={[
+                        <View style={[
                                 styles.usageIconBox,
-                                { backgroundColor: isScanExhausted ? "#FEF2F2" : "#FFF7ED" }
+                                { backgroundColor: isScanExhausted ? (isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2") : (isDark ? "rgba(234,88,12,0.20)" : "#FFF7ED") }
                             ]}>
                                 <Ionicons
                                     name="scan-outline"
                                     size={18}
-                                    color={isScanExhausted ? "#DC2626" : Colors.primary}
+                                    color={isScanExhausted ? "#DC2626" : colors.primary}
                                 />
                             </View>
                             <Text style={[styles.usageValue, isScanExhausted && styles.usageValueExhausted]}>
@@ -218,9 +232,9 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
 
                         {/* AI Chat */}
                         <View style={[styles.usageCard, isChatExhausted && styles.usageCardExhausted]}>
-                            <View style={[
+                        <View style={[
                                 styles.usageIconBox,
-                                { backgroundColor: isChatExhausted ? "#FEF2F2" : "#EDE9FE" }
+                                { backgroundColor: isChatExhausted ? (isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2") : (isDark ? "rgba(124,58,237,0.22)" : "#EDE9FE") }
                             ]}>
                                 <MaterialCommunityIcons
                                     name="robot-outline"
@@ -238,9 +252,9 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
 
                         {/* Family */}
                         <View style={[styles.usageCard, isFamilyExhausted && styles.usageCardExhausted]}>
-                            <View style={[
+                        <View style={[
                                 styles.usageIconBox,
-                                { backgroundColor: isFamilyExhausted ? "#FEF2F2" : "#E0F2FE" }
+                                { backgroundColor: isFamilyExhausted ? (isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2") : (isDark ? "rgba(2,132,199,0.22)" : "#E0F2FE") }
                             ]}>
                                 <MaterialCommunityIcons
                                     name="account-group-outline"
@@ -262,7 +276,7 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
                 {diet && (
                     <View style={styles.dietSection}>
                         <View style={styles.dietIconBox}>
-                            <MaterialCommunityIcons name="silverware-fork-knife" size={16} color={Colors.primary} />
+                            <MaterialCommunityIcons name="silverware-fork-knife" size={16} color={colors.primary} />
                         </View>
                         <View style={styles.dietInfo}>
                             <Text style={styles.dietLabel}>{t("profile.diet_plan")}</Text>
@@ -308,7 +322,7 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
 
                 {/* Logout */}
                 <Pressable style={({ pressed }) => [styles.logoutBtn, pressed && styles.btnPressed]} onPress={handleLogout}>
-                    <Ionicons name="log-out-outline" size={18} color="#EF4444" />
+                    <Ionicons name="log-out-outline" size={18} color={isDark ? "#FCA5A5" : "#EF4444"} />
                     <Text style={styles.logoutText}>{t("auth.logout")}</Text>
                 </Pressable>
             </View>
@@ -334,11 +348,11 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
 
             {/* Form */}
             <View style={styles.inputBox}>
-                <Ionicons name="mail-outline" size={18} color={Colors.gray[400]} />
+                <Ionicons name="mail-outline" size={18} color={colors.gray[400]} />
                 <TextInput
                     style={styles.input}
                     placeholder={t("auth.email_placeholder")}
-                    placeholderTextColor={Colors.gray[400]}
+                    placeholderTextColor={colors.gray[400]}
                     value={email}
                     onChangeText={setEmail}
                     autoCapitalize="none"
@@ -347,17 +361,17 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
             </View>
 
             <View style={styles.inputBox}>
-                <Ionicons name="lock-closed-outline" size={18} color={Colors.gray[400]} />
+                <Ionicons name="lock-closed-outline" size={18} color={colors.gray[400]} />
                 <TextInput
                     style={styles.input}
                     placeholder={t("auth.password_placeholder")}
-                    placeholderTextColor={Colors.gray[400]}
+                    placeholderTextColor={colors.gray[400]}
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}
                 />
                 <Pressable onPress={() => setShowPassword(!showPassword)} hitSlop={8}>
-                    <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={Colors.gray[400]} />
+                    <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={colors.gray[400]} />
                 </Pressable>
             </View>
 
@@ -369,7 +383,7 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
                     disabled={forgotLoading}
                 >
                     {forgotLoading ? (
-                        <ActivityIndicator color={Colors.primary} size="small" />
+                        <ActivityIndicator color={colors.primary} size="small" />
                     ) : (
                         <Text style={styles.forgotPasswordText}>{t("auth.forgot_password")}</Text>
                     )}
@@ -395,7 +409,7 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
 
             {/* Google */}
             <Pressable style={({ pressed }) => [styles.googleBtn, pressed && styles.btnPressed]} onPress={loginWithGoogle}>
-                <Ionicons name="logo-google" size={18} color={Colors.secondary} />
+                <Ionicons name="logo-google" size={18} color={colors.secondary} />
                 <Text style={styles.googleText}>{t("auth.google_button")}</Text>
             </Pressable>
 
@@ -420,10 +434,10 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
                     {/* Modal */}
                     <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardView}>
                         <View style={styles.modal}>
-                            <Toast message={toast.message} type={toast.type} visible={toast.visible} />
+            <Toast message={toast.message} type={toast.type} visible={toast.visible} styles={styles} />
 
                             <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={12}>
-                                <Ionicons name="close" size={22} color={Colors.gray[400]} />
+                                <Ionicons name="close" size={22} color={colors.gray[400]} />
                             </Pressable>
 
                             {isLoggedIn ? renderProfile() : renderAuth()}
@@ -442,11 +456,11 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
 }
 
 // STYLES
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     container: { flex: 1 },
     backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(15,23,42,0.5)" },
     keyboardView: { flex: 1, justifyContent: "center", alignItems: "center" },
-    modal: { width: "88%", backgroundColor: "#FFF", borderRadius: 24, padding: 24, shadowColor: "#000", shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 12, overflow: "hidden" },
+    modal: { width: "88%", backgroundColor: colors.card, borderRadius: 24, padding: 24, shadowColor: "#000", shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 12, overflow: "hidden" },
     closeBtn: { position: "absolute", top: 16, right: 16, zIndex: 10 },
     content: { paddingTop: 8 },
 
@@ -457,74 +471,86 @@ const styles = StyleSheet.create({
     // Profile
     profileHeader: { alignItems: "center", marginBottom: 20 },
     avatar: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center", marginBottom: 12 },
-    crownBadge: { position: "absolute", bottom: -2, right: -2, width: 24, height: 24, borderRadius: 12, backgroundColor: "#FFF", alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
-    profileName: { fontSize: 20, fontWeight: "700", color: Colors.secondary, marginBottom: 2 },
-    profileEmail: { fontSize: 13, color: Colors.gray[500], marginBottom: 10 },
-    memberBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, backgroundColor: Colors.gray[100] },
+    crownBadge: { position: "absolute", bottom: -2, right: -2, width: 24, height: 24, borderRadius: 12, backgroundColor: colors.card, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
+    profileName: { fontSize: 20, fontWeight: "700", color: colors.secondary, marginBottom: 2 },
+    profileEmail: { fontSize: 13, color: colors.gray[500], marginBottom: 10 },
+    memberBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, backgroundColor: colors.gray[100] },
     memberBadgePremium: { backgroundColor: "#FEF3C7" },
-    memberText: { fontSize: 11, fontWeight: "700", color: Colors.gray[600] },
+    memberText: { fontSize: 11, fontWeight: "700", color: colors.gray[600] },
     memberTextPremium: { color: "#D97706" },
 
     // Usage Section - 3 Column Grid
     usageSection: { marginBottom: 16 },
-    usageSectionTitle: { fontSize: 11, fontWeight: "700", color: Colors.gray[400], marginBottom: 10, letterSpacing: 0.5 },
+    usageSectionTitle: { fontSize: 11, fontWeight: "700", color: colors.gray[400], marginBottom: 10, letterSpacing: 0.5 },
     usageGrid: { flexDirection: "row", gap: 10 },
-    usageCard: { flex: 1, backgroundColor: "#FFF", borderRadius: 14, padding: 14, alignItems: "center", borderWidth: 1, borderColor: Colors.gray[200], gap: 8 },
-    usageCardExhausted: { borderColor: "#FECACA", backgroundColor: "#FEF2F2" },
+    usageCard: { flex: 1, backgroundColor: colors.card, borderRadius: 14, padding: 14, alignItems: "center", borderWidth: 1, borderColor: colors.gray[200], gap: 8 },
+    usageCardExhausted: { borderColor: "#FECACA", backgroundColor: isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2" },
     usageIconBox: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-    usageValue: { fontSize: 20, fontWeight: "800", color: Colors.secondary },
+    usageValue: { fontSize: 20, fontWeight: "800", color: colors.secondary },
     usageValueExhausted: { color: "#DC2626" },
-    usageLabel: { fontSize: 10, color: Colors.gray[500], textAlign: "center" },
+    usageLabel: { fontSize: 10, color: colors.gray[500], textAlign: "center" },
     usageLabelExhausted: { color: "#EF4444" },
 
     // Diet Section
-    dietSection: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFBEB", borderRadius: 12, padding: 12, marginBottom: 12, gap: 12, borderWidth: 1, borderColor: "#FEF3C7" },
-    dietIconBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center" },
+    dietSection: { flexDirection: "row", alignItems: "center", backgroundColor: isDark ? "rgba(245,158,11,0.16)" : "#FFFBEB", borderRadius: 12, padding: 12, marginBottom: 12, gap: 12, borderWidth: 1, borderColor: isDark ? "rgba(252,211,77,0.45)" : "#FEF3C7" },
+    dietIconBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: isDark ? "rgba(245,158,11,0.24)" : "#FEF3C7", alignItems: "center", justifyContent: "center" },
     dietInfo: { flex: 1 },
-    dietLabel: { fontSize: 11, color: "#92400E", marginBottom: 2 },
-    dietValue: { fontSize: 14, fontWeight: "700", color: "#B45309" },
+    dietLabel: { fontSize: 11, color: isDark ? "#FDE68A" : "#92400E", marginBottom: 2 },
+    dietValue: { fontSize: 14, fontWeight: "700", color: isDark ? "#FCD34D" : "#B45309" },
 
     // Allergens - Warm Amber Design
-    allergensSection: { backgroundColor: "#FFFBEB", borderRadius: 14, borderWidth: 1, borderColor: "#FDE68A", marginBottom: 16, overflow: "hidden" },
+    allergensSection: { backgroundColor: isDark ? "rgba(245,158,11,0.16)" : "#FFFBEB", borderRadius: 14, borderWidth: 1, borderColor: isDark ? "rgba(252,211,77,0.45)" : "#FDE68A", marginBottom: 16, overflow: "hidden" },
     allergensHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, paddingVertical: 12 },
     allergensHeaderLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
-    allergenIconBox: { width: 28, height: 28, borderRadius: 8, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center" },
-    allergensTitle: { fontSize: 14, fontWeight: "600", color: "#92400E" },
-    allergenCount: { backgroundColor: "#FDE68A", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
-    allergenCountText: { fontSize: 12, fontWeight: "700", color: "#B45309" },
+    allergenIconBox: { width: 28, height: 28, borderRadius: 8, backgroundColor: isDark ? "rgba(245,158,11,0.24)" : "#FEF3C7", alignItems: "center", justifyContent: "center" },
+    allergensTitle: { fontSize: 14, fontWeight: "600", color: isDark ? "#FDE68A" : "#92400E" },
+    allergenCount: { backgroundColor: isDark ? "rgba(252,211,77,0.30)" : "#FDE68A", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
+    allergenCountText: { fontSize: 12, fontWeight: "700", color: isDark ? "#FCD34D" : "#B45309" },
     allergensList: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 14, paddingBottom: 14 },
-    allergenChip: { backgroundColor: "#FEF3C7", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-    allergenChipText: { fontSize: 13, fontWeight: "600", color: "#92400E" },
+    allergenChip: { backgroundColor: isDark ? "rgba(245,158,11,0.22)" : "#FEF3C7", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+    allergenChipText: { fontSize: 13, fontWeight: "600", color: isDark ? "#FDE68A" : "#92400E" },
 
-    logoutBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 14, borderRadius: 14, borderWidth: 1.5, borderColor: "#FECACA", backgroundColor: "#FEF2F2" },
-    logoutText: { fontSize: 15, fontWeight: "600", color: "#EF4444" },
+    logoutBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        paddingVertical: 14,
+        borderRadius: 14,
+        borderWidth: 1.5,
+        borderColor: isDark ? "rgba(248,113,113,0.45)" : "#FECACA",
+        backgroundColor: isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2"
+    },
+    logoutText: { fontSize: 15, fontWeight: "600", color: isDark ? "#FCA5A5" : "#EF4444" },
 
     // Auth
     authHeader: { alignItems: "center", marginBottom: 24 },
     authIcon: { height: 82, borderRadius: 16, alignItems: "center", justifyContent: "center", marginBottom: 16 },
     authLottie: { width: 162, height: 162 },
-    authTitle: { fontSize: 22, fontWeight: "700", color: Colors.secondary, marginBottom: 4 },
-    authSubtitle: { fontSize: 14, color: Colors.gray[500], textAlign: "center" },
+    authTitle: { fontSize: 22, fontWeight: "700", color: colors.secondary, marginBottom: 4 },
+    authSubtitle: { fontSize: 14, color: colors.gray[500], textAlign: "center" },
 
-    inputBox: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: Colors.gray[50], borderRadius: 14, paddingHorizontal: 14, height: 52, marginBottom: 12, borderWidth: 1, borderColor: Colors.gray[200] },
-    input: { flex: 1, fontSize: 15, color: Colors.secondary },
+    inputBox: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: colors.gray[50], borderRadius: 14, paddingHorizontal: 14, height: 52, marginBottom: 12, borderWidth: 1, borderColor: colors.gray[200] },
+    input: { flex: 1, fontSize: 15, color: colors.secondary },
 
     forgotPasswordBtn: { alignSelf: "flex-end", marginBottom: 8, marginTop: -4 },
-    forgotPasswordText: { fontSize: 13, fontWeight: "600", color: Colors.primary },
+    forgotPasswordText: { fontSize: 13, fontWeight: "600", color: colors.primary },
 
-    submitBtn: { height: 52, borderRadius: 14, backgroundColor: Colors.primary, alignItems: "center", justifyContent: "center", marginTop: 4 },
+    submitBtn: { height: 52, borderRadius: 14, backgroundColor: colors.primary, alignItems: "center", justifyContent: "center", marginTop: 4 },
     submitText: { fontSize: 16, fontWeight: "700", color: "#FFF" },
     btnPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
     btnDisabled: { opacity: 0.6 },
 
     divider: { flexDirection: "row", alignItems: "center", marginVertical: 20 },
-    dividerLine: { flex: 1, height: 1, backgroundColor: Colors.gray[200] },
-    dividerText: { marginHorizontal: 12, fontSize: 12, fontWeight: "600", color: Colors.gray[400] },
+    dividerLine: { flex: 1, height: 1, backgroundColor: colors.gray[200] },
+    dividerText: { marginHorizontal: 12, fontSize: 12, fontWeight: "600", color: colors.gray[400] },
 
-    googleBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, height: 52, borderRadius: 14, backgroundColor: "#FFF", borderWidth: 1.5, borderColor: Colors.gray[200] },
-    googleText: { fontSize: 15, fontWeight: "600", color: Colors.secondary },
+    googleBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, height: 52, borderRadius: 14, backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.gray[200] },
+    googleText: { fontSize: 15, fontWeight: "600", color: colors.secondary },
 
     footer: { flexDirection: "row", justifyContent: "center", gap: 6, marginTop: 20 },
-    footerText: { fontSize: 14, color: Colors.gray[500] },
-    footerLink: { fontSize: 14, fontWeight: "700", color: Colors.primary },
+    footerText: { fontSize: 14, color: colors.gray[500] },
+    footerLink: { fontSize: 14, fontWeight: "700", color: colors.primary },
 });
+
+

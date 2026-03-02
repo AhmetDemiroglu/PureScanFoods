@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,8 +11,9 @@ import {
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Colors } from "../../constants/colors";
+import { AppColors } from "../../constants/colors";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "../../context/ThemeContext";
 
 interface ConfirmDeleteModalProps {
   visible: boolean;
@@ -28,6 +29,8 @@ export default function ConfirmDeleteModal({
   type,
 }: ConfirmDeleteModalProps) {
   const { t } = useTranslation();
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -129,7 +132,7 @@ export default function ConfirmDeleteModal({
                   <Ionicons
                     name="close"
                     size={22}
-                    color={Colors.gray[400]}
+                    color={colors.gray[400]}
                   />
                 </Pressable>
               </View>
@@ -167,7 +170,7 @@ export default function ConfirmDeleteModal({
                   value={inputValue}
                   onChangeText={setInputValue}
                   placeholder={confirmWord}
-                  placeholderTextColor={Colors.gray[300]}
+                  placeholderTextColor={colors.gray[300]}
                   autoCapitalize="none"
                   autoCorrect={false}
                   editable={!loading}
@@ -231,7 +234,7 @@ export default function ConfirmDeleteModal({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: "center",
@@ -269,19 +272,19 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Colors.gray[100],
+    backgroundColor: colors.gray[100],
     alignItems: "center",
     justifyContent: "center",
   },
   title: {
     fontSize: 18,
     fontWeight: "700",
-    color: Colors.secondary,
+    color: colors.secondary,
     marginBottom: 8,
   },
   description: {
     fontSize: 13,
-    color: Colors.gray[500],
+    color: colors.gray[500],
     lineHeight: 20,
     marginBottom: 16,
   },
@@ -304,16 +307,16 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 13,
     fontWeight: "600",
-    color: Colors.secondary,
+    color: colors.secondary,
     marginBottom: 8,
   },
   inputBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.gray[50],
+    backgroundColor: colors.gray[50],
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: Colors.gray[200],
+    borderColor: colors.gray[200],
     paddingHorizontal: 14,
     height: 48,
     marginBottom: 12,
@@ -326,7 +329,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: "600",
-    color: Colors.secondary,
+    color: colors.secondary,
   },
   errorBox: {
     flexDirection: "row",
@@ -348,14 +351,14 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 48,
     borderRadius: 12,
-    backgroundColor: Colors.gray[100],
+    backgroundColor: colors.gray[100],
     alignItems: "center",
     justifyContent: "center",
   },
   cancelBtnText: {
     fontSize: 14,
     fontWeight: "600",
-    color: Colors.gray[600],
+    color: colors.gray[600],
   },
   confirmBtn: {
     flex: 1,
@@ -391,3 +394,4 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
+

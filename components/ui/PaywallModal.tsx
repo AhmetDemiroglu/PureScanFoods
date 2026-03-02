@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useCallback } from "react";
+﻿import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
   Modal,
   View,
@@ -11,7 +11,7 @@ import {
   Linking,
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { Colors } from "../../constants/colors";
+import { AppColors } from "../../constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
   useSharedValue,
@@ -24,6 +24,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import LottieView from "lottie-react-native";
+import { useTheme } from "../../context/ThemeContext";
 
 interface PaywallModalProps {
   visible: boolean;
@@ -45,12 +46,14 @@ const FeatureItem = ({
   iconBg,
   label,
   index,
+  styles,
 }: {
   icon: string;
   iconColor: string;
   iconBg: string;
   label: string;
   index: number;
+  styles: ReturnType<typeof createStyles>;
 }) => (
   <Animated.View
     entering={FadeInDown.delay(220 + index * 50).duration(360).springify()}
@@ -66,6 +69,9 @@ const FeatureItem = ({
 
 const DevNoticeModal = ({ visible, onClose }: { visible: boolean; onClose: () => void }) => {
   const { t } = useTranslation();
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+  const devStyles = useMemo(() => createDevStyles(colors, isDark), [colors, isDark]);
 
   const scale = useSharedValue(0.9);
   const opacity = useSharedValue(0);
@@ -94,7 +100,7 @@ const DevNoticeModal = ({ visible, onClose }: { visible: boolean; onClose: () =>
         <Animated.View style={[devStyles.card, animatedStyle]}>
           <Image source={require("../../assets/septimus_lab.png")} style={devStyles.logo} resizeMode="contain" />
           <View style={devStyles.iconBox}>
-            <MaterialCommunityIcons name="hammer-wrench" size={28} color={Colors.primary} />
+            <MaterialCommunityIcons name="hammer-wrench" size={28} color={colors.primary} />
           </View>
 
           <Text style={devStyles.title}>{t("paywall.dev_notice_title")}</Text>
@@ -104,9 +110,9 @@ const DevNoticeModal = ({ visible, onClose }: { visible: boolean; onClose: () =>
             style={({ pressed }) => [devStyles.linkButton, pressed && { opacity: 0.7 }]}
             onPress={() => Linking.openURL("https://septimuslab.com")}
           >
-            <Ionicons name="globe-outline" size={18} color={Colors.primary} />
+            <Ionicons name="globe-outline" size={18} color={colors.primary} />
             <Text style={devStyles.linkText}>septimuslab.com</Text>
-            <Ionicons name="open-outline" size={14} color={Colors.gray[400]} />
+            <Ionicons name="open-outline" size={14} color={colors.gray[400]} />
           </Pressable>
 
           <Pressable style={({ pressed }) => [devStyles.closeButton, pressed && { opacity: 0.8 }]} onPress={onClose}>
@@ -120,6 +126,9 @@ const DevNoticeModal = ({ visible, onClose }: { visible: boolean; onClose: () =>
 
 export default function PaywallModal({ visible, onClose }: PaywallModalProps) {
   const { t } = useTranslation();
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+  const devStyles = useMemo(() => createDevStyles(colors, isDark), [colors, isDark]);
   const [selectedPlan, setSelectedPlan] = useState<PlanType>("yearly");
   const [showDevNotice, setShowDevNotice] = useState(false);
 
@@ -149,11 +158,11 @@ export default function PaywallModal({ visible, onClose }: PaywallModalProps) {
   if (!visible) return null;
 
   const features = [
-    { icon: "barcode-scan", iconColor: Colors.primary, iconBg: "#FFF7ED", label: t("paywall.feat_unlimited_scan") },
-    { icon: "robot-outline", iconColor: "#7C3AED", iconBg: "#EDE9FE", label: t("paywall.feat_unlimited_ai") },
-    { icon: "account-group-outline", iconColor: "#0284C7", iconBg: "#E0F2FE", label: t("paywall.feat_unlimited_family") },
-    { icon: "advertisements-off", iconColor: "#DC2626", iconBg: "#FEF2F2", label: t("paywall.feat_no_ads") },
-    { icon: "lightning-bolt", iconColor: "#F59E0B", iconBg: "#FEF3C7", label: t("paywall.feat_priority") },
+    { icon: "barcode-scan", iconColor: colors.primary, iconBg: isDark ? "rgba(234,88,12,0.20)" : "#FFF7ED", label: t("paywall.feat_unlimited_scan") },
+    { icon: "robot-outline", iconColor: "#7C3AED", iconBg: isDark ? "rgba(124,58,237,0.20)" : "#EDE9FE", label: t("paywall.feat_unlimited_ai") },
+    { icon: "account-group-outline", iconColor: "#0284C7", iconBg: isDark ? "rgba(2,132,199,0.20)" : "#E0F2FE", label: t("paywall.feat_unlimited_family") },
+    { icon: "advertisements-off", iconColor: "#DC2626", iconBg: isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2", label: t("paywall.feat_no_ads") },
+    { icon: "lightning-bolt", iconColor: "#F59E0B", iconBg: isDark ? "rgba(245,158,11,0.20)" : "#FEF3C7", label: t("paywall.feat_priority") },
   ];
 
   return (
@@ -163,11 +172,11 @@ export default function PaywallModal({ visible, onClose }: PaywallModalProps) {
 
         <Animated.View style={[styles.container, animatedStyle]}>
           <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={12}>
-            <Ionicons name="close" size={20} color={Colors.gray[500]} />
+            <Ionicons name="close" size={20} color={colors.gray[500]} />
           </Pressable>
 
           <Animated.View entering={FadeIn.delay(90).duration(350)} style={styles.header}>
-            <LinearGradient colors={["#FFFFFF", "#FFFFFF"]} style={styles.crownBox}>
+            <LinearGradient colors={isDark ? [colors.gray[100], colors.gray[200]] : ["#FFFFFF", "#FFFFFF"]} style={styles.crownBox}>
               <LottieView
                 source={require("../../assets/crown.json")}
                 autoPlay
@@ -231,7 +240,7 @@ export default function PaywallModal({ visible, onClose }: PaywallModalProps) {
               showsVerticalScrollIndicator={true}
             >
               {features.map((f, i) => (
-                <FeatureItem key={f.icon} {...f} index={i} />
+                <FeatureItem styles={styles} key={f.icon} {...f} index={i} />
               ))}
             </ScrollView>
           </View>
@@ -264,7 +273,7 @@ export default function PaywallModal({ visible, onClose }: PaywallModalProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: "center",
@@ -278,7 +287,7 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH * 0.92,
     maxWidth: 410,
     maxHeight: SCREEN_HEIGHT * 0.9,
-    backgroundColor: "#FFF",
+    backgroundColor: colors.card,
     borderRadius: 26,
     paddingTop: 24,
     paddingHorizontal: 18,
@@ -291,9 +300,9 @@ const styles = StyleSheet.create({
     zIndex: 20,
     padding: 6,
     borderRadius: 14,
-    backgroundColor: "#FFF",
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: Colors.gray[200],
+    borderColor: colors.gray[200],
   },
 
   header: {
@@ -314,12 +323,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 21,
     fontWeight: "800",
-    color: Colors.secondary,
+    color: colors.secondary,
     textAlign: "center",
   },
   subtitle: {
     fontSize: 12,
-    color: Colors.gray[500],
+    color: colors.gray[500],
     textAlign: "center",
     marginTop: 5,
     lineHeight: 17,
@@ -336,15 +345,15 @@ const styles = StyleSheet.create({
     minHeight: 122,
     borderRadius: 16,
     borderWidth: 2,
-    borderColor: Colors.gray[100],
-    backgroundColor: Colors.gray[50],
+    borderColor: colors.gray[100],
+    backgroundColor: colors.gray[50],
     overflow: "hidden",
     position: "relative",
     padding: 8,
   },
   planSquareSelected: {
-    borderColor: Colors.primary,
-    backgroundColor: "#FFF7ED",
+    borderColor: colors.primary,
+    backgroundColor: isDark ? "rgba(249,115,22,0.18)" : "#FFF7ED",
   },
   cornerTriangle: {
     position: "absolute",
@@ -376,18 +385,18 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: Colors.gray[300],
+    borderColor: colors.gray[300],
     alignItems: "center",
     justifyContent: "center",
   },
   radioOuterSelected: {
-    borderColor: Colors.primary,
+    borderColor: colors.primary,
   },
   radioInner: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
   },
   planCenter: {
     flex: 1,
@@ -398,27 +407,27 @@ const styles = StyleSheet.create({
   squareTitle: {
     fontSize: 12,
     fontWeight: "700",
-    color: Colors.gray[600],
+    color: colors.gray[600],
     marginBottom: 2,
   },
   squareTitleSelected: {
-    color: Colors.secondary,
+    color: colors.secondary,
   },
   squarePrice: {
     fontSize: 16,
     fontWeight: "800",
-    color: Colors.primary,
+    color: colors.primary,
   },
   squareMeta: {
     fontSize: 10,
-    color: Colors.gray[500],
+    color: colors.gray[500],
     fontWeight: "600",
     marginTop: 1,
   },
   squareHint: {
     marginTop: 4,
     fontSize: 9,
-    color: Colors.gray[400],
+    color: colors.gray[400],
     fontWeight: "600",
   },
 
@@ -428,7 +437,7 @@ const styles = StyleSheet.create({
   featuresTitle: {
     fontSize: 11,
     fontWeight: "700",
-    color: Colors.gray[400],
+    color: colors.gray[400],
     letterSpacing: 0.5,
     marginBottom: 8,
     textTransform: "uppercase",
@@ -444,7 +453,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray[100],
+    borderBottomColor: colors.gray[100],
   },
   featureIcon: {
     width: 30,
@@ -458,7 +467,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 13,
     fontWeight: "600",
-    color: Colors.secondary,
+    color: colors.secondary,
   },
 
   ctaButton: {
@@ -493,11 +502,11 @@ const styles = StyleSheet.create({
   footerLink: {
     fontSize: 11,
     fontWeight: "600",
-    color: Colors.gray[400],
+    color: colors.gray[400],
   },
   footerDot: {
     fontSize: 11,
-    color: Colors.gray[300],
+    color: colors.gray[300],
   },
   secondaryClose: {
     alignItems: "center",
@@ -506,11 +515,11 @@ const styles = StyleSheet.create({
   secondaryCloseText: {
     fontSize: 12,
     fontWeight: "600",
-    color: Colors.gray[400],
+    color: colors.gray[400],
   },
 });
 
-const devStyles = StyleSheet.create({
+const createDevStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: "center",
@@ -523,7 +532,7 @@ const devStyles = StyleSheet.create({
   card: {
     width: SCREEN_WIDTH * 0.82,
     maxWidth: 340,
-    backgroundColor: "#FFF",
+    backgroundColor: colors.card,
     borderRadius: 24,
     padding: 24,
     alignItems: "center",
@@ -537,23 +546,23 @@ const devStyles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 14,
-    backgroundColor: "#FFF7ED",
+    backgroundColor: isDark ? "rgba(234,88,12,0.20)" : "#FFF7ED",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: "#FFEDD5",
+    borderColor: isDark ? "rgba(251,146,60,0.40)" : "#FFEDD5",
   },
   title: {
     fontSize: 17,
     fontWeight: "800",
-    color: Colors.secondary,
+    color: colors.secondary,
     textAlign: "center",
     marginBottom: 8,
   },
   desc: {
     fontSize: 13,
-    color: Colors.gray[500],
+    color: colors.gray[500],
     textAlign: "center",
     lineHeight: 19,
     marginBottom: 16,
@@ -563,21 +572,21 @@ const devStyles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "#FFF7ED",
+    backgroundColor: isDark ? "rgba(234,88,12,0.20)" : "#FFF7ED",
     paddingVertical: 12,
     paddingHorizontal: 18,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#FFEDD5",
+    borderColor: isDark ? "rgba(251,146,60,0.40)" : "#FFEDD5",
     marginBottom: 16,
   },
   linkText: {
     fontSize: 14,
     fontWeight: "700",
-    color: Colors.primary,
+    color: colors.primary,
   },
   closeButton: {
-    backgroundColor: Colors.gray[100],
+    backgroundColor: colors.gray[100],
     paddingVertical: 12,
     paddingHorizontal: 32,
     borderRadius: 12,
@@ -585,6 +594,9 @@ const devStyles = StyleSheet.create({
   closeText: {
     fontSize: 14,
     fontWeight: "700",
-    color: Colors.gray[600],
+    color: colors.gray[600],
   },
 });
+
+
+

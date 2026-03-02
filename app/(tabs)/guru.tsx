@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback } from "react";
+import React, { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import {
     View,
     Text,
@@ -20,7 +20,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
-import { Colors } from "../../constants/colors";
+import { AppColors } from "../../constants/colors";
 import { useGuru } from "../../context/GuruContext";
 import { ChatBubble } from "../../components/guru/ChatBubble";
 import { ProductContextCard } from "../../components/guru/ProductContextCard";
@@ -32,6 +32,7 @@ import { ScanSelector } from "../../components/guru/ScanSelector";
 import LimitWarningModal from "../../components/ui/LimitWarningModal";
 import HistorySidebar from "../history";
 import PaywallModal from "../../components/ui/PaywallModal";
+import { useTheme } from "../../context/ThemeContext";
 
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -39,6 +40,8 @@ const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 export default function GuruScreen() {
     const { t, i18n } = useTranslation();
+    const { colors, isDark } = useTheme();
+    const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const router = useRouter();
     const insets = useSafeAreaInsets();
     const { user } = useAuth();
@@ -175,19 +178,19 @@ export default function GuruScreen() {
     };
 
     return (
-        <View style={{ flex: 1, backgroundColor: Colors.surface }}>
+        <View style={{ flex: 1, backgroundColor: colors.surface }}>
             {/* --- HEADER --- */}
-            <View style={{ backgroundColor: Colors.surface }}>
+            <View style={{ backgroundColor: colors.surface }}>
                 {/* SafeArea Üstü */}
                 <LinearGradient
-                    colors={[Colors.primary, "#E65100"]}
+                    colors={isDark ? ["#B45309", "#9A3412"] : [colors.primary, "#E65100"]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={{ paddingTop: insets.top }}
                 >
                     <View style={styles.headerContent}>
-                        <Pressable onPress={() => (router.canGoBack() ? router.back() : router.push("/"))} style={styles.backButton}>
-                            <Ionicons name="arrow-back" size={24} color={Colors.white} />
+                        <Pressable onPress={() => router.replace("/")} style={styles.backButton}>
+                            <Ionicons name="arrow-back" size={24} color={colors.white} />
                         </Pressable>
 
                         <View style={styles.headerTitleArea}>
@@ -203,10 +206,10 @@ export default function GuruScreen() {
                             <Ionicons name="information-circle-outline" size={18} color="rgba(255,255,255,0.7)" />
                         </Pressable>
                         <Pressable onPress={() => setHistoryOpen(true)} style={styles.backButton}>
-                            <MaterialCommunityIcons name="history" size={22} color={Colors.white} />
+                            <MaterialCommunityIcons name="history" size={22} color={colors.white} />
                         </Pressable>
                         <Pressable onPress={handleClearHistory} style={[styles.backButton, { marginRight: 0 }]}>
-                            <Ionicons name="trash-outline" size={22} color={Colors.white} />
+                            <Ionicons name="trash-outline" size={22} color={colors.white} />
                         </Pressable>
                     </View>
                 </LinearGradient>
@@ -252,7 +255,7 @@ export default function GuruScreen() {
                 {/* --- BOTTOM AREA (Warning + Input) --- */}
                 <View style={styles.bottomArea}>
                     <View style={styles.warningBox}>
-                        <Ionicons name="shield-checkmark-outline" size={12} color={Colors.gray[500]} />
+                        <Ionicons name="shield-checkmark-outline" size={12} color={colors.gray[500]} />
                         <Text style={styles.warningText}>
                             {t("guru.fixedWarning")}
                         </Text>
@@ -291,7 +294,7 @@ export default function GuruScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     headerContent: {
         flexDirection: "row",
         alignItems: "center",
@@ -323,7 +326,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 20,
         fontWeight: "800",
-        color: Colors.white,
+        color: colors.white,
     },
     headerSubtitle: {
         fontSize: 12,
@@ -332,7 +335,7 @@ const styles = StyleSheet.create({
     },
     contentWrapper: {
         flex: 1,
-        backgroundColor: Colors.surface,
+        backgroundColor: colors.surface,
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         marginTop: 0,
@@ -344,7 +347,7 @@ const styles = StyleSheet.create({
         flexGrow: 1
     },
     bottomArea: {
-        backgroundColor: Colors.surface,
+        backgroundColor: colors.card,
         paddingBottom: 8,
     },
     warningBox: {
@@ -353,13 +356,14 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         gap: 6,
         paddingVertical: 6,
-        backgroundColor: Colors.gray[50],
+        backgroundColor: colors.card,
         borderBottomWidth: 1,
-        borderBottomColor: Colors.gray[200]
+        borderBottomColor: colors.gray[200]
     },
     warningText: {
         fontSize: 10,
-        color: Colors.gray[500],
+        color: colors.gray[500],
         textAlign: "center"
     },
 });
+

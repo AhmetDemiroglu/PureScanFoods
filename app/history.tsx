@@ -1,11 +1,11 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+﻿import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, Image, TouchableOpacity,
   Dimensions, Modal, ActivityIndicator, Pressable, Animated,
   PanResponder
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../constants/colors';
+import { AppColors } from '../constants/colors';
 import { useAuth } from '../context/AuthContext';
 import { getScanHistoryFromDB, ScanResult } from '../lib/firestore';
 import { doc, deleteDoc as firestoreDelete, collection, getDocs, writeBatch } from 'firebase/firestore';
@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../context/ThemeContext';
 
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -62,6 +63,8 @@ const formatDate = (
 
 export default function HistorySidebar({ visible, onClose }: HistorySidebarProps) {
   const { t, i18n } = useTranslation();
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const { user } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -314,7 +317,7 @@ export default function HistorySidebar({ visible, onClose }: HistorySidebarProps
   const renderEmpty = () => (
     <View style={styles.emptyWrap}>
       <View style={styles.emptyIcon}>
-        <Ionicons name="scan" size={28} color={Colors.gray[300]} />
+        <Ionicons name="scan" size={28} color={colors.gray[300]} />
       </View>
       <Text style={styles.emptyText}>{t("history.empty")}</Text>
     </View>
@@ -343,7 +346,7 @@ export default function HistorySidebar({ visible, onClose }: HistorySidebarProps
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <View style={styles.modalCard}>
           <View style={styles.modalIconWrap}>
-            <Ionicons name="trash" size={24} color={Colors.error} />
+            <Ionicons name="trash" size={24} color={colors.error} />
           </View>
           <Text style={styles.modalTitle}>{title}</Text>
           <Text style={styles.modalMessage}>{message}</Text>
@@ -400,7 +403,7 @@ export default function HistorySidebar({ visible, onClose }: HistorySidebarProps
           <View style={styles.header}>
             <Text style={styles.headerTitle}>{t("history.title")}</Text>
             <TouchableOpacity style={styles.closeBtn} onPress={closeWithAnimation}>
-              <Ionicons name="close" size={18} color={Colors.gray[600]} />
+              <Ionicons name="close" size={18} color={colors.gray[600]} />
             </TouchableOpacity>
           </View>
 
@@ -408,7 +411,7 @@ export default function HistorySidebar({ visible, onClose }: HistorySidebarProps
           <View style={styles.listWrap}>
             {loading ? (
               <View style={styles.loadingWrap}>
-                <ActivityIndicator size="small" color={Colors.primary} />
+                <ActivityIndicator size="small" color={colors.primary} />
               </View>
             ) : history.length === 0 ? (
               renderEmpty()
@@ -435,7 +438,7 @@ export default function HistorySidebar({ visible, onClose }: HistorySidebarProps
               style={styles.clearBtn}
               onPress={() => setShowClearModal(true)}
             >
-              <Ionicons name="trash-outline" size={14} color={Colors.gray[500]} />
+              <Ionicons name="trash-outline" size={14} color={colors.gray[500]} />
               <Text style={styles.clearBtnText}>{t("history.clear")}</Text>
             </TouchableOpacity>
           )}
@@ -466,7 +469,7 @@ export default function HistorySidebar({ visible, onClose }: HistorySidebarProps
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
     flexDirection: 'row',
@@ -474,12 +477,12 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: colors.overlay,
   },
   sidebar: {
     width: SIDEBAR_WIDTH,
     height: '100%',
-    backgroundColor: '#FFF',
+    backgroundColor: colors.card,
     borderTopLeftRadius: 20,
     borderBottomLeftRadius: 20,
     shadowColor: "#000",
@@ -497,18 +500,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingBottom: 10,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray[100],
+    borderBottomColor: colors.gray[100],
   },
   headerTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.secondary,
+    color: colors.secondary,
   },
   closeBtn: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: Colors.gray[100],
+    backgroundColor: colors.gray[100],
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -529,16 +532,21 @@ const styles = StyleSheet.create({
 
   // Card
   card: {
-    backgroundColor: '#FFF',
+    backgroundColor: colors.card,
     borderRadius: 14,
     overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: Colors.gray[100],
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: isDark ? 0.28 : 0.08,
+    shadowRadius: 6,
+    elevation: 3,
   },
   cardImageWrap: {
     width: '100%',
     height: 75,
-    backgroundColor: Colors.gray[100],
+    backgroundColor: colors.gray[100],
   },
   cardImage: {
     width: '100%',
@@ -548,7 +556,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.gray[100],
+    backgroundColor: colors.gray[100],
   },
   scoreBadge: {
     position: 'absolute',
@@ -570,7 +578,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 6,
     left: 6,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: colors.overlay,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -606,17 +614,17 @@ const styles = StyleSheet.create({
   moreBadgesText: {
     fontSize: 9,
     fontWeight: '600',
-    color: Colors.gray[400],
+    color: colors.gray[400],
     marginLeft: 2,
   },
   cardName: {
     fontSize: 13,
     fontWeight: '700',
-    color: Colors.secondary,
+    color: colors.secondary,
   },
   cardVerdict: {
     fontSize: 11,
-    color: Colors.gray[500],
+    color: colors.gray[500],
     lineHeight: 14,
   },
 
@@ -631,13 +639,13 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: Colors.gray[100],
+    backgroundColor: colors.gray[100],
     alignItems: 'center',
     justifyContent: 'center',
   },
   emptyText: {
     fontSize: 12,
-    color: Colors.gray[400],
+    color: colors.gray[400],
   },
 
   // Footer
@@ -649,19 +657,19 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginHorizontal: 10,
     marginBottom: 4,
-    backgroundColor: Colors.gray[100],
+    backgroundColor: colors.gray[100],
     borderRadius: 10,
   },
   clearBtnText: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.gray[500],
+    color: colors.gray[500],
   },
 
   // Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: colors.overlay,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 32,
@@ -669,7 +677,7 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '100%',
     maxWidth: 280,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 24,
     alignItems: 'center',
@@ -686,12 +694,12 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: Colors.secondary,
+    color: colors.secondary,
     marginBottom: 8,
   },
   modalMessage: {
     fontSize: 13,
-    color: Colors.gray[500],
+    color: colors.gray[500],
     textAlign: 'center',
     lineHeight: 18,
     marginBottom: 20,
@@ -704,19 +712,19 @@ const styles = StyleSheet.create({
   modalBtnCancel: {
     flex: 1,
     paddingVertical: 12,
-    backgroundColor: Colors.gray[100],
+    backgroundColor: colors.gray[100],
     borderRadius: 12,
     alignItems: 'center',
   },
   modalBtnCancelText: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.gray[600],
+    color: colors.gray[600],
   },
   modalBtnConfirm: {
     flex: 1,
     paddingVertical: 12,
-    backgroundColor: Colors.error,
+    backgroundColor: colors.error,
     borderRadius: 12,
     alignItems: 'center',
   },
@@ -727,11 +735,15 @@ const styles = StyleSheet.create({
   },
   hintText: {
     fontSize: 10,
-    color: Colors.gray[300],
+    color: colors.gray[300],
     textAlign: 'center',
     marginBottom: 6,
   },
 });
+
+
+
+
 
 
 

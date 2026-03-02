@@ -1,79 +1,84 @@
-import React, { useState } from "react";
+﻿import React, { useMemo, useState } from "react";
 import { View, TextInput, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Colors } from "../../constants/colors";
+import { useTranslation } from "react-i18next";
+import { AppColors } from "../../constants/colors";
+import { useTheme } from "../../context/ThemeContext";
 
 interface ChatInputProps {
-    value: string;
-    onChangeText: (text: string) => void;
-    onSend: () => void;
-    isLoading: boolean;
+  value: string;
+  onChangeText: (text: string) => void;
+  onSend: () => void;
+  isLoading: boolean;
 }
 
 export const ChatInput = ({ value, onChangeText, onSend, isLoading }: ChatInputProps) => {
-    const [focused, setFocused] = useState(false);
+  const { t } = useTranslation();
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+  const [focused, setFocused] = useState(false);
 
-    return (
-        <View style={[styles.container, focused && styles.focused]}>
-            <TextInput
-                style={styles.input}
-                value={value}
-                onChangeText={onChangeText}
-                placeholder="Bir şey sorun..."
-                placeholderTextColor={Colors.gray[400]}
-                multiline
-                maxLength={500}
-                onFocus={() => setFocused(true)}
-                onBlur={() => setFocused(false)}
-            />
-            <Pressable
-                style={[styles.sendButton, !value.trim() && styles.disabled]}
-                onPress={onSend}
-                disabled={!value.trim() || isLoading}
-            >
-                {isLoading ? (
-                    <ActivityIndicator size="small" color={Colors.white} />
-                ) : (
-                    <Ionicons name="send" size={20} color={Colors.white} />
-                )}
-            </Pressable>
-        </View>
-    );
+  return (
+    <View style={[styles.container, focused && styles.focused]}>
+      <TextInput
+        style={styles.input}
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={t("guru.placeholder", { defaultValue: "Bir şey sorun..." })}
+        placeholderTextColor={colors.gray[400]}
+        multiline
+        maxLength={500}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+      />
+      <Pressable style={[styles.sendButton, !value.trim() && styles.disabled]} onPress={onSend} disabled={!value.trim() || isLoading}>
+        {isLoading ? <ActivityIndicator size="small" color={colors.white} /> : <Ionicons name="send" size={20} color={colors.white} />}
+      </Pressable>
+    </View>
+  );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors, isDark: boolean) =>
+  StyleSheet.create({
     container: {
-        flexDirection: "row",
-        alignItems: "flex-end",
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        backgroundColor: Colors.white,
-        gap: 10,
+      flexDirection: "row",
+      alignItems: "flex-end",
+      gap: 8,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      backgroundColor: colors.card,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
     },
     focused: {
-        backgroundColor: Colors.surface,
+      borderTopColor: colors.primary,
     },
     input: {
-        flex: 1,
-        backgroundColor: Colors.gray[50],
-        borderRadius: 20,
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        maxHeight: 100,
-        fontSize: 15,
-        color: Colors.secondary,
-        borderWidth: 1,
-        borderColor: Colors.gray[200],
+      flex: 1,
+      minHeight: 42,
+      maxHeight: 120,
+      backgroundColor: colors.gray[100],
+      borderWidth: 1,
+      borderColor: isDark ? colors.gray[300] : colors.gray[200],
+      borderRadius: 14,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      color: colors.text,
+      fontSize: 14,
     },
     sendButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: Colors.primary,
-        alignItems: "center",
-        justifyContent: "center",
+      width: 42,
+      height: 42,
+      borderRadius: 12,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.primary,
     },
     disabled: {
-        backgroundColor: Colors.gray[300],
+      opacity: 0.45,
     },
-});
+  });
+
+
+
+

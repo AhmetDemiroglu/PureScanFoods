@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import {
   View,
   Text,
@@ -21,7 +21,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { Colors } from "../../constants/colors";
+import { AppColors } from "../../constants/colors";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import {
@@ -56,6 +56,7 @@ import HistorySidebar from "../history";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { OnboardingModal } from "../../components/ui/OnboardingModal";
 import PaywallModal from "../../components/ui/PaywallModal";
+import { useTheme } from "../../context/ThemeContext";
 
 const getSafeIcon = (iconName: string): any => iconName === "person" ? "account" : iconName;
 
@@ -72,6 +73,8 @@ export default function NutritionScreen() {
   const isPremium = userProfile?.subscriptionStatus === "premium" || false;
   const router = useRouter();
   const { t, i18n } = useTranslation();
+  const { colors, isDark } = useTheme();
+  const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const isTr = i18n.language === "tr";
   const isEs = i18n.language?.startsWith("es");
   const insets = useSafeAreaInsets();
@@ -144,7 +147,7 @@ export default function NutritionScreen() {
 
   const [tempName, setTempName] = useState("");
   const [tempRole, setTempRole] = useState<FamilyRole>("child");
-  const [tempColor, setTempColor] = useState(Colors.primary);
+  const [tempColor, setTempColor] = useState(colors.primary);
   const [tempIcon, setTempIcon] = useState<string>("account");
   const [tempLifeStage, setTempLifeStage] = useState<LifeStageType>("ADULT");
 
@@ -160,7 +163,7 @@ export default function NutritionScreen() {
   const [showAllergenModal, setShowAllergenModal] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
 
-  // Form State (Geçici)
+  // Form State (temporary)
   const [newMemberName, setNewMemberName] = useState("");
   const [newMemberRole, setNewMemberRole] = useState<FamilyRole>("child");
   const [editingAvatarId, setEditingAvatarId] = useState<string | null>(null);
@@ -187,7 +190,7 @@ export default function NutritionScreen() {
       title: t("nutrition.onboarding.slide1Title"),
       desc: t("nutrition.onboarding.slide1Desc"),
       icon: "heart" as const,
-      iconColor: Colors.primary,
+      iconColor: colors.primary,
       iconBg: "#FFF7ED",
     },
     {
@@ -308,7 +311,7 @@ export default function NutritionScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (editingAvatarId) {
       const activeMember = familyMembers.find(m => m.id === editingAvatarId);
-      updateMemberAvatar(editingAvatarId, activeMember?.color || Colors.primary, icon);
+      updateMemberAvatar(editingAvatarId, activeMember?.color || colors.primary, icon);
     }
   };
 
@@ -337,7 +340,7 @@ export default function NutritionScreen() {
 
   const addFamilyMember = () => {
     if (!newMemberName.trim()) return;
-    // Context fonksiyonunu çağır (Renk/Icon mantığı Context içinde)
+    // Call context updater (color/icon logic handled in context)
     contextAddMember(newMemberName, newMemberRole);
 
     setNewMemberName("");
@@ -355,18 +358,18 @@ export default function NutritionScreen() {
   const renderDietCard = () => {
     if (!selectedDiet) return (
       <View style={styles.emptyBox}>
-        <Ionicons name="restaurant-outline" size={24} color={Colors.gray[400]} style={{ marginBottom: 8 }} />
+        <Ionicons name="restaurant-outline" size={24} color={colors.gray[400]} style={{ marginBottom: 8 }} />
         <Text style={styles.emptyText}>{t("nutrition.noDiet")}</Text>
       </View>
     );
 
     const def = getDietDefinition(selectedDiet);
-    // Güvenlik kontrolü: def undefined ise render etme
+    // Guard: do not render if definition is missing
     if (!def) return null;
 
     return (
       <TouchableOpacity
-        style={[styles.novaCard, { borderLeftColor: Colors.primary }]}
+        style={[styles.novaCard, { borderLeftColor: colors.primary }]}
         activeOpacity={0.9}
         onPress={() => {
           LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -374,7 +377,7 @@ export default function NutritionScreen() {
         }}
       >
         <View style={styles.novaHeader}>
-          <View style={[styles.novaGroupBadge, { backgroundColor: Colors.primary }]}>
+          <View style={[styles.novaGroupBadge, { backgroundColor: colors.primary }]}>
             <Ionicons name="leaf" size={20} color="#FFF" />
           </View>
           <View style={styles.novaTitleArea}>
@@ -383,7 +386,7 @@ export default function NutritionScreen() {
               {isTr ? def.descriptionTr : def.description}
             </Text>
           </View>
-          <Ionicons name={isDietExpanded ? "chevron-up" : "chevron-down"} size={20} color={Colors.gray[400]} />
+          <Ionicons name={isDietExpanded ? "chevron-up" : "chevron-down"} size={20} color={colors.gray[400]} />
         </View>
 
         {isDietExpanded && (
@@ -392,7 +395,7 @@ export default function NutritionScreen() {
 
             <View style={styles.aiInfoBox}>
               <View style={styles.aiHeader}>
-                <Ionicons name="scan-circle" size={18} color={Colors.secondary} />
+                <Ionicons name="scan-circle" size={18} color={colors.secondary} />
                 <Text style={styles.aiTitle}>{isTr ? "Analiz Kapsamı" : "Analysis Scope"}</Text>
               </View>
               <Text style={styles.aiText}>
@@ -417,7 +420,7 @@ export default function NutritionScreen() {
   const renderAllergenList = () => {
     if (userAllergens.length === 0) return (
       <View style={styles.emptyBox}>
-        <Ionicons name="shield-checkmark-outline" size={24} color={Colors.gray[400]} style={{ marginBottom: 8 }} />
+        <Ionicons name="shield-checkmark-outline" size={24} color={colors.gray[400]} style={{ marginBottom: 8 }} />
         <Text style={styles.emptyText}>{t("nutrition.noAllergen")}</Text>
       </View>
     );
@@ -429,10 +432,10 @@ export default function NutritionScreen() {
           if (!def) return null;
 
           return (
-            <View key={type} style={[styles.novaCard, { borderLeftColor: Colors.error, paddingVertical: 12 }]}>
+            <View key={type} style={[styles.novaCard, { borderLeftColor: colors.error, paddingVertical: 12 }]}>
               <View style={styles.novaHeader}>
                 <View style={[styles.novaGroupBadge, { backgroundColor: "#FEF2F2" }]}>
-                  <Ionicons name="warning" size={20} color={Colors.error} />
+                  <Ionicons name="warning" size={20} color={colors.error} />
                 </View>
                 <View style={styles.novaTitleArea}>
                   <Text style={styles.novaTitle}>{isTr ? def.nameTr : def.name}</Text>
@@ -454,14 +457,14 @@ export default function NutritionScreen() {
 
       {/* --- HEADER --- */}
       <LinearGradient
-        colors={[Colors.primary, "#E65100"]}
+        colors={isDark ? ["#B45309", "#9A3412"] : [colors.primary, "#E65100"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.header}
       >
         <SafeAreaView edges={["top"]}>
           <View style={styles.headerContent}>
-            <TouchableOpacity style={styles.backButton} onPress={() => router.canGoBack() ? router.back() : router.push("/")}>
+            <TouchableOpacity style={styles.backButton} onPress={() => router.replace("/")}>
               <Ionicons name="arrow-back" size={24} color="#FFF" />
             </TouchableOpacity>
             <View style={styles.headerTitleArea}>
@@ -488,7 +491,7 @@ export default function NutritionScreen() {
                   >
                     <MaterialCommunityIcons name={(mainUser?.avatarIcon as AvatarIconName) || "account"} size={24} color="#FFF" />
 
-                    {/* Sadece Premium ise yıldız göster */}
+                    {/* Show star badge only for Premium */}
                     {isPremium && (
                       <View style={styles.premiumBadge}>
                         <Ionicons name="star" size={10} color="#FFF" />
@@ -501,7 +504,7 @@ export default function NutritionScreen() {
                       <Text style={styles.profileName}>{mainUser?.name}</Text>
                       <Ionicons name="pencil" size={14} color="rgba(255,255,255,0.7)" />
                     </TouchableOpacity>
-                    {/* Üyelik Metni */}
+                    {/* Membership label */}
                     <Text style={styles.profileRole}>
                       {isPremium ? t("nutrition.premium_member") : t("nutrition.standard_member")}
                     </Text>
@@ -525,7 +528,7 @@ export default function NutritionScreen() {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{t("nutrition.family.title")}</Text>
             <TouchableOpacity onPress={openAddModal} style={styles.actionButton}>
-              <Ionicons name="add" size={16} color={Colors.primary} />
+              <Ionicons name="add" size={16} color={colors.primary} />
               <Text style={styles.actionButtonText}>{t("nutrition.family.add")}</Text>
             </TouchableOpacity>
           </View>
@@ -544,7 +547,7 @@ export default function NutritionScreen() {
                   <View style={[styles.memberAvatar, { backgroundColor: member.color }]}>
                     <MaterialCommunityIcons name={member.avatarIcon as AvatarIconName} size={20} color="#FFF" />
                   </View>
-                  <Text style={[styles.memberName, isActive && { color: Colors.primary }]} numberOfLines={1}>
+                  <Text style={[styles.memberName, isActive && { color: colors.primary }]} numberOfLines={1}>
                     {member.name}
                   </Text>
                   <Text style={styles.memberRole}>{t(`nutrition.family.roles.${member.role}`)}</Text>
@@ -559,7 +562,7 @@ export default function NutritionScreen() {
           </ScrollView>
           {familyMembers.length > 1 && (
             <View style={styles.hintRow}>
-              <Ionicons name="information-circle-outline" size={14} color={Colors.gray[400]} />
+              <Ionicons name="information-circle-outline" size={14} color={colors.gray[400]} />
               <Text style={styles.hintText}>{t("nutrition.hints.longPressEdit")}</Text>
             </View>
           )}
@@ -591,7 +594,7 @@ export default function NutritionScreen() {
 
       {/* --- MODALS --- */}
 
-      {/* 1. FAMILY ADD/EDIT MODAL - YENİLENMİŞ TASARIM */}
+      {/* 1. FAMILY ADD/EDIT MODAL */}
       <Modal
         visible={showFamilyModal}
         transparent
@@ -604,7 +607,7 @@ export default function NutritionScreen() {
           <Animated.View
             style={[
               styles.bottomSheet,
-              { maxHeight: '85%' }, // Biraz daha alan açtık
+              { maxHeight: '85%' }, // Slightly larger vertical space
               { transform: [{ translateY: panY }] }
             ]}
           >
@@ -621,9 +624,9 @@ export default function NutritionScreen() {
                 <TouchableOpacity
                   onPress={() => setShowFamilyModal(false)}
                   style={styles.closeButtonIcon}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // Tıklama alanını genişlettik
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // Larger touch target
                 >
-                  <Ionicons name="close" size={20} color={Colors.gray[500]} />
+                  <Ionicons name="close" size={20} color={colors.gray[500]} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -660,13 +663,13 @@ export default function NutritionScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.labelSmall}>{t("nutrition.family.inputName")}</Text>
                 <View style={styles.inputWrapper}>
-                  <Ionicons name="person-outline" size={20} color={Colors.gray[400]} style={{ marginLeft: 12 }} />
+                  <Ionicons name="person-outline" size={20} color={colors.gray[400]} style={{ marginLeft: 12 }} />
                   <TextInput
                     style={styles.textInputClean}
                     value={tempName}
                     onChangeText={setTempName}
                     placeholder={t("nutrition.family.namePlaceholder", "Örn: Ali")}
-                    placeholderTextColor={Colors.gray[400]}
+                    placeholderTextColor={colors.gray[400]}
                   />
                 </View>
               </View>
@@ -678,7 +681,7 @@ export default function NutritionScreen() {
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingRight: 20 }}>
                     {["spouse", "child", "mother", "father", "sibling", "friend", "other"].map((role) => {
                       const isSelected = tempRole === role;
-                      // Rol ikonlarını basitçe eşleyelim (Daha fazlası eklenebilir)
+                      // Basic role icon mapping
                       let iconName = "account-outline";
                       if (role === 'mother') iconName = "face-woman";
                       if (role === 'father') iconName = "face-man";
@@ -694,7 +697,7 @@ export default function NutritionScreen() {
                           <MaterialCommunityIcons
                             name={iconName as any}
                             size={20}
-                            color={isSelected ? Colors.primary : Colors.gray[500]}
+                            color={isSelected ? colors.primary : colors.gray[500]}
                           />
                           <Text style={[styles.roleCardText, isSelected && styles.roleCardTextActive]}>
                             {t(`nutrition.family.roles.${role}`, role)}
@@ -714,9 +717,11 @@ export default function NutritionScreen() {
                     const def = LIFESTAGE_DEFINITIONS[stage];
                     const isSelected = tempLifeStage === stage;
                     const isVulnerable = ['INFANT_0_6', 'INFANT_6_12', 'TODDLER_1_3', 'PREGNANT'].includes(stage);
-                    const activeBorder = isVulnerable ? "#F59E0B" : Colors.primary;
-                    const activeBg = isVulnerable ? "#FEF3C7" : "#EFF6FF";
-                    const activeText = isVulnerable ? "#B45309" : Colors.primary;
+                    const activeBorder = isVulnerable ? "#F59E0B" : colors.primary;
+                    const activeBg = isVulnerable
+                      ? (isDark ? "rgba(245, 158, 11, 0.18)" : "#FEF3C7")
+                      : (isDark ? "rgba(249, 115, 22, 0.20)" : "#EFF6FF");
+                    const activeText = isVulnerable ? "#B45309" : colors.primary;
 
                     return (
                       <TouchableOpacity
@@ -801,7 +806,7 @@ export default function NutritionScreen() {
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>{t("nutrition.modalDiet")}</Text>
               <TouchableOpacity onPress={() => setShowDietModal(false)} style={styles.closeButton}>
-                <Ionicons name="close" size={20} color={Colors.gray[500]} />
+                <Ionicons name="close" size={20} color={colors.gray[500]} />
               </TouchableOpacity>
             </View>
             <FlatList
@@ -817,7 +822,7 @@ export default function NutritionScreen() {
                     setShowDietModal(false);
                   }}
                 >
-                  <Ionicons name="close-circle-outline" size={20} color={Colors.error} />
+                  <Ionicons name="close-circle-outline" size={20} color={colors.error} />
                   <Text style={styles.clearDietText}>{t("nutrition.clearDiet")}</Text>
                 </TouchableOpacity>
               ) : null}
@@ -833,10 +838,10 @@ export default function NutritionScreen() {
                     }}
                   >
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.optionTitle, isSelected && { color: Colors.primary }]}>{isTr ? def.nameTr : def.name}</Text>
+                      <Text style={[styles.optionTitle, isSelected && { color: colors.primary }]}>{isTr ? def.nameTr : def.name}</Text>
                       <Text style={styles.optionDesc}>{isTr ? def.descriptionTr : def.description}</Text>
                     </View>
-                    {isSelected && <Ionicons name="checkmark-circle" size={24} color={Colors.primary} />}
+                    {isSelected && <Ionicons name="checkmark-circle" size={24} color={colors.primary} />}
                   </TouchableOpacity>
                 );
               }}
@@ -863,7 +868,7 @@ export default function NutritionScreen() {
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>{t("nutrition.modalAllergen")}</Text>
               <TouchableOpacity onPress={() => setShowAllergenModal(false)} style={styles.closeButton}>
-                <Ionicons name="close" size={20} color={Colors.gray[500]} />
+                <Ionicons name="close" size={20} color={colors.gray[500]} />
               </TouchableOpacity>
             </View>
             <FlatList
@@ -880,10 +885,10 @@ export default function NutritionScreen() {
                     onPress={() => toggleAllergenSelection(item)}
                   >
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.optionTitle, isSelected && { color: Colors.error }]}>{isTr ? def.nameTr : def.name}</Text>
+                      <Text style={[styles.optionTitle, isSelected && { color: colors.error }]}>{isTr ? def.nameTr : def.name}</Text>
                       <Text style={styles.optionDesc}>{isTr ? def.descriptionTr : def.description}</Text>
                     </View>
-                    <Switch value={isSelected} onValueChange={() => toggleAllergenSelection(item)} trackColor={{ false: Colors.gray[200], true: Colors.error }} />
+                    <Switch value={isSelected} onValueChange={() => toggleAllergenSelection(item)} trackColor={{ false: colors.gray[200], true: colors.error }} />
                   </TouchableOpacity>
                 );
               }}
@@ -913,7 +918,7 @@ export default function NutritionScreen() {
             {/* Header with Hero Avatar */}
             {(() => {
               const activeMember = editingAvatarId ? familyMembers.find(m => m.id === editingAvatarId) : null;
-              const activeColor = activeMember?.color || Colors.primary;
+              const activeColor = activeMember?.color || colors.primary;
               const activeIcon = (activeMember?.avatarIcon || "account") as AvatarIconName;
 
               return (
@@ -925,7 +930,7 @@ export default function NutritionScreen() {
                     </View>
                     <Text style={styles.avatarHeroName}>{activeMember?.name}</Text>
                     <TouchableOpacity style={styles.randomButton} onPress={randomizeAvatar} activeOpacity={0.7}>
-                      <MaterialCommunityIcons name="dice-5" size={16} color={Colors.primary} />
+                      <MaterialCommunityIcons name="dice-5" size={16} color={colors.primary} />
                       <Text style={styles.randomButtonText}>{isTr ? "Rastgele" : "Random"}</Text>
                     </TouchableOpacity>
                   </View>
@@ -939,7 +944,7 @@ export default function NutritionScreen() {
                       <MaterialCommunityIcons
                         name="palette"
                         size={16}
-                        color={avatarTab === 'colors' ? '#FFF' : Colors.gray[500]}
+                        color={avatarTab === 'colors' ? '#FFF' : colors.gray[500]}
                       />
                       <Text style={[styles.segmentTabText, avatarTab === 'colors' && styles.segmentTabTextActive]}>
                         {isTr ? "Renkler" : "Colors"}
@@ -952,7 +957,7 @@ export default function NutritionScreen() {
                       <MaterialCommunityIcons
                         name="emoticon-outline"
                         size={16}
-                        color={avatarTab === 'icons' ? '#FFF' : Colors.gray[500]}
+                        color={avatarTab === 'icons' ? '#FFF' : colors.gray[500]}
                       />
                       <Text style={[styles.segmentTabText, avatarTab === 'icons' && styles.segmentTabTextActive]}>
                         {isTr ? "İkonlar" : "Icons"}
@@ -1026,7 +1031,7 @@ export default function NutritionScreen() {
                               <MaterialCommunityIcons
                                 name={cat.icons[0]}
                                 size={14}
-                                color={iconCategory === key ? '#FFF' : Colors.gray[500]}
+                                color={iconCategory === key ? '#FFF' : colors.gray[500]}
                               />
                               <Text style={[styles.categoryChipText, iconCategory === key && styles.categoryChipTextActive]}>
                                 {isTr ? cat.labelTr : cat.labelEn}
@@ -1057,7 +1062,7 @@ export default function NutritionScreen() {
                                 <MaterialCommunityIcons
                                   name={item}
                                   size={24}
-                                  color={isSelected ? activeColor : Colors.gray[600]}
+                                  color={isSelected ? activeColor : colors.gray[600]}
                                 />
                               </TouchableOpacity>
                             );
@@ -1102,8 +1107,8 @@ export default function NutritionScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8FAFC" },
+const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.surface },
   header: { paddingBottom: 20 },
   headerContent: { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingTop: 10, marginBottom: 16 },
   backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center", marginRight: 12 },
@@ -1121,55 +1126,55 @@ const styles = StyleSheet.create({
   scrollContainer: { flex: 1, marginTop: 20, paddingHorizontal: 20 },
   section: { marginBottom: 28 },
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: "#1E293B" },
-  actionButton: { paddingVertical: 6, paddingHorizontal: 12, backgroundColor: "#F1F5F9", borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 4 },
-  actionButtonText: { fontSize: 13, fontWeight: "600", color: Colors.primary },
+  sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.secondary },
+  actionButton: { paddingVertical: 6, paddingHorizontal: 12, backgroundColor: colors.gray[100], borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  actionButtonText: { fontSize: 13, fontWeight: "600", color: colors.primary },
 
-  memberCard: { width: 100, padding: 12, backgroundColor: "#FFF", borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: "#E2E8F0", marginRight: 8 },
-  memberCardActive: { borderColor: Colors.primary, backgroundColor: "#EFF6FF" },
+  memberCard: { width: 100, padding: 12, backgroundColor: colors.card, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: colors.gray[200], marginRight: 8 },
+  memberCardActive: { borderColor: colors.primary, backgroundColor: isDark ? "rgba(249, 115, 22, 0.20)" : "#EFF6FF" },
   memberAvatar: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  memberName: { fontSize: 13, fontWeight: '600', color: "#334155", textAlign: 'center' },
-  memberRole: { fontSize: 11, color: "#94A3B8" },
-  activeIndicator: { position: 'absolute', top: 8, right: 8, backgroundColor: Colors.primary, width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  memberName: { fontSize: 13, fontWeight: '600', color: colors.secondary, textAlign: 'center' },
+  memberRole: { fontSize: 11, color: colors.gray[500] },
+  activeIndicator: { position: 'absolute', top: 8, right: 8, backgroundColor: colors.primary, width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   hintRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, paddingLeft: 4 },
-  hintText: { fontSize: 11, color: Colors.gray[400] },
-  clearDietButton: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 14, paddingHorizontal: 4, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
-  clearDietText: { fontSize: 15, fontWeight: '600', color: Colors.error },
+  hintText: { fontSize: 11, color: colors.gray[400] },
+  clearDietButton: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 14, paddingHorizontal: 4, borderBottomWidth: 1, borderBottomColor: colors.gray[200] },
+  clearDietText: { fontSize: 15, fontWeight: '600', color: colors.error },
 
-  emptyBox: { padding: 24, backgroundColor: "#FFF", borderRadius: 16, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#E2E8F0", borderStyle: "dashed" },
-  emptyText: { color: "#94A3B8", fontSize: 14, fontWeight: "500" },
-  novaCard: { backgroundColor: "#FFF", borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: "#E2E8F0", borderLeftWidth: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 4, elevation: 2 },
+  emptyBox: { padding: 24, backgroundColor: colors.card, borderRadius: 16, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.gray[200], borderStyle: "dashed" },
+  emptyText: { color: colors.gray[500], fontSize: 14, fontWeight: "500" },
+  novaCard: { backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.gray[200], borderLeftWidth: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 4, elevation: 2 },
   novaHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
   novaGroupBadge: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   novaTitleArea: { flex: 1 },
-  novaTitle: { fontSize: 15, fontWeight: "700", color: Colors.secondary },
-  novaShortDesc: { fontSize: 12, color: Colors.gray[500], marginTop: 2 },
-  novaExpandedContent: { marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: "#F1F5F9" },
-  novaDescription: { fontSize: 13, color: Colors.gray[700], lineHeight: 20, marginBottom: 12 },
+  novaTitle: { fontSize: 15, fontWeight: "700", color: colors.secondary },
+  novaShortDesc: { fontSize: 12, color: colors.gray[500], marginTop: 2 },
+  novaExpandedContent: { marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.gray[200] },
+  novaDescription: { fontSize: 13, color: colors.gray[700], lineHeight: 20, marginBottom: 12 },
 
-  aiInfoBox: { backgroundColor: "#F8FAFC", borderRadius: 12, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: "#E2E8F0" },
+  aiInfoBox: { backgroundColor: colors.gray[50], borderRadius: 12, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: colors.gray[200] },
   aiHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 6 },
-  aiTitle: { fontSize: 13, fontWeight: '700', color: Colors.secondary },
-  aiText: { fontSize: 12, color: "#64748B", lineHeight: 18 },
+  aiTitle: { fontSize: 13, fontWeight: '700', color: colors.secondary },
+  aiText: { fontSize: 12, color: colors.gray[600], lineHeight: 18 },
   tipRow: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#FEF2F2", padding: 8, borderRadius: 8 },
   tipText: { fontSize: 12 },
 
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
   modalDismiss: { flex: 1 },
-  bottomSheet: { backgroundColor: "#FFF", borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%', paddingTop: 12, shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 20 },
-  bottomSheetHandle: { width: 40, height: 5, backgroundColor: "#CBD5E1", borderRadius: 2.5, alignSelf: 'center', marginBottom: 20 },
-  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" },
-  sheetTitle: { fontSize: 18, fontWeight: "700", color: "#1E293B" },
-  closeButton: { padding: 4, backgroundColor: "#F1F5F9", borderRadius: 12 },
-  optionItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" },
-  optionItemSelected: { backgroundColor: "#F8FAFC", marginHorizontal: -20, paddingHorizontal: 20 },
-  optionTitle: { fontSize: 16, fontWeight: "600", color: "#334155", marginBottom: 2 },
-  optionDesc: { fontSize: 12, color: "#94A3B8" },
+  bottomSheet: { backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%', paddingTop: 12, shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 20 },
+  bottomSheetHandle: { width: 40, height: 5, backgroundColor: colors.gray[300], borderRadius: 2.5, alignSelf: 'center', marginBottom: 20 },
+  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 15, borderBottomWidth: 1, borderBottomColor: colors.gray[200] },
+  sheetTitle: { fontSize: 18, fontWeight: "700", color: colors.secondary },
+  closeButton: { padding: 4, backgroundColor: colors.gray[100], borderRadius: 12 },
+  optionItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: colors.gray[200] },
+  optionItemSelected: { backgroundColor: colors.gray[50], marginHorizontal: -20, paddingHorizontal: 20 },
+  optionTitle: { fontSize: 16, fontWeight: "600", color: colors.secondary, marginBottom: 2 },
+  optionDesc: { fontSize: 12, color: colors.gray[500] },
   roleContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  roleChip: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: "#F1F5F9", borderWidth: 1, borderColor: "#E2E8F0" },
-  roleChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  roleText: { fontSize: 13, fontWeight: '600', color: "#64748B" },
-  saveButton: { backgroundColor: Colors.primary, padding: 16, borderRadius: 16, alignItems: 'center', marginTop: 32, shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
+  roleChip: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, backgroundColor: colors.gray[100], borderWidth: 1, borderColor: colors.gray[200] },
+  roleChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  roleText: { fontSize: 13, fontWeight: '600', color: colors.gray[600] },
+  saveButton: { backgroundColor: colors.primary, padding: 16, borderRadius: 16, alignItems: 'center', marginTop: 32, shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
   saveButtonText: { color: '#FFF', fontWeight: '700', fontSize: 16 },
 
   // AVATAR SELECTOR STYLES
@@ -1177,7 +1182,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
-    backgroundColor: Colors.gray[100],
+    backgroundColor: colors.gray[100],
     padding: 12,
     borderRadius: 12
   },
@@ -1192,11 +1197,11 @@ const styles = StyleSheet.create({
   previewTitleText: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.gray[800]
+    color: colors.gray[800]
   },
   previewSubtitleText: {
     fontSize: 12,
-    color: Colors.gray[500]
+    color: colors.gray[500]
   },
   colorListContainer: {
     gap: 8,
@@ -1225,7 +1230,7 @@ const styles = StyleSheet.create({
   },
   // AVATAR MODAL STYLES
   avatarSheet: {
-    backgroundColor: "#FFF",
+    backgroundColor: colors.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     height: '65%',
@@ -1234,7 +1239,7 @@ const styles = StyleSheet.create({
   avatarSheetHandle: {
     width: 36,
     height: 4,
-    backgroundColor: Colors.gray[300],
+    backgroundColor: colors.gray[300],
     borderRadius: 2,
     alignSelf: 'center',
     marginTop: 10,
@@ -1244,7 +1249,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray[100],
+    borderBottomColor: colors.gray[100],
   },
   avatarHeroCircle: {
     width: 72,
@@ -1262,7 +1267,7 @@ const styles = StyleSheet.create({
   avatarHeroName: {
     fontSize: 16,
     fontWeight: '700',
-    color: Colors.gray[800],
+    color: colors.gray[800],
     marginBottom: 8,
   },
   randomButton: {
@@ -1271,19 +1276,19 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingVertical: 6,
     paddingHorizontal: 12,
-    backgroundColor: Colors.primary + '10',
+    backgroundColor: colors.primary + '10',
     borderRadius: 16,
   },
   randomButtonText: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.primary,
+    color: colors.primary,
   },
   segmentedControl: {
     flexDirection: 'row',
     marginHorizontal: 16,
     marginTop: 12,
-    backgroundColor: Colors.gray[100],
+    backgroundColor: colors.gray[100],
     borderRadius: 10,
     padding: 3,
   },
@@ -1297,12 +1302,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   segmentTabActive: {
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
   },
   segmentTabText: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.gray[500],
+    color: colors.gray[500],
   },
   segmentTabTextActive: {
     color: '#FFF',
@@ -1326,14 +1331,14 @@ const styles = StyleSheet.create({
     gap: 5,
     height: 32,
     paddingHorizontal: 10,
-    backgroundColor: Colors.gray[100],
+    backgroundColor: colors.gray[100],
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: Colors.gray[200],
+    borderColor: colors.gray[200],
   },
   categoryChipActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   categoryChipDot: {
     width: 8,
@@ -1343,7 +1348,7 @@ const styles = StyleSheet.create({
   categoryChipText: {
     fontSize: 11,
     fontWeight: '600',
-    color: Colors.gray[600],
+    color: colors.gray[600],
     lineHeight: 14,
   },
   categoryChipTextActive: {
@@ -1392,7 +1397,7 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     maxWidth: '18.5%',
     borderRadius: 12,
-    backgroundColor: Colors.gray[100],
+    backgroundColor: colors.gray[100],
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
@@ -1402,7 +1407,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: Colors.secondary,
+    backgroundColor: colors.secondary,
     width: 24,
     height: 24,
     borderRadius: 12,
@@ -1413,7 +1418,7 @@ const styles = StyleSheet.create({
   },
   headerDraggableArea: {
     paddingBottom: 10,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
   },
@@ -1426,7 +1431,7 @@ const styles = StyleSheet.create({
   },
   closeButtonIcon: {
     padding: 6,
-    backgroundColor: Colors.gray[100],
+    backgroundColor: colors.gray[100],
     borderRadius: 50,
   },
 
@@ -1444,7 +1449,7 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: Colors.primary,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -1454,7 +1459,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: Colors.secondary,
+    backgroundColor: colors.secondary,
     width: 28,
     height: 28,
     borderRadius: 14,
@@ -1465,7 +1470,7 @@ const styles = StyleSheet.create({
   },
   avatarHintText: {
     fontSize: 12,
-    color: Colors.gray[400],
+    color: colors.gray[400],
     marginTop: 10,
   },
 
@@ -1476,17 +1481,17 @@ const styles = StyleSheet.create({
   labelSmall: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.gray[700],
+    color: colors.gray[700],
     marginBottom: 8,
     marginLeft: 4,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.gray[50],
+    backgroundColor: colors.gray[50],
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.gray[200],
+    borderColor: colors.gray[200],
     height: 50,
   },
   textInputClean: {
@@ -1494,7 +1499,7 @@ const styles = StyleSheet.create({
     height: '100%',
     paddingHorizontal: 12,
     fontSize: 16,
-    color: Colors.secondary,
+    color: colors.secondary,
     fontWeight: '500',
   },
 
@@ -1506,23 +1511,23 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 12,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: Colors.gray[200],
+    borderColor: colors.gray[200],
     minWidth: 100,
     justifyContent: 'center',
   },
   roleCardActive: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primary + '10', // %10 opacity hex sonuna ekleme tekniği yoksa rgba kullan
+    borderColor: colors.primary,
+    backgroundColor: colors.primary + '10', // 10% tint
   },
   roleCardText: {
     fontSize: 14,
-    color: Colors.gray[600],
+    color: colors.gray[600],
     fontWeight: '500',
   },
   roleCardTextActive: {
-    color: Colors.primary,
+    color: colors.primary,
     fontWeight: '700',
   },
 
@@ -1537,14 +1542,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 10,
     borderRadius: 12,
-    backgroundColor: '#FFF',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: Colors.gray[200],
+    borderColor: colors.gray[200],
     alignItems: 'center',
   },
   lifeStageText: {
     fontSize: 13,
-    color: Colors.gray[600],
+    color: colors.gray[600],
     textAlign: 'center',
   },
 
@@ -1571,8 +1576,8 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 16,
     borderTopWidth: 1,
-    borderTopColor: Colors.gray[100],
-    backgroundColor: '#FFF',
+    borderTopColor: colors.gray[100],
+    backgroundColor: colors.card,
     gap: 12,
   },
   buttonDelete: {
@@ -1588,20 +1593,20 @@ const styles = StyleSheet.create({
   buttonSave: {
     flex: 1,
     height: 50,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    shadowColor: Colors.primary,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 6,
   },
   buttonDisabled: {
-    backgroundColor: Colors.gray[300],
+    backgroundColor: colors.gray[300],
     shadowOpacity: 0,
     elevation: 0,
   },
@@ -1611,3 +1616,7 @@ const styles = StyleSheet.create({
     color: '#FFF',
   },
 });
+
+
+
+

@@ -1,11 +1,11 @@
-import React, { useState, useRef, useEffect } from "react";
+﻿import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
     View, Text, StyleSheet, Image, ScrollView, TouchableOpacity,
     Dimensions, StatusBar, Modal, Pressable, PanResponder, Animated
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
-import { Colors } from "../constants/colors";
+import { AppColors } from "../constants/colors";
 import { Ionicons } from "@expo/vector-icons";
 import { getDietDefinition } from "../lib/diets";
 import { getAllergenDefinition, AllergenType } from "../lib/allergens";
@@ -13,6 +13,7 @@ import ScoreRing from "../components/ui/ScoreRing";
 import { LinearGradient } from "expo-linear-gradient";
 import { TempStore } from "../lib/tempStore";
 import DetailCards from "../components/product/DetailCards";
+import { useTheme } from "../context/ThemeContext";
 import { useUser } from "../context/UserContext";
 import { analyzeEngine, CompatibilityReport, SeverityLevel, IngredientInput } from "../lib/analysisEngine";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -44,27 +45,27 @@ interface KetoAnalysis {
     reasoning: string;
 }
 
-const BADGE_CONFIG: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string; bg: string; labelKey: string }> = {
-    EU_BANNED: { icon: "ban", color: "#DC2626", bg: "#FEF2F2", labelKey: "results.badges.eu_banned" },
-    FDA_WARN: { icon: "warning", color: "#D97706", bg: "#FFFBEB", labelKey: "results.badges.fda_warn" },
-    HIGH_SUGAR: { icon: "alert-circle", color: "#DC2626", bg: "#FEF2F2", labelKey: "results.badges.high_sugar" },
-    HIGH_SODIUM: { icon: "alert-circle", color: "#EA580C", bg: "#FFF7ED", labelKey: "results.badges.high_sodium" },
-    HIGH_FAT: { icon: "alert-circle", color: "#EA580C", bg: "#FFF7ED", labelKey: "results.badges.high_fat" },
-    CONTAINS_ALLERGENS: { icon: "warning", color: "#DC2626", bg: "#FEF2F2", labelKey: "results.badges.contains_allergens" },
-    NO_ADDITIVES: { icon: "leaf", color: "#16A34A", bg: "#F0FDF4", labelKey: "results.badges.no_additives" },
-    HIGH_PROTEIN: { icon: "barbell", color: "#2563EB", bg: "#EFF6FF", labelKey: "results.badges.high_protein" },
-    SUGAR_FREE: { icon: "water", color: "#0891B2", bg: "#ECFEFF", labelKey: "results.badges.sugar_free" },
-    WHOLE_GRAIN: { icon: "nutrition", color: "#16A34A", bg: "#F0FDF4", labelKey: "results.badges.whole_grain" },
-    HIGH_FIBER: { icon: "leaf", color: "#16A34A", bg: "#F0FDF4", labelKey: "results.badges.high_fiber" },
-    LOW_FAT: { icon: "heart", color: "#0891B2", bg: "#ECFEFF", labelKey: "results.badges.low_fat" },
-    LOW_SODIUM: { icon: "heart", color: "#0891B2", bg: "#ECFEFF", labelKey: "results.badges.low_sodium" },
-    ORGANIC: { icon: "leaf", color: "#16A34A", bg: "#F0FDF4", labelKey: "results.badges.organic" },
-    VEGAN: { icon: "leaf", color: "#16A34A", bg: "#F0FDF4", labelKey: "results.badges.vegan" },
-    VEGETARIAN: { icon: "leaf", color: "#22C55E", bg: "#F0FDF4", labelKey: "results.badges.vegetarian" },
-    GLUTEN_FREE: { icon: "checkmark-circle", color: "#0891B2", bg: "#ECFEFF", labelKey: "results.badges.gluten_free" },
-    LACTOSE_FREE: { icon: "checkmark-circle", color: "#0891B2", bg: "#ECFEFF", labelKey: "results.badges.lactose_free" },
-    DEFAULT: { icon: "information-circle", color: Colors.gray[600], bg: Colors.gray[100], labelKey: "results.badges.general" }
-};
+const getBadgeConfig = (colors: AppColors, isDark: boolean): Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string; bg: string; labelKey: string }> => ({
+    EU_BANNED: { icon: "ban", color: "#DC2626", bg: isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2", labelKey: "results.badges.eu_banned" },
+    FDA_WARN: { icon: "warning", color: "#D97706", bg: isDark ? "rgba(217,119,6,0.20)" : "#FFFBEB", labelKey: "results.badges.fda_warn" },
+    HIGH_SUGAR: { icon: "alert-circle", color: "#DC2626", bg: isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2", labelKey: "results.badges.high_sugar" },
+    HIGH_SODIUM: { icon: "alert-circle", color: "#EA580C", bg: isDark ? "rgba(234,88,12,0.20)" : "#FFF7ED", labelKey: "results.badges.high_sodium" },
+    HIGH_FAT: { icon: "alert-circle", color: "#EA580C", bg: isDark ? "rgba(234,88,12,0.20)" : "#FFF7ED", labelKey: "results.badges.high_fat" },
+    CONTAINS_ALLERGENS: { icon: "warning", color: "#DC2626", bg: isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2", labelKey: "results.badges.contains_allergens" },
+    NO_ADDITIVES: { icon: "leaf", color: "#16A34A", bg: isDark ? "rgba(22,163,74,0.20)" : "#F0FDF4", labelKey: "results.badges.no_additives" },
+    HIGH_PROTEIN: { icon: "barbell", color: "#2563EB", bg: isDark ? "rgba(37,99,235,0.20)" : "#EFF6FF", labelKey: "results.badges.high_protein" },
+    SUGAR_FREE: { icon: "water", color: "#0891B2", bg: isDark ? "rgba(8,145,178,0.20)" : "#ECFEFF", labelKey: "results.badges.sugar_free" },
+    WHOLE_GRAIN: { icon: "nutrition", color: "#16A34A", bg: isDark ? "rgba(22,163,74,0.20)" : "#F0FDF4", labelKey: "results.badges.whole_grain" },
+    HIGH_FIBER: { icon: "leaf", color: "#16A34A", bg: isDark ? "rgba(22,163,74,0.20)" : "#F0FDF4", labelKey: "results.badges.high_fiber" },
+    LOW_FAT: { icon: "heart", color: "#0891B2", bg: isDark ? "rgba(8,145,178,0.20)" : "#ECFEFF", labelKey: "results.badges.low_fat" },
+    LOW_SODIUM: { icon: "heart", color: "#0891B2", bg: isDark ? "rgba(8,145,178,0.20)" : "#ECFEFF", labelKey: "results.badges.low_sodium" },
+    ORGANIC: { icon: "leaf", color: "#16A34A", bg: isDark ? "rgba(22,163,74,0.20)" : "#F0FDF4", labelKey: "results.badges.organic" },
+    VEGAN: { icon: "leaf", color: "#16A34A", bg: isDark ? "rgba(22,163,74,0.20)" : "#F0FDF4", labelKey: "results.badges.vegan" },
+    VEGETARIAN: { icon: "leaf", color: "#22C55E", bg: isDark ? "rgba(34,197,94,0.20)" : "#F0FDF4", labelKey: "results.badges.vegetarian" },
+    GLUTEN_FREE: { icon: "checkmark-circle", color: "#0891B2", bg: isDark ? "rgba(8,145,178,0.20)" : "#ECFEFF", labelKey: "results.badges.gluten_free" },
+    LACTOSE_FREE: { icon: "checkmark-circle", color: "#0891B2", bg: isDark ? "rgba(8,145,178,0.20)" : "#ECFEFF", labelKey: "results.badges.lactose_free" },
+    DEFAULT: { icon: "information-circle", color: colors.gray[600], bg: colors.gray[100], labelKey: "results.badges.general" }
+});
 
 const getScoreColor = (score: number): string => {
     if (score >= 80) return "#22C55E";
@@ -72,14 +73,26 @@ const getScoreColor = (score: number): string => {
     return "#EF4444";
 };
 
-const getScoreStyles = (score: number) => ({
-    bg: score >= 80 ? '#F0FDF4' : (score >= 50 ? '#FFF7ED' : '#FEF2F2'),
-    border: score >= 80 ? '#BBF7D0' : (score >= 50 ? '#FED7AA' : '#FECACA'),
-    text: score >= 80 ? '#15803D' : (score >= 50 ? '#9A3412' : '#B91C1C'),
+const getScoreStyles = (score: number, isDark: boolean) => ({
+    bg: score >= 80
+        ? (isDark ? "rgba(22,163,74,0.18)" : "#F0FDF4")
+        : (score >= 50
+            ? (isDark ? "rgba(234,88,12,0.18)" : "#FFF7ED")
+            : (isDark ? "rgba(220,38,38,0.18)" : "#FEF2F2")),
+    border: score >= 80
+        ? (isDark ? "rgba(34,197,94,0.45)" : "#BBF7D0")
+        : (score >= 50
+            ? (isDark ? "rgba(251,146,60,0.45)" : "#FED7AA")
+            : (isDark ? "rgba(248,113,113,0.45)" : "#FECACA")),
+    text: score >= 80 ? "#15803D" : (score >= 50 ? "#9A3412" : "#B91C1C"),
 });
 
 export default function ProductResultScreen() {
     const { t, i18n } = useTranslation();
+    const { colors, isDark } = useTheme();
+    const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+    const localStyles = useMemo(() => createLocalStyles(colors, isDark), [colors, isDark]);
+    const badgeConfig = useMemo(() => getBadgeConfig(colors, isDark), [colors, isDark]);
     const isTr = i18n.language === "tr";
     const isEs = i18n.language?.startsWith("es");
 
@@ -187,7 +200,7 @@ export default function ProductResultScreen() {
     if (!data || !currentData) {
         return (
             <View style={styles.errorContainer}>
-                <Ionicons name="alert-circle-outline" size={48} color={Colors.gray[400]} />
+                <Ionicons name="alert-circle-outline" size={48} color={colors.gray[400]} />
                 <Text style={styles.errorText}>{t("results.errorLoad")}</Text>
                 <TouchableOpacity style={styles.backButtonSimple} onPress={() => router.back()}>
                     <Text style={styles.backButtonText}>{t("common.back")}</Text>
@@ -292,7 +305,7 @@ export default function ProductResultScreen() {
                         const filename = `scans/${user.uid}/${Date.now()}.jpg`;
                         imageUrl = await uploadImage(imageUri, filename);
                     } catch (imgError) {
-                        console.error("⚠️ Image upload failed:", imgError);
+                        console.error("Image upload failed:", imgError);
                     }
                 }
 
@@ -312,9 +325,9 @@ export default function ProductResultScreen() {
                     })
                 });
 
-                console.log("🎉 Scan saved successfully!");
+                console.log("Scan saved successfully!");
             } catch (error) {
-                console.error("❌ CRITICAL SCAN ERROR:", error);
+                console.error("CRITICAL SCAN ERROR:", error);
                 hasSaved.current = false;
             }
         };
@@ -398,8 +411,12 @@ export default function ProductResultScreen() {
 
         const isSafe = !isRisky;
 
-        const bg = isSafe ? '#F0FDF4' : '#FEF2F2';
-        const border = isSafe ? '#BBF7D0' : '#FECACA';
+        const bg = isSafe
+            ? (isDark ? "rgba(22,163,74,0.18)" : '#F0FDF4')
+            : (isDark ? "rgba(220,38,38,0.18)" : '#FEF2F2');
+        const border = isSafe
+            ? (isDark ? "rgba(34,197,94,0.45)" : '#BBF7D0')
+            : (isDark ? "rgba(248,113,113,0.45)" : '#FECACA');
         const text = isSafe ? '#15803D' : '#B91C1C';
         const label = userDiet === 'KETO'
             ? t("results.diet_card.keto_title")
@@ -415,7 +432,7 @@ export default function ProductResultScreen() {
                         <Text style={[styles.dietCardTitle, { color: text }]}>{label}</Text>
                     </View>
                     {/* Sağ Üst Köşe: Durum Rozeti */}
-                    <View style={[styles.statusBadge, { backgroundColor: isSafe ? '#DCFCE7' : '#FEE2E2' }]}>
+                    <View style={[styles.statusBadge, { backgroundColor: isSafe ? (isDark ? "rgba(22,163,74,0.22)" : '#DCFCE7') : (isDark ? "rgba(220,38,38,0.22)" : '#FEE2E2') }]}>
                         <Text style={[styles.statusText, { color: text }]}>
                             {isSafe ? t("common.suitable") : t("common.limit_exceeded")}
                         </Text>
@@ -428,7 +445,7 @@ export default function ProductResultScreen() {
                         flexDirection: 'row',
                         gap: 6,
                         marginBottom: 10,
-                        backgroundColor: 'rgba(255,255,0,0.15)',
+                        backgroundColor: isDark ? 'rgba(245,158,11,0.18)' : 'rgba(255,255,0,0.15)',
                         padding: 8,
                         borderRadius: 6
                     }}>
@@ -479,7 +496,7 @@ export default function ProductResultScreen() {
 
                 {/* Alt Kısım: AI Açıklaması */}
                 <View style={styles.dividerSimple} />
-                <Text style={[styles.dietReason, { color: Colors.gray[600] }]} >
+                <Text style={[styles.dietReason, { color: colors.gray[600] }]} >
                     {ketoData.reasoning}
                 </Text>
             </View>
@@ -504,7 +521,7 @@ export default function ProductResultScreen() {
     const ownerAnalysis = familyAnalysis.find(f => f.member.id === "main_user") || familyAnalysis[0];
 
     const displayScore = ownerAnalysis ? ownerAnalysis.report.score : (scores.compatibility?.value || 0);
-    const scoreStyles = getScoreStyles(displayScore);
+    const scoreStyles = getScoreStyles(displayScore, isDark);
 
     const displayVerdict = ownerAnalysis?.report.title || t("results.analysis.status.safe");
     const displaySummary = ownerAnalysis?.report.summary || t("results.analysis.findings.safe_summary");
@@ -515,7 +532,7 @@ export default function ProductResultScreen() {
     };
 
     if (isAdLoading && !isPremium) {
-        return <View style={{ flex: 1, backgroundColor: Colors.surface }} />;
+        return <View style={{ flex: 1, backgroundColor: colors.surface }} />;
     }
 
     return (
@@ -558,18 +575,18 @@ export default function ProductResultScreen() {
                     <View style={styles.badgesRow}>
                         {product.isFood ? (
                             <View style={[styles.badge, styles.badgeSuccess]}>
-                                <Ionicons name="nutrition" size={12} color={Colors.success} style={{ marginRight: 4 }} />
-                                <Text style={[styles.badgeText, { color: Colors.success }]}>{t("results.badges.food")}</Text>
+                                <Ionicons name="nutrition" size={12} color={colors.success} style={{ marginRight: 4 }} />
+                                <Text style={[styles.badgeText, { color: colors.success }]}>{t("results.badges.food")}</Text>
                             </View>
                         ) : (
                             <View style={[styles.badge, styles.badgeError]}>
-                                <Ionicons name="warning" size={12} color={Colors.error} style={{ marginRight: 4 }} />
-                                <Text style={[styles.badgeText, { color: Colors.error }]}>{t("results.badges.notFood")}</Text>
+                                <Ionicons name="warning" size={12} color={colors.error} style={{ marginRight: 4 }} />
+                                <Text style={[styles.badgeText, { color: colors.error }]}>{t("results.badges.notFood")}</Text>
                             </View>
                         )}
 
                         {data.badges?.map((badgeCode: string, index: number) => {
-                            const config = BADGE_CONFIG[badgeCode] || BADGE_CONFIG.DEFAULT;
+                            const config = badgeConfig[badgeCode] || badgeConfig.DEFAULT;
                             return (
                                 <View key={index} style={[styles.badge, { backgroundColor: config.bg, borderColor: config.color + '40' }]}>
                                     <Ionicons name={config.icon} size={12} color={config.color} style={{ marginRight: 4 }} />
@@ -609,7 +626,7 @@ export default function ProductResultScreen() {
                             <View style={styles.nutriScoreHeader}>
                                 <Text style={styles.nutriScoreTitle}>NUTRI-SCORE</Text>
                                 <TouchableOpacity onPress={() => setShowNutriInfo(true)} style={{ padding: 4 }}>
-                                    <Ionicons name="information-circle-outline" size={20} color={Colors.secondary} />
+                                    <Ionicons name="information-circle-outline" size={20} color={colors.secondary} />
                                 </TouchableOpacity>
                             </View>
 
@@ -621,7 +638,7 @@ export default function ProductResultScreen() {
 
                                 <View style={styles.nutriScoreTextContainer}>
                                     <Text style={styles.nutriScoreGradeTitle}>
-                                        {t("results.nutriscore.grade_label")}: <Text style={{ fontWeight: '900', color: Colors.secondary }}>
+                                        {t("results.nutriscore.grade_label")}: <Text style={{ fontWeight: '900', color: colors.secondary }}>
                                             {data.product.nutriscore_grade === 'unknown' ? '?' : data.product.nutriscore_grade.toUpperCase()}
                                         </Text>
                                     </Text>
@@ -644,7 +661,7 @@ export default function ProductResultScreen() {
                         <Ionicons
                             name={displayScore >= 80 ? "checkmark-circle" : "alert-circle"}
                             size={24}
-                            color={displayScore >= 80 ? Colors.success : (displayScore >= 50 ? '#EA580C' : Colors.error)}
+                            color={displayScore >= 80 ? colors.success : (displayScore >= 50 ? '#EA580C' : colors.error)}
                         />
                         <View style={{ flex: 1, gap: 4 }}>
                             <Text style={[styles.verdictTitle, {
@@ -661,22 +678,22 @@ export default function ProductResultScreen() {
                     {/* --- BÖLÜM 2: YASAL / KRİTİK UYARILAR --- */}
                     {criticalBadges.length > 0 && (
                         <View style={[styles.warningBox, {
-                            backgroundColor: '#FEF2F2',
-                            borderColor: '#FECACA',
+                            backgroundColor: isDark ? "rgba(127,29,29,0.35)" : '#FEF2F2',
+                            borderColor: isDark ? "rgba(248,113,113,0.45)" : '#FECACA',
                             borderTopLeftRadius: 4,
                             borderTopRightRadius: 4,
                         }]}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                                <Ionicons name="megaphone" size={18} color="#B91C1C" />
-                                <Text style={{ fontSize: 12, fontWeight: '800', color: '#B91C1C', textTransform: 'uppercase' }}>
+                                <Ionicons name="megaphone" size={18} color={isDark ? "#FCA5A5" : "#B91C1C"} />
+                                <Text style={{ fontSize: 12, fontWeight: '800', color: isDark ? "#FCA5A5" : '#B91C1C', textTransform: 'uppercase' }}>
                                     {t("results.critical_warnings")}
                                 </Text>
                             </View>
 
                             {criticalBadges.map((badge: string, idx: number) => (
                                 <View key={idx} style={{ flexDirection: 'row', gap: 6, marginBottom: 4 }}>
-                                    <Text style={{ fontSize: 12, color: '#B91C1C' }}>•</Text>
-                                    <Text style={{ fontSize: 12, color: '#7F1D1D', flex: 1 }}>
+                                    <Text style={{ fontSize: 12, color: isDark ? "#FCA5A5" : '#B91C1C' }}>•</Text>
+                                    <Text style={{ fontSize: 12, color: isDark ? '#FCA5A5' : '#7F1D1D', flex: 1 }}>
                                         {t(`results.badges.${badge.toLowerCase()}_desc`)}
                                     </Text>
                                 </View>
@@ -732,7 +749,7 @@ export default function ProductResultScreen() {
                 </View>
 
                 <View style={styles.disclaimerBox}>
-                    <Ionicons name="information-circle-outline" size={20} color={Colors.gray[400]} />
+                    <Ionicons name="information-circle-outline" size={20} color={colors.gray[400]} />
                     <View style={{ flex: 1 }}>
                         <Text style={styles.disclaimerTitle}>{t("common.disclaimer.title")}</Text>
                         <Text style={styles.disclaimerText}>{t("common.disclaimer.text")}</Text>
@@ -742,7 +759,7 @@ export default function ProductResultScreen() {
                 {isBarcodeSource && (
                     <View style={styles.offInfoBox}>
                         <View style={styles.offInfoHeader}>
-                            <Ionicons name="barcode-outline" size={18} color={Colors.secondary} />
+                            <Ionicons name="barcode-outline" size={18} color={colors.secondary} />
                             <Text style={styles.offInfoTitle}>{t("results.openfoodfactsNotice.title")}</Text>
                         </View>
                         <Text style={styles.offInfoText}>
@@ -752,7 +769,7 @@ export default function ProductResultScreen() {
                             style={styles.offInfoButton}
                             onPress={() => router.replace({ pathname: "/", params: { autoStart: "true" } })}
                         >
-                            <Ionicons name="camera-outline" size={16} color={Colors.primary} />
+                            <Ionicons name="camera-outline" size={16} color={colors.primary} />
                             <Text style={styles.offInfoButtonText}>
                                 {t("results.openfoodfactsNotice.cta")}
                             </Text>
@@ -840,8 +857,12 @@ export default function ProductResultScreen() {
                                                         if (!lifeStageDef) return null;
 
                                                         const isVulnerable = ['INFANT_0_6', 'INFANT_6_12', 'TODDLER_1_3', 'PREGNANT', 'BREASTFEEDING'].includes(lifeStage);
-                                                        const bgColor = isVulnerable ? '#FEF3C7' : '#F0FDF4';
-                                                        const borderColor = isVulnerable ? '#FCD34D' : '#BBF7D0';
+                                                        const bgColor = isVulnerable
+                                                            ? (isDark ? "rgba(245,158,11,0.22)" : '#FEF3C7')
+                                                            : (isDark ? "rgba(22,163,74,0.22)" : '#F0FDF4');
+                                                        const borderColor = isVulnerable
+                                                            ? (isDark ? "rgba(252,211,77,0.50)" : '#FCD34D')
+                                                            : (isDark ? "rgba(34,197,94,0.45)" : '#BBF7D0');
                                                         const textColor = isVulnerable ? '#B45309' : '#15803D';
                                                         const iconName = lifeStage.includes('INFANT') || lifeStage.includes('TODDLER')
                                                             ? 'nutrition-outline'
@@ -859,9 +880,9 @@ export default function ProductResultScreen() {
 
                                                     {/* Diyet Bilgisi */}
                                                     {dietDef && (
-                                                        <View style={[styles.infoChip, { backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }]}>
+                                                        <View style={[styles.infoChip, { backgroundColor: isDark ? "rgba(37,99,235,0.22)" : '#EFF6FF', borderColor: isDark ? "rgba(147,197,253,0.55)" : '#BFDBFE' }]}>
                                                             <Ionicons name="restaurant" size={14} color="#2563EB" />
-                                                            <Text style={[styles.infoChipText, { color: '#1E40AF' }]}>
+                                                            <Text style={[styles.infoChipText, { color: isDark ? '#93C5FD' : '#1E40AF' }]}>
                                                                 {isTr ? dietDef.nameTr : isEs ? dietDef.nameEs : dietDef.name}
                                                             </Text>
                                                         </View>
@@ -872,9 +893,9 @@ export default function ProductResultScreen() {
                                                         const algDef = getAllergenDefinition(alg as AllergenType);
                                                         if (!algDef) return null;
                                                         return (
-                                                            <View key={alg} style={[styles.infoChip, { backgroundColor: '#FEF2F2', borderColor: '#FECACA' }]}>
+                                                            <View key={alg} style={[styles.infoChip, { backgroundColor: isDark ? "rgba(220,38,38,0.22)" : '#FEF2F2', borderColor: isDark ? "rgba(248,113,113,0.45)" : '#FECACA' }]}>
                                                                 <Ionicons name="hand-left" size={14} color="#DC2626" />
-                                                                <Text style={[styles.infoChipText, { color: '#991B1B' }]}>
+                                                                <Text style={[styles.infoChipText, { color: isDark ? '#FCA5A5' : '#991B1B' }]}>
                                                                     {isTr ? algDef.nameTr : isEs ? algDef.nameEs : algDef.name}
                                                                 </Text>
                                                             </View>
@@ -886,7 +907,7 @@ export default function ProductResultScreen() {
                                     })()}
                                     {selectedMemberReport.report.findings.length === 0 ? (
                                         <View style={styles.emptyStateBox}>
-                                            <Ionicons name="checkmark-circle" size={32} color={Colors.success} />
+                                            <Ionicons name="checkmark-circle" size={32} color={colors.success} />
                                             <Text style={styles.emptyStateText}>{selectedMemberReport.report.summary}</Text>
                                         </View>
                                     ) : (
@@ -895,16 +916,20 @@ export default function ProductResultScreen() {
 
                                             return (
                                                 <View key={index} style={[styles.findingCard, {
-                                                    backgroundColor: isHighSeverity ? '#FEF2F2' : '#FFF7ED',
-                                                    borderColor: isHighSeverity ? '#FECACA' : '#FED7AA'
+                                                    backgroundColor: isHighSeverity
+                                                        ? (isDark ? "rgba(220,38,38,0.22)" : '#FEF2F2')
+                                                        : (isDark ? "rgba(234,88,12,0.22)" : '#FFF7ED'),
+                                                    borderColor: isHighSeverity
+                                                        ? (isDark ? "rgba(248,113,113,0.45)" : '#FECACA')
+                                                        : (isDark ? "rgba(251,146,60,0.45)" : '#FED7AA')
                                                 }]}>
                                                     <Ionicons
                                                         name={isHighSeverity ? "ban" : "alert-circle"}
                                                         size={20}
-                                                        color={isHighSeverity ? Colors.error : "#EA580C"}
+                                                        color={isHighSeverity ? colors.error : "#EA580C"}
                                                     />
                                                     <Text style={[styles.findingText, {
-                                                        color: isHighSeverity ? '#B91C1C' : '#9A3412'
+                                                        color: isHighSeverity ? (isDark ? '#FCA5A5' : '#B91C1C') : (isDark ? '#FDBA74' : '#9A3412')
                                                     }]}>
                                                         {finding.message}
                                                     </Text>
@@ -945,11 +970,11 @@ export default function ProductResultScreen() {
                         </View>
 
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                            <Ionicons name="information-circle" size={32} color={Colors.primary} />
+                            <Ionicons name="information-circle" size={32} color={colors.primary} />
                             <Text style={styles.modalTitle}>{t("results.nutriscore.what_is_title")}</Text>
                         </View>
 
-                        <Text style={[styles.modalSubtitle, { fontWeight: '400', lineHeight: 22, color: Colors.gray[600] }]}>
+                        <Text style={[styles.modalSubtitle, { fontWeight: '400', lineHeight: 22, color: colors.gray[600] }]}>
                             {t("results.nutriscore.what_is_desc")}
                         </Text>
 
@@ -960,10 +985,10 @@ export default function ProductResultScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#F1F5F9",
+        backgroundColor: colors.surface,
     },
     errorContainer: {
         flex: 1,
@@ -973,18 +998,18 @@ const styles = StyleSheet.create({
     },
     errorText: {
         fontSize: 16,
-        color: Colors.gray[500],
+        color: colors.gray[500],
         fontWeight: '600',
     },
     backButtonSimple: {
         paddingVertical: 10,
         paddingHorizontal: 20,
-        backgroundColor: Colors.gray[200],
+        backgroundColor: colors.gray[200],
         borderRadius: 8,
     },
     backButtonText: {
         fontWeight: '600',
-        color: Colors.secondary,
+        color: colors.secondary,
     },
 
     scrollContent: {
@@ -994,32 +1019,32 @@ const styles = StyleSheet.create({
         marginHorizontal: 20,
         marginTop: 20,
         padding: 16,
-        backgroundColor: Colors.gray[100],
+        backgroundColor: colors.gray[100],
         borderRadius: 12,
         flexDirection: "row",
         gap: 12,
         borderWidth: 1,
-        borderColor: Colors.gray[200],
+        borderColor: colors.gray[200],
     },
     disclaimerTitle: {
         fontSize: 10,
         fontWeight: "700",
-        color: Colors.gray[500],
+        color: colors.gray[500],
         marginBottom: 4,
     },
     disclaimerText: {
         fontSize: 11,
-        color: Colors.gray[500],
+        color: colors.gray[500],
         lineHeight: 16,
     },
     offInfoBox: {
         marginHorizontal: 20,
         marginTop: 14,
         padding: 14,
-        backgroundColor: "#EFF6FF",
+        backgroundColor: isDark ? "rgba(37,99,235,0.16)" : "#EFF6FF",
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: "#DBEAFE",
+        borderColor: isDark ? "rgba(147,197,253,0.40)" : "#DBEAFE",
         gap: 8,
     },
     offInfoHeader: {
@@ -1030,12 +1055,12 @@ const styles = StyleSheet.create({
     offInfoTitle: {
         fontSize: 12,
         fontWeight: "800",
-        color: Colors.secondary,
+        color: colors.secondary,
     },
     offInfoText: {
         fontSize: 12,
         lineHeight: 17,
-        color: "#1E3A8A",
+        color: isDark ? "#BFDBFE" : "#1E3A8A",
     },
     offInfoButton: {
         marginTop: 4,
@@ -1043,9 +1068,9 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         gap: 6,
-        backgroundColor: "#FFFFFF",
+        backgroundColor: colors.card,
         borderWidth: 1,
-        borderColor: "#BFDBFE",
+        borderColor: isDark ? "rgba(147,197,253,0.55)" : "#BFDBFE",
         borderRadius: 10,
         paddingVertical: 8,
         paddingHorizontal: 10,
@@ -1053,12 +1078,12 @@ const styles = StyleSheet.create({
     offInfoButtonText: {
         fontSize: 12,
         fontWeight: "700",
-        color: Colors.primary,
+        color: colors.primary,
     },
     imageContainer: {
         height: IMAGE_HEIGHT,
         width: '100%',
-        backgroundColor: Colors.gray[200],
+        backgroundColor: colors.gray[200],
         borderBottomLeftRadius: 40,
         borderBottomRightRadius: 40,
         overflow: 'hidden',
@@ -1089,27 +1114,29 @@ const styles = StyleSheet.create({
     floatingCard: {
         marginTop: -60,
         marginHorizontal: 20,
-        backgroundColor: Colors.white,
+        backgroundColor: colors.card,
+        borderWidth: 1,
+        borderColor: colors.gray[200],
         borderRadius: 24,
         padding: 24,
         zIndex: 2,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.1,
+        shadowOpacity: isDark ? 0.28 : 0.1,
         shadowRadius: 20,
         elevation: 10,
     },
     dragHandle: {
         width: 40,
         height: 4,
-        backgroundColor: Colors.gray[200],
+        backgroundColor: colors.gray[200],
         borderRadius: 2,
         alignSelf: 'center',
         marginBottom: 16,
     },
     brandText: {
         fontSize: 13,
-        color: Colors.gray[500],
+        color: colors.gray[500],
         fontWeight: "700",
         textTransform: "uppercase",
         letterSpacing: 1.2,
@@ -1118,7 +1145,7 @@ const styles = StyleSheet.create({
     productName: {
         fontSize: 24,
         fontWeight: "900",
-        color: Colors.secondary,
+        color: colors.secondary,
         marginVertical: 4,
         textAlign: 'center',
         lineHeight: 30,
@@ -1138,17 +1165,18 @@ const styles = StyleSheet.create({
         paddingVertical: 6,
         borderRadius: 20,
         borderWidth: 1,
+        maxWidth: '100%',
     },
-    badgeSuccess: { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' },
-    badgeError: { backgroundColor: '#FEF2F2', borderColor: '#FECACA' },
-    badgeNeutral: { backgroundColor: Colors.gray[100], borderColor: Colors.gray[200] },
+    badgeSuccess: { backgroundColor: isDark ? "rgba(22,163,74,0.20)" : '#F0FDF4', borderColor: isDark ? "rgba(34,197,94,0.45)" : '#BBF7D0' },
+    badgeError: { backgroundColor: isDark ? "rgba(220,38,38,0.20)" : '#FEF2F2', borderColor: isDark ? "rgba(248,113,113,0.45)" : '#FECACA' },
+    badgeNeutral: { backgroundColor: colors.gray[100], borderColor: colors.gray[200] },
 
-    badgeText: { fontSize: 11, fontWeight: "700" },
-    badgeTextNeutral: { fontSize: 11, fontWeight: "600", color: Colors.gray[600] },
+    badgeText: { fontSize: 11, fontWeight: "700", flexShrink: 1 },
+    badgeTextNeutral: { fontSize: 11, fontWeight: "600", color: colors.gray[600] },
 
     divider: {
         height: 1,
-        backgroundColor: Colors.gray[100],
+        backgroundColor: colors.gray[100],
         marginVertical: 20,
     },
 
@@ -1160,7 +1188,7 @@ const styles = StyleSheet.create({
     scoreDivider: {
         width: 1,
         height: 60,
-        backgroundColor: Colors.gray[200],
+        backgroundColor: colors.gray[200],
     },
 
     verdictBox: {
@@ -1180,7 +1208,7 @@ const styles = StyleSheet.create({
     verdictText: {
         fontSize: 13,
         fontWeight: "500",
-        color: Colors.gray[600],
+        color: colors.gray[600],
         lineHeight: 18,
     },
 
@@ -1190,7 +1218,7 @@ const styles = StyleSheet.create({
     sectionHeader: {
         fontSize: 13,
         fontWeight: "800",
-        color: Colors.gray[400],
+        color: colors.gray[400],
         marginBottom: 12,
         marginLeft: 24,
         letterSpacing: 1,
@@ -1210,7 +1238,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 6,
-        backgroundColor: '#FFF',
+        backgroundColor: colors.card,
     },
     memberAvatar: {
         width: 44,
@@ -1229,7 +1257,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 2,
-        borderColor: '#FFF',
+        borderColor: colors.card,
     },
     miniScoreText: {
         fontSize: 9,
@@ -1238,21 +1266,21 @@ const styles = StyleSheet.create({
     },
     memberName: {
         fontSize: 11,
-        color: Colors.gray[600],
+        color: colors.gray[600],
         fontWeight: '600',
         textAlign: 'center',
     },
     // --- MODAL STİLLERİ ---
     modalOverlay: {
         flex: 1,
-        backgroundColor: "rgba(0,0,0,0.5)",
+        backgroundColor: colors.overlay,
         justifyContent: "flex-end",
     },
     modalDismiss: {
         flex: 1,
     },
     bottomSheet: {
-        backgroundColor: "#FFF",
+        backgroundColor: colors.card,
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         padding: 24,
@@ -1272,7 +1300,7 @@ const styles = StyleSheet.create({
     bottomSheetHandle: {
         width: 40,
         height: 5,
-        backgroundColor: Colors.gray[200],
+        backgroundColor: colors.gray[200],
         borderRadius: 2.5,
         alignSelf: 'center',
         marginBottom: 20,
@@ -1297,7 +1325,7 @@ const styles = StyleSheet.create({
     modalTitle: {
         fontSize: 18,
         fontWeight: '700',
-        color: Colors.secondary,
+        color: colors.secondary,
     },
     modalSubtitle: {
         fontSize: 14,
@@ -1318,7 +1346,7 @@ const styles = StyleSheet.create({
     reasonsTitle: {
         fontSize: 14,
         fontWeight: '700',
-        color: Colors.gray[500],
+        color: colors.gray[500],
         marginBottom: 12,
         textTransform: 'uppercase',
     },
@@ -1341,15 +1369,15 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         padding: 20,
-        backgroundColor: '#F0FDF4',
+        backgroundColor: isDark ? "rgba(22,163,74,0.20)" : '#F0FDF4',
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: '#BBF7D0',
+        borderColor: isDark ? "rgba(34,197,94,0.45)" : '#BBF7D0',
         gap: 8,
     },
     emptyStateText: {
         fontSize: 14,
-        color: '#15803D',
+        color: isDark ? '#86EFAC' : '#15803D',
         fontWeight: '600',
     },
     dietCard: {
@@ -1382,7 +1410,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: 'rgba(255,255,255,0.6)',
+        backgroundColor: isDark ? "rgba(15,23,42,0.55)" : 'rgba(255,255,255,0.6)',
         borderRadius: 12,
         padding: 10,
     },
@@ -1391,14 +1419,14 @@ const styles = StyleSheet.create({
     },
     statLabel: {
         fontSize: 10,
-        color: Colors.gray[500],
+        color: colors.gray[500],
         marginBottom: 2,
         fontWeight: '600',
     },
     statValue: {
         fontSize: 16,
         fontWeight: '700',
-        color: Colors.secondary,
+        color: colors.secondary,
     },
     mathOperator: {
         fontSize: 18,
@@ -1409,7 +1437,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 12,
         paddingVertical: 4,
-        backgroundColor: '#FFF',
+        backgroundColor: colors.card,
         borderRadius: 8,
         borderWidth: 1,
         minWidth: 70,
@@ -1425,7 +1453,7 @@ const styles = StyleSheet.create({
     },
     estimateBox: {
         padding: 12,
-        backgroundColor: 'rgba(255,255,255,0.5)',
+        backgroundColor: isDark ? "rgba(15,23,42,0.45)" : 'rgba(255,255,255,0.5)',
         borderRadius: 8,
         alignItems: 'center',
     },
@@ -1435,7 +1463,7 @@ const styles = StyleSheet.create({
     },
     dividerSimple: {
         height: 1,
-        backgroundColor: 'rgba(0,0,0,0.05)',
+        backgroundColor: isDark ? "rgba(148,163,184,0.20)" : 'rgba(0,0,0,0.05)',
         marginVertical: 12,
     },
     dietReason: {
@@ -1453,15 +1481,15 @@ const styles = StyleSheet.create({
     profileSummaryBox: {
         marginBottom: 16,
         padding: 12,
-        backgroundColor: '#F8FAFC',
+        backgroundColor: colors.gray[50],
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: '#E2E8F0',
+        borderColor: colors.gray[200],
     },
     profileSummaryTitle: {
         fontSize: 11,
         fontWeight: '700',
-        color: '#64748B',
+        color: colors.gray[500],
         marginBottom: 8,
         textTransform: 'uppercase',
         letterSpacing: 0.5,
@@ -1486,11 +1514,11 @@ const styles = StyleSheet.create({
     },
     nutriScoreContainer: {
         marginTop: 20,
-        backgroundColor: '#FFF',
+        backgroundColor: colors.card,
         borderRadius: 16,
         padding: 16,
         borderWidth: 1,
-        borderColor: "#E2E8F0",
+        borderColor: colors.gray[200],
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.03,
@@ -1506,7 +1534,7 @@ const styles = StyleSheet.create({
     nutriScoreTitle: {
         fontSize: 12,
         fontWeight: '800',
-        color: "#94A3B8",
+        color: colors.gray[400],
         letterSpacing: 1,
     },
     nutriScoreContent: {
@@ -1520,13 +1548,13 @@ const styles = StyleSheet.create({
     },
     nutriScoreGradeTitle: {
         fontSize: 14,
-        color: "#0F172A",
+        color: colors.secondary,
         fontWeight: '600',
         marginBottom: 2,
     },
     nutriScoreDesc: {
         fontSize: 12,
-        color: Colors.gray[500],
+        color: colors.gray[500],
         lineHeight: 16,
     },
     modalButtonPrimary: {
@@ -1542,11 +1570,11 @@ const styles = StyleSheet.create({
         fontSize: 16,
     }
 });
-const localStyles = StyleSheet.create({
+const createLocalStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     nsContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#E2E8F0',
+        backgroundColor: colors.gray[200],
         borderRadius: 8,
         padding: 2,
         height: 50,
@@ -1579,3 +1607,6 @@ const localStyles = StyleSheet.create({
         fontWeight: '700',
     }
 });
+
+
+

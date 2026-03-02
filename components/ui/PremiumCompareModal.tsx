@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+﻿import React, { useEffect, useMemo } from "react";
 import {
     Modal,
     View,
@@ -8,7 +8,7 @@ import {
     Dimensions,
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { Colors } from "../../constants/colors";
+import { AppColors } from "../../constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
     useSharedValue,
@@ -18,6 +18,7 @@ import Animated, {
     FadeIn,
 } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
+import { useTheme } from "../../context/ThemeContext";
 
 interface PremiumCompareModalProps {
     visible: boolean;
@@ -37,8 +38,8 @@ interface FeatureRowProps {
     index: number;
 }
 
-const FeatureRow = ({ icon, iconColor, iconBg, label, freeValue, premiumValue, index }: FeatureRowProps) => {
-    const isPremiumBetter = premiumValue === "∞" || premiumValue.includes("✓");
+const FeatureRow = ({ icon, iconColor, iconBg, label, freeValue, premiumValue, index, styles }: FeatureRowProps & { styles: ReturnType<typeof createStyles> }) => {
+    const isPremiumBetter = premiumValue === "?" || premiumValue.includes("?");
 
     return (
         <Animated.View
@@ -67,6 +68,8 @@ const FeatureRow = ({ icon, iconColor, iconBg, label, freeValue, premiumValue, i
 
 export default function PremiumCompareModal({ visible, onClose, onSubscribe }: PremiumCompareModalProps) {
     const { t } = useTranslation();
+    const { colors, isDark } = useTheme();
+    const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
     const translateY = useSharedValue(30);
     const opacity = useSharedValue(0);
@@ -102,7 +105,7 @@ export default function PremiumCompareModal({ visible, onClose, onSubscribe }: P
                 <Animated.View style={[styles.container, animatedStyle]}>
                     {/* Close Button */}
                     <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={12}>
-                        <Ionicons name="close" size={22} color={Colors.gray[400]} />
+                        <Ionicons name="close" size={22} color={colors.gray[400]} />
                     </Pressable>
 
                     {/* Header */}
@@ -135,49 +138,49 @@ export default function PremiumCompareModal({ visible, onClose, onSubscribe }: P
                     <View style={styles.featuresList}>
                         <FeatureRow
                             icon="barcode-scan"
-                            iconColor={Colors.primary}
+                            iconColor={colors.primary}
                             iconBg="#FFF7ED"
                             label={t("premium.feat_scan")}
                             freeValue="5"
-                            premiumValue="∞"
+                            premiumValue="?"
                             index={0}
-                        />
+                         styles={styles} />
                         <FeatureRow
                             icon="robot-outline"
                             iconColor="#7C3AED"
                             iconBg="#EDE9FE"
                             label={t("premium.feat_ai_chat")}
                             freeValue="5"
-                            premiumValue="∞"
+                            premiumValue="?"
                             index={1}
-                        />
+                         styles={styles} />
                         <FeatureRow
                             icon="account-group-outline"
                             iconColor="#0284C7"
                             iconBg="#E0F2FE"
                             label={t("premium.feat_family")}
                             freeValue="1"
-                            premiumValue="∞"
+                            premiumValue="?"
                             index={2}
-                        />
+                         styles={styles} />
                         <FeatureRow
                             icon="advertisements-off"
                             iconColor="#DC2626"
                             iconBg="#FEF2F2"
                             label={t("premium.feat_ads")}
-                            freeValue="✗"
-                            premiumValue="✓"
+                            freeValue="?"
+                            premiumValue="?"
                             index={3}
-                        />
+                         styles={styles} />
                         <FeatureRow
                             icon="lightning-bolt"
                             iconColor="#F59E0B"
                             iconBg="#FEF3C7"
                             label={t("premium.feat_priority")}
-                            freeValue="✗"
-                            premiumValue="✓"
+                            freeValue="?"
+                            premiumValue="?"
                             index={4}
-                        />
+                         styles={styles} />
                     </View>
 
                     {/* CTA Button */}
@@ -209,7 +212,7 @@ export default function PremiumCompareModal({ visible, onClose, onSubscribe }: P
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     overlay: {
         flex: 1,
         justifyContent: "center",
@@ -222,7 +225,7 @@ const styles = StyleSheet.create({
     container: {
         width: width * 0.9,
         maxWidth: 400,
-        backgroundColor: "#FFF",
+        backgroundColor: colors.card,
         borderRadius: 24,
         paddingTop: 28,
         paddingHorizontal: 20,
@@ -252,12 +255,12 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 19,
         fontWeight: "800",
-        color: Colors.secondary,
+        color: colors.secondary,
         textAlign: "center",
     },
     subtitle: {
         fontSize: 13,
-        color: Colors.gray[500],
+        color: colors.gray[500],
         textAlign: "center",
         marginTop: 6,
         lineHeight: 18,
@@ -280,13 +283,13 @@ const styles = StyleSheet.create({
         width: 50,
         paddingVertical: 5,
         borderRadius: 6,
-        backgroundColor: Colors.gray[100],
+        backgroundColor: colors.gray[100],
         alignItems: "center",
     },
     freeHeaderText: {
         fontSize: 10,
         fontWeight: "700",
-        color: Colors.gray[500],
+        color: colors.gray[500],
     },
     premiumHeader: {
         width: 70,
@@ -314,7 +317,7 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
         paddingVertical: 10,
         borderBottomWidth: 1,
-        borderBottomColor: Colors.gray[100],
+        borderBottomColor: colors.gray[100],
     },
     featureLeft: {
         flexDirection: "row",
@@ -332,7 +335,7 @@ const styles = StyleSheet.create({
     featureLabel: {
         fontSize: 13,
         fontWeight: "600",
-        color: Colors.secondary,
+        color: colors.secondary,
         flex: 1,
     },
     featureValues: {
@@ -343,19 +346,19 @@ const styles = StyleSheet.create({
         width: 50,
         paddingVertical: 5,
         borderRadius: 6,
-        backgroundColor: Colors.gray[50],
+        backgroundColor: colors.gray[50],
         alignItems: "center",
     },
     freeValue: {
         fontSize: 12,
         fontWeight: "700",
-        color: Colors.gray[500],
+        color: colors.gray[500],
     },
     premiumValueBox: {
         width: 70,
         paddingVertical: 5,
         borderRadius: 6,
-        backgroundColor: Colors.gray[50],
+        backgroundColor: colors.gray[50],
         alignItems: "center",
     },
     premiumValueBoxHighlight: {
@@ -364,7 +367,7 @@ const styles = StyleSheet.create({
     premiumValue: {
         fontSize: 12,
         fontWeight: "700",
-        color: Colors.gray[600],
+        color: colors.gray[600],
     },
     premiumValueHighlight: {
         color: "#D97706",
@@ -401,6 +404,9 @@ const styles = StyleSheet.create({
     secondaryText: {
         fontSize: 13,
         fontWeight: "600",
-        color: Colors.gray[400],
+        color: colors.gray[400],
     },
 });
+
+
+

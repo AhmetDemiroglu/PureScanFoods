@@ -9,11 +9,13 @@ import { UserProvider } from "../context/UserContext";
 import { GuruProvider } from "../context/GuruContext";
 import { preloadAds } from "../lib/admob";
 import { AppOnboardingModal } from "../components/ui/AppOnboardingModal";
+import { ThemeProvider, useTheme } from "../context/ThemeContext";
 
 const APP_ONBOARDING_ACCEPTED_KEY = "@app_onboarding_disclaimer_accepted_v1";
 
-export default function RootLayout() {
+function AppShell() {
   const [hasAcceptedDisclaimer, setHasAcceptedDisclaimer] = useState<boolean | null>(null);
+  const { isDark, isReady } = useTheme();
 
   useEffect(() => {
     preloadAds();
@@ -42,22 +44,36 @@ export default function RootLayout() {
     setHasAcceptedDisclaimer(true);
   };
 
+  if (!isReady) {
+    return null;
+  }
+
+  return (
+    <>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+      </Stack>
+      <AppOnboardingModal
+        visible={hasAcceptedDisclaimer === false}
+        onAccept={handleOnboardingAccept}
+      />
+      <StatusBar style={isDark ? "light" : "dark"} />
+    </>
+  );
+}
+
+export default function RootLayout() {
   return (
     <I18nextProvider i18n={i18n}>
-      <AuthProvider>
-        <UserProvider>
-          <GuruProvider>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(tabs)" />
-            </Stack>
-            <AppOnboardingModal
-              visible={hasAcceptedDisclaimer === false}
-              onAccept={handleOnboardingAccept}
-            />
-          </GuruProvider>
-        </UserProvider>
-        <StatusBar style="dark" />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <UserProvider>
+            <GuruProvider>
+              <AppShell />
+            </GuruProvider>
+          </UserProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </I18nextProvider>
   );
 }

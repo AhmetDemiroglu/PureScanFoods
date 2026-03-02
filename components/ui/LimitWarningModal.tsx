@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { Modal, View, Text, Pressable, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Colors } from '../../constants/colors';
+import { AppColors } from '../../constants/colors';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
     useSharedValue,
@@ -15,6 +15,7 @@ import { showRewardedAd, isRewardedReady, loadRewardedAd } from '../../lib/admob
 import { grantBonusScan, grantBonusChat } from '../../lib/firestore';
 import { useAuth } from '../../context/AuthContext';
 import { useUser } from '../../context/UserContext';
+import { useTheme } from '../../context/ThemeContext';
 
 interface LimitWarningModalProps {
     visible: boolean;
@@ -29,7 +30,7 @@ interface LimitWarningModalProps {
 
 const { width } = Dimensions.get('window');
 
-const UsageRow = ({ icon, label, status, isLimitReached, isAdAvailable, delay, onWatchAd, isLoadingAd }: any) => {
+const UsageRow = ({ icon, label, status, isLimitReached, isAdAvailable, delay, onWatchAd, isLoadingAd, styles, colors }: any) => {
     const { t } = useTranslation();
 
     return (
@@ -39,7 +40,7 @@ const UsageRow = ({ icon, label, status, isLimitReached, isAdAvailable, delay, o
         >
             <View style={styles.usageLeft}>
                 <View style={[styles.usageIconBox, isLimitReached && styles.usageIconBoxError]}>
-                    <MaterialCommunityIcons name={icon} size={20} color={isLimitReached ? '#EF4444' : Colors.gray[600]} />
+                    <MaterialCommunityIcons name={icon} size={20} color={isLimitReached ? '#EF4444' : colors.gray[600]} />
                 </View>
                 <Text style={styles.usageLabel}>{label}</Text>
             </View>
@@ -83,6 +84,8 @@ const parseDate = (input: any): Date => {
 
 export default function LimitWarningModal({ visible, onClose, onGoPremium, stats, user, limitType = 'weekly', onRewardEarned }: LimitWarningModalProps) {
     const { t } = useTranslation();
+    const { colors, isDark } = useTheme();
+    const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const { user: authUser, deviceId } = useAuth();
     const { familyMembers } = useUser();
 
@@ -119,12 +122,12 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium, stats
     const handleWatchAd = async (type: 'scan' | 'chat') => {
         if (!authUser?.uid) return;
 
-        console.log("📺 handleWatchAd START - type:", type, "uid:", authUser.uid, "deviceId:", deviceId);
+        console.log("?? handleWatchAd START - type:", type, "uid:", authUser.uid, "deviceId:", deviceId);
         setLoadingAdType(type);
 
         try {
             const result = await showRewardedAd(type);
-            console.log("📺 showRewardedAd result:", result);
+            console.log("?? showRewardedAd result:", result);
 
             if (result.success) {
                 if (type === 'scan') {
@@ -190,7 +193,7 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium, stats
                 <Pressable style={styles.backdrop} onPress={onClose} />
                 <Animated.View style={[styles.container, animatedStyle]}>
                     <Pressable style={styles.closeIconBtn} onPress={onClose}>
-                        <Ionicons name="close" size={20} color={Colors.gray[500]} />
+                        <Ionicons name="close" size={20} color={colors.gray[500]} />
                     </Pressable>
 
                     <View style={styles.headerIconContainer}>
@@ -230,7 +233,7 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium, stats
                                         delay={100}
                                         onWatchAd={() => handleWatchAd('scan')}
                                         isLoadingAd={loadingAdType === 'scan'}
-                                    />
+                                    styles={styles} colors={colors} />
                                     <UsageRow
                                         icon="robot-outline"
                                         label={t('limits.feat_chat', 'AI Asistan')}
@@ -240,7 +243,7 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium, stats
                                         delay={200}
                                         onWatchAd={() => handleWatchAd('chat')}
                                         isLoadingAd={loadingAdType === 'chat'}
-                                    />
+                                    styles={styles} colors={colors} />
                                 </>
                             )}
 
@@ -251,7 +254,7 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium, stats
                                 status={`${computedData.family.current}/${computedData.family.max}`}
                                 isLimitReached={computedData.family.current >= computedData.family.max}
                                 delay={300}
-                            />
+                            styles={styles} colors={colors} />
                         </View>
                     </View>
 
@@ -316,11 +319,11 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium, stats
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     overlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(15, 23, 42, 0.7)' },
     usageRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#F8FAFC', paddingVertical: 12, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1, borderColor: '#F1F5F9' },
     usageLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-    usageIconBox: { width: 32, height: 32, borderRadius: 10, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#E2E8F0' },
+    usageIconBox: { width: 32, height: 32, borderRadius: 10, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#E2E8F0' },
     usageIconBoxError: { borderColor: '#FECACA', backgroundColor: '#FEF2F2' },
     usageLabel: { fontSize: 13, fontWeight: '600', color: '#334155' },
     usageRight: { flexDirection: 'row', alignItems: 'center' },
@@ -328,7 +331,7 @@ const styles = StyleSheet.create({
     statusBadgeError: { backgroundColor: '#FEF2F2' },
     statusText: { fontSize: 12, fontWeight: '600', color: '#64748B' },
     statusTextError: { color: '#EF4444' },
-    container: { width: width * 0.88, maxWidth: 380, backgroundColor: '#FFF', borderRadius: 24, padding: 24, alignItems: 'center' },
+    container: { width: width * 0.88, maxWidth: 380, backgroundColor: colors.card, borderRadius: 24, padding: 24, alignItems: 'center' },
     backdrop: { ...StyleSheet.absoluteFillObject },
     closeIconBtn: { position: 'absolute', top: 16, right: 16, zIndex: 10, padding: 4 },
     headerIconContainer: { marginBottom: 16, marginTop: 8 },
@@ -368,3 +371,6 @@ const styles = StyleSheet.create({
         letterSpacing: 0.3,
     },
 }); 
+
+
+

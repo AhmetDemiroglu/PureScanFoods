@@ -1,126 +1,114 @@
-import React from "react";
-import { View, Text, StyleSheet, Pressable, Image } from "react-native";
+import React, { useMemo } from "react";
+import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { Colors } from "../../constants/colors";
+import { AppColors } from "../../constants/colors";
 import { ActiveProduct } from "../../context/GuruContext";
+import { useTheme } from "../../context/ThemeContext";
 
 interface ProductContextCardProps {
-    product: ActiveProduct;
-    onClose: () => void;
+  product: ActiveProduct;
+  onClose: () => void;
 }
 
 export const ProductContextCard = ({ product, onClose }: ProductContextCardProps) => {
-    const { t } = useTranslation();
+  const { t } = useTranslation();
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
-    const getScoreColor = (score: number) => {
-        if (score >= 70) return Colors.success;
-        if (score >= 40) return Colors.warning;
-        return Colors.error;
-    };
+  const getScoreColor = (score: number) => {
+    if (score >= 70) return colors.success;
+    if (score >= 40) return colors.warning;
+    return colors.error;
+  };
 
-    const scoreColor = getScoreColor(product.score);
-    const displayName = product.name?.trim() || product.brand?.trim() || "Bilinmeyen ÃœrÃ¼n";
+  const scoreColor = getScoreColor(product.score);
+  const displayName = product.name?.trim() || product.brand?.trim() || "Bilinmeyen Ürün";
 
-    return (
-        <View style={styles.container}>
-            {/* Close Button - SaÄŸ Ãœst */}
-            <Pressable onPress={onClose} hitSlop={12} style={styles.closeBtn}>
-                <Ionicons name="close" size={18} color={Colors.gray[400]} />
-            </Pressable>
+  return (
+    <View style={styles.container}>
+      <Pressable onPress={onClose} hitSlop={12} style={styles.closeBtn}>
+        <Ionicons name="close" size={18} color={colors.gray[500]} />
+      </Pressable>
 
-            {/* Label */}
-            <Text style={styles.label}>
-                {t("guru.activeProduct", { defaultValue: "Aktif ÃœrÃ¼n" })}
-            </Text>
+      <Text style={styles.label}>{t("guru.activeProduct", { defaultValue: "Aktif Ürün" })}</Text>
 
-            {/* Content Row */}
-            <View style={styles.contentRow}>
-                {/* Score Badge */}
-                <View style={[styles.scoreBadge, { backgroundColor: scoreColor }]}>
-                    <Text style={styles.scoreValue}>{product.score}</Text>
-                    <Text style={styles.scoreMax}>/100</Text>
-                </View>
-
-                {/* Info */}
-                <View style={styles.info}>
-                    <Text style={styles.name} numberOfLines={1}>{displayName}</Text>
-                    <Text style={styles.brand} numberOfLines={1}>{product.brand || "-"}</Text>
-                    <Text style={[styles.verdict, { color: scoreColor }]} numberOfLines={1}>
-                        {product.verdict}
-                    </Text>
-                </View>
-            </View>
+      <View style={styles.contentRow}>
+        <View style={[styles.scoreBadge, { backgroundColor: scoreColor }]}>
+          <Text style={styles.scoreText}>{product.score}</Text>
         </View>
-    );
+
+        <View style={styles.metaWrap}>
+          <Text style={styles.name} numberOfLines={1}>{displayName}</Text>
+          {!!product.brand && <Text style={styles.brand} numberOfLines={1}>{product.brand}</Text>}
+        </View>
+      </View>
+    </View>
+  );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors, isDark: boolean) =>
+  StyleSheet.create({
     container: {
-        backgroundColor: Colors.white,
-        marginHorizontal: 16,
-        marginTop: 12,
-        padding: 14,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: Colors.gray[200],
-        position: "relative",
+      marginHorizontal: 16,
+      marginTop: 10,
+      marginBottom: 8,
+      borderRadius: 14,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: 12,
+      position: "relative",
     },
     closeBtn: {
-        position: "absolute",
-        top: 10,
-        right: 10,
-        zIndex: 1,
-        padding: 4,
+      position: "absolute",
+      right: 8,
+      top: 8,
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      alignItems: "center",
+      justifyContent: "center",
     },
     label: {
-        fontSize: 10,
-        fontWeight: "600",
-        color: Colors.primary,
-        textTransform: "uppercase",
-        letterSpacing: 0.5,
-        marginBottom: 10,
+      fontSize: 11,
+      fontWeight: "700",
+      color: colors.textMuted,
+      marginBottom: 8,
+      letterSpacing: 0.3,
+      textTransform: "uppercase",
     },
     contentRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 14,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
     },
     scoreBadge: {
-        width: 56,
-        height: 56,
-        borderRadius: 12,
-        alignItems: "center",
-        justifyContent: "center",
+      minWidth: 38,
+      height: 38,
+      borderRadius: 12,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 8,
     },
-    scoreValue: {
-        fontSize: 20,
-        fontWeight: "800",
-        color: Colors.white,
+    scoreText: {
+      color: colors.white,
+      fontWeight: "800",
+      fontSize: 14,
     },
-    scoreMax: {
-        fontSize: 10,
-        fontWeight: "600",
-        color: "rgba(255,255,255,0.8)",
-        marginTop: -2,
-    },
-    info: {
-        flex: 1,
-        minWidth: 0,
+    metaWrap: {
+      flex: 1,
     },
     name: {
-        fontSize: 15,
-        fontWeight: "700",
-        color: Colors.secondary,
+      fontSize: 14,
+      color: colors.text,
+      fontWeight: "700",
     },
     brand: {
-        fontSize: 13,
-        color: Colors.gray[500],
-        marginTop: 2,
+      marginTop: 2,
+      fontSize: 12,
+      color: colors.textMuted,
     },
-    verdict: {
-        fontSize: 12,
-        fontWeight: "600",
-        marginTop: 4,
-    },
-});
+  });
+
+

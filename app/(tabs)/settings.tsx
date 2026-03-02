@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -20,7 +20,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { Colors } from "../../constants/colors";
+import { AppColors } from "../../constants/colors";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { useUser } from "../../context/UserContext";
@@ -36,6 +36,7 @@ import HistorySidebar from "../history";
 import PaywallModal from "../../components/ui/PaywallModal";
 import ConfirmDeleteModal from "../../components/ui/ConfirmDeleteModal";
 import AuthModal from "../../components/profile/AuthModal";
+import { useTheme } from "../../context/ThemeContext";
 
 
 if (Platform.OS === "android" && !(global as any).nativeFabricUIManager && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -48,6 +49,8 @@ const SUPPORT_EMAIL = "info@septimuslab.com";
 
 export default function SettingsScreen() {
   const { t } = useTranslation();
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const { user, userProfile, isPremium, usageStats, logout, deleteUserData, deleteAccount } = useAuth();
   const { familyMembers } = useUser();
   const router = useRouter();
@@ -70,19 +73,20 @@ export default function SettingsScreen() {
   const isAnonymous = user?.isAnonymous ?? true;
   const isLoggedIn = user && !isAnonymous;
 
-  // Haklar hesaplama
-  const scanRemaining = isPremium ? "∞" : Math.max(0, usageStats.scanLimit - usageStats.scanCount);
-  const chatRemaining = isPremium ? "∞" : Math.max(0, usageStats.aiChatLimit - usageStats.aiChatCount);
+  // Usage calculations
+  const unlimited = String.fromCharCode(8734);
+  const scanRemaining = isPremium ? unlimited : Math.max(0, usageStats.scanLimit - usageStats.scanCount);
+  const chatRemaining = isPremium ? unlimited : Math.max(0, usageStats.aiChatLimit - usageStats.aiChatCount);
   const familyCount = Math.max(0, (familyMembers?.length || 1) - 1);
   const familyLimitNum = isPremium ? Infinity : 1;
-  const familyLimitDisplay = isPremium ? "∞" : "1";
+  const familyLimitDisplay = isPremium ? unlimited : "1";
 
-  // Limit kontrolleri (kırmızı gösterim için)
+  // Exhausted limit state
   const isScanExhausted = !isPremium && scanRemaining === 0;
   const isChatExhausted = !isPremium && chatRemaining === 0;
   const isFamilyExhausted = !isPremium && familyCount >= familyLimitNum;
 
-  // Şifre değiştirme toggle
+  // Password section toggle
   const togglePasswordSection = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setPasswordSectionOpen(!passwordSectionOpen);
@@ -95,7 +99,7 @@ export default function SettingsScreen() {
     }
   };
 
-  // Şifre değiştirme işlemi
+  // Change password
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       Alert.alert(t("settings.error"), t("settings.fill_all_fields"));
@@ -128,18 +132,18 @@ export default function SettingsScreen() {
     }
   };
 
-  // Veri yönetimi toggle
+  // Data management toggle
   const toggleDataManagement = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setDataManagementOpen(!dataManagementOpen);
   };
 
-  // Mail gönderme
+  // Contact support
   const handleContactSupport = () => {
     Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(t("settings.support_subject"))}`);
   };
 
-  // Gizlilik politikası
+  // Privacy policy
   const handlePrivacyPolicy = () => {
     Linking.openURL(PRIVACY_URL);
   };
@@ -150,14 +154,14 @@ export default function SettingsScreen() {
 
       {/* Header */}
       <LinearGradient
-        colors={[Colors.primary, "#E65100"]}
+        colors={isDark ? ["#B45309", "#9A3412"] : [colors.primary, "#E65100"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.header}
       >
         <SafeAreaView edges={["top"]}>
           <View style={styles.headerContent}>
-            <TouchableOpacity style={styles.backButton} onPress={() => router.canGoBack() ? router.back() : router.push("/")}>
+            <TouchableOpacity style={styles.backButton} onPress={() => router.replace("/")}>
               <Ionicons name="arrow-back" size={24} color="#FFF" />
             </TouchableOpacity>
             <View style={styles.headerTitleArea}>
@@ -177,10 +181,10 @@ export default function SettingsScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* === SECTION 1: Profil Kartı === */}
+        {/* === SECTION 1: Profile Card === */}
         <View style={styles.profileCard}>
           <View style={styles.profileHeader}>
-            <View style={[styles.avatar, { backgroundColor: userProfile?.color || Colors.primary }]}>
+            <View style={[styles.avatar, { backgroundColor: userProfile?.color || colors.primary }]}>
               <MaterialCommunityIcons
                 name={(userProfile?.avatarIcon || "account") as any}
                 size={32}
@@ -209,19 +213,19 @@ export default function SettingsScreen() {
             </View>
           </View>
 
-          {/* Haklarım Grid */}
+          {/* Usage Grid */}
           <View style={styles.usageSection}>
             <Text style={styles.sectionLabel}>{t("settings.my_rights")}</Text>
             <View style={styles.usageGrid}>
               <View style={[styles.usageCard, isScanExhausted && styles.usageCardExhausted]}>
                 <View style={[
                   styles.usageIconBox,
-                  { backgroundColor: isScanExhausted ? "#FEF2F2" : "#FFF7ED" }
+                  { backgroundColor: isScanExhausted ? (isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2") : (isDark ? "rgba(234,88,12,0.20)" : "#FFF7ED") }
                 ]}>
                   <Ionicons
                     name="scan-outline"
                     size={18}
-                    color={isScanExhausted ? "#DC2626" : Colors.primary}
+                    color={isScanExhausted ? "#DC2626" : colors.primary}
                   />
                 </View>
                 <Text style={[styles.usageValue, isScanExhausted && styles.usageValueExhausted]}>
@@ -234,7 +238,7 @@ export default function SettingsScreen() {
               <View style={[styles.usageCard, isChatExhausted && styles.usageCardExhausted]}>
                 <View style={[
                   styles.usageIconBox,
-                  { backgroundColor: isChatExhausted ? "#FEF2F2" : "#EDE9FE" }
+                  { backgroundColor: isChatExhausted ? (isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2") : (isDark ? "rgba(124,58,237,0.22)" : "#EDE9FE") }
                 ]}>
                   <MaterialCommunityIcons
                     name="robot-outline"
@@ -252,7 +256,7 @@ export default function SettingsScreen() {
               <View style={[styles.usageCard, isFamilyExhausted && styles.usageCardExhausted]}>
                 <View style={[
                   styles.usageIconBox,
-                  { backgroundColor: isFamilyExhausted ? "#FEF2F2" : "#E0F2FE" }
+                  { backgroundColor: isFamilyExhausted ? (isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2") : (isDark ? "rgba(2,132,199,0.22)" : "#E0F2FE") }
                 ]}>
                   <MaterialCommunityIcons
                     name="account-group-outline"
@@ -271,7 +275,7 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* === SECTION 1.5: Giriş Yap (Misafir için) === */}
+        {/* === SECTION 1.5: Login CTA (Guest) === */}
         {!isLoggedIn && (
           <View style={styles.section}>
             <Pressable
@@ -279,11 +283,11 @@ export default function SettingsScreen() {
               onPress={() => setShowAuthModal(true)}
             >
               <LinearGradient
-                colors={[Colors.primary, "#E65100"]}
+                colors={[colors.primary, "#E65100"]}
                 style={styles.loginGradient}
               >
                 <View style={styles.loginIconBox}>
-                  <Ionicons name="log-in-outline" size={24} color={Colors.primary} />
+                  <Ionicons name="log-in-outline" size={24} color={colors.primary} />
                 </View>
                 <View style={styles.loginContent}>
                   <Text style={styles.loginTitle}>{t("settings.login_label")}</Text>
@@ -317,7 +321,7 @@ export default function SettingsScreen() {
           </Pressable>
         )}
 
-        {/* === SECTION 3: Hesap Ayarları (Şifre Değiştirme) === */}
+        {/* === SECTION 3: Account Settings (Password) === */}
         {isLoggedIn && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t("settings.account_settings")}</Text>
@@ -327,7 +331,7 @@ export default function SettingsScreen() {
               onPress={togglePasswordSection}
             >
               <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIconBox, { backgroundColor: "#FEF2F2" }]}>
+                <View style={[styles.menuIconBox, { backgroundColor: isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2" }]}>
                   <Ionicons name="lock-closed-outline" size={18} color="#EF4444" />
                 </View>
                 <Text style={styles.menuItemText}>{t("settings.change_password")}</Text>
@@ -335,46 +339,46 @@ export default function SettingsScreen() {
               <Ionicons
                 name={passwordSectionOpen ? "chevron-up" : "chevron-down"}
                 size={20}
-                color={Colors.gray[400]}
+                color={colors.gray[400]}
               />
             </Pressable>
 
             {passwordSectionOpen && (
               <View style={styles.passwordForm}>
                 <View style={styles.inputBox}>
-                  <Ionicons name="key-outline" size={18} color={Colors.gray[400]} />
+                  <Ionicons name="key-outline" size={18} color={colors.gray[400]} />
                   <TextInput
                     style={styles.input}
                     placeholder={t("settings.current_password")}
-                    placeholderTextColor={Colors.gray[400]}
+                    placeholderTextColor={colors.gray[400]}
                     value={currentPassword}
                     onChangeText={setCurrentPassword}
                     secureTextEntry={!showCurrentPassword}
                   />
                   <Pressable onPress={() => setShowCurrentPassword(!showCurrentPassword)} hitSlop={8}>
-                    <Ionicons name={showCurrentPassword ? "eye-off-outline" : "eye-outline"} size={20} color={Colors.gray[400]} />
+                    <Ionicons name={showCurrentPassword ? "eye-off-outline" : "eye-outline"} size={20} color={colors.gray[400]} />
                   </Pressable>
                 </View>
                 <View style={styles.inputBox}>
-                  <Ionicons name="lock-closed-outline" size={18} color={Colors.gray[400]} />
+                  <Ionicons name="lock-closed-outline" size={18} color={colors.gray[400]} />
                   <TextInput
                     style={styles.input}
                     placeholder={t("settings.new_password")}
-                    placeholderTextColor={Colors.gray[400]}
+                    placeholderTextColor={colors.gray[400]}
                     value={newPassword}
                     onChangeText={setNewPassword}
                     secureTextEntry={!showNewPassword}
                   />
                   <Pressable onPress={() => setShowNewPassword(!showNewPassword)} hitSlop={8}>
-                    <Ionicons name={showNewPassword ? "eye-off-outline" : "eye-outline"} size={20} color={Colors.gray[400]} />
+                    <Ionicons name={showNewPassword ? "eye-off-outline" : "eye-outline"} size={20} color={colors.gray[400]} />
                   </Pressable>
                 </View>
                 <View style={styles.inputBox}>
-                  <Ionicons name="checkmark-circle-outline" size={18} color={Colors.gray[400]} />
+                  <Ionicons name="checkmark-circle-outline" size={18} color={colors.gray[400]} />
                   <TextInput
                     style={styles.input}
                     placeholder={t("settings.confirm_password")}
-                    placeholderTextColor={Colors.gray[400]}
+                    placeholderTextColor={colors.gray[400]}
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
                     secureTextEntry={!showNewPassword}
@@ -398,7 +402,7 @@ export default function SettingsScreen() {
           </View>
         )}
 
-        {/* === SECTION 4: Destek & İletişim === */}
+        {/* === SECTION 4: Support & Contact === */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t("settings.support_contact")}</Text>
 
@@ -407,7 +411,7 @@ export default function SettingsScreen() {
             onPress={handleContactSupport}
           >
             <View style={styles.menuItemLeft}>
-              <View style={[styles.menuIconBox, { backgroundColor: "#E0F2FE" }]}>
+              <View style={[styles.menuIconBox, { backgroundColor: isDark ? "rgba(2,132,199,0.22)" : "#E0F2FE" }]}>
                 <Ionicons name="mail-outline" size={18} color="#0284C7" />
               </View>
               <View>
@@ -415,11 +419,11 @@ export default function SettingsScreen() {
                 <Text style={styles.menuItemSubtext}>{SUPPORT_EMAIL}</Text>
               </View>
             </View>
-            <Ionicons name="open-outline" size={18} color={Colors.gray[400]} style={styles.chevronRight} />
+            <Ionicons name="open-outline" size={18} color={colors.gray[400]} style={styles.chevronRight} />
           </Pressable>
         </View>
 
-        {/* === SECTION 5: Hakkında === */}
+        {/* === SECTION 5: About === */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t("settings.about")}</Text>
 
@@ -428,7 +432,7 @@ export default function SettingsScreen() {
             onPress={handlePrivacyPolicy}
           >
             <View style={styles.menuItemLeft}>
-              <View style={[styles.menuIconBox, { backgroundColor: "#F0FDF4" }]}>
+              <View style={[styles.menuIconBox, { backgroundColor: isDark ? "rgba(22,163,74,0.20)" : "#F0FDF4" }]}>
                 <Ionicons name="shield-checkmark-outline" size={18} color="#16A34A" />
               </View>
               <View>
@@ -436,11 +440,11 @@ export default function SettingsScreen() {
                 <Text style={styles.menuItemSubtext}>{t("settings.privacy_policy_desc")}</Text>
               </View>
             </View>
-            <Ionicons name="open-outline" size={18} color={Colors.gray[400]} style={styles.chevronRight} />
+            <Ionicons name="open-outline" size={18} color={colors.gray[400]} style={styles.chevronRight} />
           </Pressable>
         </View>
 
-        {/* === SECTION 5.5: Veri Yönetimi === */}
+        {/* === SECTION 5.5: Data Management === */}
         {isLoggedIn && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t("settings.data_management")}</Text>
@@ -450,47 +454,47 @@ export default function SettingsScreen() {
               onPress={toggleDataManagement}
             >
               <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIconBox, { backgroundColor: "#FFF7ED" }]}>
-                  <Ionicons name="server-outline" size={18} color={Colors.primary} />
+                <View style={[styles.menuIconBox, { backgroundColor: isDark ? "rgba(234,88,12,0.20)" : "#FFF7ED" }]}>
+                  <Ionicons name="server-outline" size={18} color={colors.primary} />
                 </View>
                 <View>
-                  <Text style={[styles.menuItemText, { color: Colors.primary }]}>{t("settings.data_management_label")}</Text>
+                  <Text style={[styles.menuItemText, { color: colors.primary }]}>{t("settings.data_management_label")}</Text>
                   <Text style={styles.menuItemSubtext}>{t("settings.data_management_desc")}</Text>
                 </View>
               </View>
               <Ionicons
                 name={dataManagementOpen ? "chevron-up" : "chevron-down"}
                 size={20}
-                color={Colors.gray[400]}
+                color={colors.gray[400]}
               />
             </Pressable>
 
             {dataManagementOpen && (
               <View style={styles.dataManagementPanel}>
-                {/* Verilerimi Sil - Amber/Sarı */}
+                {/* Delete Data - Warning */}
                 <Pressable
                   style={({ pressed }) => [styles.subMenuItem, styles.subMenuItemWarning, pressed && styles.menuItemPressed]}
                   onPress={() => setDeleteDataModalVisible(true)}
                 >
                   <View style={styles.menuItemLeft}>
-                    <View style={[styles.menuIconBox, { backgroundColor: "#FEF3C7" }]}>
+                    <View style={[styles.menuIconBox, { backgroundColor: isDark ? "rgba(245,158,11,0.22)" : "#FEF3C7" }]}>
                       <Ionicons name="trash-outline" size={18} color="#D97706" />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.menuItemText, { color: "#92400E" }]}>{t("settings.delete_data_label")}</Text>
+                      <Text style={[styles.menuItemText, { color: isDark ? "#FCD34D" : "#92400E" }]}>{t("settings.delete_data_label")}</Text>
                       <Text style={styles.menuItemSubtext}>{t("settings.delete_data_sublabel")}</Text>
                     </View>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color={Colors.gray[400]} style={styles.chevronRight} />
+                  <Ionicons name="chevron-forward" size={18} color={colors.gray[400]} style={styles.chevronRight} />
                 </Pressable>
 
-                {/* Hesabımı Sil - Kırmızı */}
+                {/* Delete Account - Danger */}
                 <Pressable
                   style={({ pressed }) => [styles.subMenuItem, styles.subMenuItemDanger, pressed && styles.menuItemPressed]}
                   onPress={() => setDeleteAccountModalVisible(true)}
                 >
                   <View style={styles.menuItemLeft}>
-                    <View style={[styles.menuIconBox, { backgroundColor: "#FEE2E2" }]}>
+                    <View style={[styles.menuIconBox, { backgroundColor: isDark ? "rgba(220,38,38,0.22)" : "#FEE2E2" }]}>
                       <Ionicons name="person-remove-outline" size={18} color="#DC2626" />
                     </View>
                     <View style={{ flex: 1 }}>
@@ -498,16 +502,16 @@ export default function SettingsScreen() {
                       <Text style={styles.menuItemSubtext}>{t("settings.delete_account_sublabel")}</Text>
                     </View>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color={Colors.gray[400]} style={styles.chevronRight} />
+                  <Ionicons name="chevron-forward" size={18} color={colors.gray[400]} style={styles.chevronRight} />
                 </Pressable>
 
-                {/* Çıkış Yap - Normal kart, mavi ikon */}
+                {/* Logout */}
                 <Pressable
                   style={({ pressed }) => [styles.subMenuItem, styles.subMenuItemLast, pressed && styles.menuItemPressed]}
                   onPress={logout}
                 >
                   <View style={styles.menuItemLeft}>
-                    <View style={[styles.menuIconBox, { backgroundColor: "#EFF6FF" }]}>
+                    <View style={[styles.menuIconBox, { backgroundColor: isDark ? "rgba(37,99,235,0.22)" : "#EFF6FF" }]}>
                       <Ionicons name="log-out-outline" size={18} color="#2563EB" />
                     </View>
                     <View style={{ flex: 1 }}>
@@ -515,7 +519,7 @@ export default function SettingsScreen() {
                       <Text style={styles.menuItemSubtext}>{t("settings.logout_sublabel")}</Text>
                     </View>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color={Colors.gray[400]} style={styles.chevronRight} />
+                  <Ionicons name="chevron-forward" size={18} color={colors.gray[400]} style={styles.chevronRight} />
                 </Pressable>
               </View>
             )}
@@ -531,7 +535,7 @@ export default function SettingsScreen() {
           <Text style={styles.disclaimerText}>{t("settings.disclaimer_text")}</Text>
         </View>
 
-        {/* === SECTION 7: Geliştirici + Versiyon === */}
+        {/* === SECTION 7: Developer + Version === */}
         <View style={styles.developerCard}>
           <Text style={styles.developerTitle}>{t("settings.developer_text")} </Text>
           <Image
@@ -579,10 +583,10 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: colors.surface,
   },
   header: {
     paddingBottom: 20,
@@ -625,12 +629,12 @@ const styles = StyleSheet.create({
 
   // Profile Card
   profileCard: {
-    backgroundColor: "#FFF",
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 20,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: Colors.gray[200],
+    borderColor: colors.gray[200],
   },
   profileHeader: {
     flexDirection: "row",
@@ -651,7 +655,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: "#FFF",
+    backgroundColor: colors.card,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
@@ -666,11 +670,11 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 18,
     fontWeight: "700",
-    color: Colors.secondary,
+    color: colors.secondary,
   },
   profileEmail: {
     fontSize: 13,
-    color: Colors.gray[500],
+    color: colors.gray[500],
     marginTop: 2,
   },
   memberBadge: {
@@ -678,7 +682,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10,
-    backgroundColor: Colors.gray[100],
+    backgroundColor: colors.gray[100],
     marginTop: 8,
   },
   memberBadgePremium: {
@@ -687,7 +691,7 @@ const styles = StyleSheet.create({
   memberText: {
     fontSize: 11,
     fontWeight: "700",
-    color: Colors.gray[600],
+    color: colors.gray[600],
   },
   memberTextPremium: {
     color: "#D97706",
@@ -696,13 +700,13 @@ const styles = StyleSheet.create({
   // Usage Section
   usageSection: {
     borderTopWidth: 1,
-    borderTopColor: Colors.gray[100],
+    borderTopColor: colors.gray[100],
     paddingTop: 16,
   },
   sectionLabel: {
     fontSize: 11,
     fontWeight: "700",
-    color: Colors.gray[400],
+    color: colors.gray[400],
     letterSpacing: 0.5,
     marginBottom: 12,
   },
@@ -712,12 +716,12 @@ const styles = StyleSheet.create({
   },
   usageCard: {
     flex: 1,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: colors.card,
     borderRadius: 14,
     padding: 14,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: Colors.gray[100],
+    borderColor: colors.gray[200],
   },
   usageIconBox: {
     width: 40,
@@ -730,11 +734,11 @@ const styles = StyleSheet.create({
   usageValue: {
     fontSize: 20,
     fontWeight: "800",
-    color: Colors.secondary,
+    color: colors.secondary,
   },
   usageLabel: {
     fontSize: 10,
-    color: Colors.gray[500],
+    color: colors.gray[500],
     textAlign: "center",
     marginTop: 4,
   },
@@ -742,7 +746,7 @@ const styles = StyleSheet.create({
   // Exhausted states
   usageCardExhausted: {
     borderColor: "#FECACA",
-    backgroundColor: "#FEF2F2",
+    backgroundColor: isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2",
   },
   usageValueExhausted: {
     color: "#DC2626",
@@ -799,7 +803,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 11,
     fontWeight: "700",
-    color: Colors.gray[400],
+    color: colors.gray[400],
     letterSpacing: 0.5,
     marginBottom: 10,
     marginLeft: 4,
@@ -810,23 +814,23 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#FFF",
+    backgroundColor: colors.card,
     paddingVertical: 14,
     paddingLeft: 14,
     paddingRight: 22,
     borderRadius: 14,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: Colors.gray[200],
+    borderColor: colors.gray[200],
   },
   menuItemActive: {
-    borderColor: Colors.primary,
+    borderColor: colors.primary,
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
     marginBottom: 0,
   },
   menuItemPressed: {
-    backgroundColor: "#FAFAFA",
+    backgroundColor: colors.gray[50],
   },
   menuItemLeft: {
     flexDirection: "row",
@@ -843,21 +847,21 @@ const styles = StyleSheet.create({
   menuItemText: {
     fontSize: 14,
     fontWeight: "600",
-    color: Colors.secondary,
+    color: colors.secondary,
   },
   menuItemSubtext: {
     fontSize: 11,
-    color: Colors.gray[500],
+    color: colors.gray[500],
     marginTop: 2,
   },
 
   // Password Form
   passwordForm: {
-    backgroundColor: "#FFF",
+    backgroundColor: colors.card,
     padding: 16,
     borderWidth: 1,
     borderTopWidth: 0,
-    borderColor: Colors.primary,
+    borderColor: colors.primary,
     borderBottomLeftRadius: 14,
     borderBottomRightRadius: 14,
     marginBottom: 8,
@@ -866,23 +870,23 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: Colors.gray[50],
+    backgroundColor: colors.gray[50],
     borderRadius: 12,
     paddingHorizontal: 14,
     height: 48,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: Colors.gray[200],
+    borderColor: colors.gray[200],
   },
   input: {
     flex: 1,
     fontSize: 14,
-    color: Colors.secondary,
+    color: colors.secondary,
   },
   changePasswordBtn: {
     height: 48,
     borderRadius: 12,
-    backgroundColor: Colors.primary,
+    backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 4,
@@ -911,28 +915,28 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     paddingBottom: 4,
-    color: Colors.gray[500],
+    color: colors.gray[500],
   },
   versionBadge: {
     marginTop: 0,
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 8,
-    backgroundColor: Colors.gray[100],
+    backgroundColor: colors.gray[100],
   },
   versionBadgeText: {
     fontSize: 11,
     fontWeight: "600",
-    color: Colors.gray[500],
+    color: colors.gray[500],
   },
 
   // Data Management Panel
   dataManagementPanel: {
-    backgroundColor: "#FFF",
+    backgroundColor: colors.card,
     padding: 12,
     borderWidth: 1,
     borderTopWidth: 0,
-    borderColor: Colors.primary,
+    borderColor: colors.primary,
     borderBottomLeftRadius: 14,
     borderBottomRightRadius: 14,
     marginBottom: 8,
@@ -942,25 +946,25 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#FFF",
+    backgroundColor: colors.card,
     paddingVertical: 14,
     paddingLeft: 14,
     paddingRight: 22,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.gray[200],
+    borderColor: colors.gray[200],
   },
   subMenuItemWarning: {
     borderColor: "#FCD34D",
-    backgroundColor: "#FFFBEB",
+    backgroundColor: isDark ? "rgba(245, 158, 11, 0.14)" : "#FFFBEB",
   },
   subMenuItemDanger: {
     borderColor: "#FCA5A5",
-    backgroundColor: "#FEF2F2",
+    backgroundColor: isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2",
   },
   subMenuItemLast: {
-    borderColor: Colors.gray[200],
-    backgroundColor: "#FFF",
+    borderColor: colors.gray[200],
+    backgroundColor: colors.card,
   },
   chevronRight: {
     marginRight: 6,
@@ -970,7 +974,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
 
-  // Login Card (Misafir için)
+  // Login Card (Guest)
   loginCard: {
     borderRadius: 16,
     overflow: "hidden",
@@ -985,7 +989,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 14,
-    backgroundColor: "#FFF",
+    backgroundColor: colors.card,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1006,7 +1010,7 @@ const styles = StyleSheet.create({
 
   // Disclaimer Card
   disclaimerCard: {
-    backgroundColor: "#FFFBEB",
+    backgroundColor: isDark ? "rgba(245, 158, 11, 0.14)" : "#FFFBEB",
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
@@ -1022,11 +1026,13 @@ const styles = StyleSheet.create({
   disclaimerTitle: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#B45309",
+    color: isDark ? "#FCD34D" : "#B45309",
   },
   disclaimerText: {
     fontSize: 12,
-    color: "#92400E",
+    color: isDark ? "#FDE68A" : "#92400E",
     lineHeight: 18,
   },
 });
+
+

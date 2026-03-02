@@ -1,84 +1,90 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { Colors } from "../../constants/colors";
+import { AppColors } from "../../constants/colors";
+import { useTheme } from "../../context/ThemeContext";
 
 interface GuruEmptyStateProps {
-    onSelectSuggestion: (text: string) => void;
+  onSelectSuggestion: (text: string) => void;
 }
 
 export const GuruEmptyState = ({ onSelectSuggestion }: GuruEmptyStateProps) => {
-    const { t } = useTranslation();
+  const { t } = useTranslation();
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+  const suggestions = (t("guru.suggestions", { returnObjects: true }) || []) as string[];
 
-    const suggestions = (t("guru.suggestions", { returnObjects: true }) || []) as string[];
+  return (
+    <View style={styles.container}>
+      <View style={styles.iconContainer}>
+        <Ionicons name="restaurant-outline" size={48} color={colors.primary} />
+      </View>
+      <Text style={styles.title}>{t("guru.emptyState.title")}</Text>
+      <Text style={styles.subtitle}>{t("guru.emptyState.subtitle")}</Text>
 
-    return (
-        <View style={styles.container}>
-            <View style={styles.iconContainer}>
-                <Ionicons name="restaurant-outline" size={48} color={Colors.primary} />
-            </View>
-            <Text style={styles.title}>{t("guru.emptyState.title")}</Text>
-            <Text style={styles.subtitle}>{t("guru.emptyState.subtitle")}</Text>
-
-            <View style={styles.suggestionsContainer}>
-                {suggestions.map((suggestion, index) => (
-                    <Pressable
-                        key={index}
-                        style={styles.suggestionChip}
-                        onPress={() => onSelectSuggestion(suggestion)}
-                    >
-                        <Text style={styles.suggestionText}>{suggestion}</Text>
-                    </Pressable>
-                ))}
-            </View>
-        </View>
-    );
+      <View style={styles.suggestionsContainer}>
+        {suggestions.map((suggestion, index) => (
+          <Pressable key={index} style={styles.suggestionChip} onPress={() => onSelectSuggestion(suggestion)}>
+            <Text style={styles.suggestionText}>{suggestion}</Text>
+          </Pressable>
+        ))}
+      </View>
+    </View>
+  );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors: AppColors, isDark: boolean) =>
+  StyleSheet.create({
     container: {
-        alignItems: "center",
-        padding: 20,
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingTop: 30,
     },
     iconContainer: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: Colors.gray[50],
-        alignItems: "center",
-        justifyContent: "center",
-        marginBottom: 16,
+      width: 92,
+      height: 92,
+      borderRadius: 46,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.gray[100],
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: 16,
     },
     title: {
-        fontSize: 20,
-        fontWeight: "700",
-        color: Colors.secondary,
-        marginBottom: 8,
+      fontSize: 18,
+      fontWeight: "700",
+      color: colors.text,
+      textAlign: "center",
     },
     subtitle: {
-        fontSize: 14,
-        color: Colors.gray[500],
-        marginBottom: 24,
-        textAlign: "center",
+      marginTop: 6,
+      fontSize: 13,
+      color: colors.textMuted,
+      textAlign: "center",
     },
     suggestionsContainer: {
-        flexDirection: "row",
-        flexWrap: "wrap",
-        justifyContent: "center",
-        gap: 8,
+      marginTop: 16,
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "center",
+      gap: 10,
     },
     suggestionChip: {
-        backgroundColor: Colors.gray[50],
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: Colors.gray[200],
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 999,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
     },
     suggestionText: {
-        fontSize: 13,
-        color: Colors.secondary,
-        fontWeight: "500",
+      fontSize: 12,
+      color: colors.text,
+      fontWeight: "500",
     },
-});
+  });
+
+
