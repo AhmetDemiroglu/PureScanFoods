@@ -442,7 +442,7 @@ export default function ScanScreen() {
                     }}
                   >
                     <LinearGradient
-                      colors={[colors.primary, "#E65100"]}
+                      colors={isDark ? ["#B45309", "#7C2D12"] : [colors.primary, "#E65100"]}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
                       style={styles.mainButton}

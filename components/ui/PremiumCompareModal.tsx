@@ -33,13 +33,18 @@ interface FeatureRowProps {
     iconColor: string;
     iconBg: string;
     label: string;
-    freeValue: string;
-    premiumValue: string;
+    freeValue: React.ReactNode;
+    premiumValue: React.ReactNode;
+    premiumHighlight?: boolean;
     index: number;
 }
 
-const FeatureRow = ({ icon, iconColor, iconBg, label, freeValue, premiumValue, index, styles }: FeatureRowProps & { styles: ReturnType<typeof createStyles> }) => {
-    const isPremiumBetter = premiumValue === "?" || premiumValue.includes("?");
+const UNLIMITED = "\u221E";
+const CHECK = "\u2713";
+const CROSS = "\u2717";
+
+const FeatureRow = ({ icon, iconColor, iconBg, label, freeValue, premiumValue, premiumHighlight = false, index, styles }: FeatureRowProps & { styles: ReturnType<typeof createStyles> }) => {
+    const isPremiumBetter = premiumHighlight;
 
     return (
         <Animated.View
@@ -54,12 +59,14 @@ const FeatureRow = ({ icon, iconColor, iconBg, label, freeValue, premiumValue, i
             </View>
             <View style={styles.featureValues}>
                 <View style={styles.freeValueBox}>
-                    <Text style={styles.freeValue}>{freeValue}</Text>
+                    {typeof freeValue === "string" ? <Text style={styles.freeValue}>{freeValue}</Text> : freeValue}
                 </View>
                 <View style={[styles.premiumValueBox, isPremiumBetter && styles.premiumValueBoxHighlight]}>
-                    <Text style={[styles.premiumValue, isPremiumBetter && styles.premiumValueHighlight]}>
-                        {premiumValue}
-                    </Text>
+                    {typeof premiumValue === "string" ? (
+                        <Text style={[styles.premiumValue, isPremiumBetter && styles.premiumValueHighlight]}>
+                            {premiumValue}
+                        </Text>
+                    ) : premiumValue}
                 </View>
             </View>
         </Animated.View>
@@ -142,7 +149,8 @@ export default function PremiumCompareModal({ visible, onClose, onSubscribe }: P
                             iconBg="#FFF7ED"
                             label={t("premium.feat_scan")}
                             freeValue="5"
-                            premiumValue="?"
+                            premiumValue={UNLIMITED}
+                            premiumHighlight
                             index={0}
                          styles={styles} />
                         <FeatureRow
@@ -151,7 +159,8 @@ export default function PremiumCompareModal({ visible, onClose, onSubscribe }: P
                             iconBg="#EDE9FE"
                             label={t("premium.feat_ai_chat")}
                             freeValue="5"
-                            premiumValue="?"
+                            premiumValue={UNLIMITED}
+                            premiumHighlight
                             index={1}
                          styles={styles} />
                         <FeatureRow
@@ -160,7 +169,8 @@ export default function PremiumCompareModal({ visible, onClose, onSubscribe }: P
                             iconBg="#E0F2FE"
                             label={t("premium.feat_family")}
                             freeValue="1"
-                            premiumValue="?"
+                            premiumValue={UNLIMITED}
+                            premiumHighlight
                             index={2}
                          styles={styles} />
                         <FeatureRow
@@ -168,8 +178,9 @@ export default function PremiumCompareModal({ visible, onClose, onSubscribe }: P
                             iconColor="#DC2626"
                             iconBg="#FEF2F2"
                             label={t("premium.feat_ads")}
-                            freeValue="?"
-                            premiumValue="?"
+                            freeValue={CROSS}
+                            premiumValue={CHECK}
+                            premiumHighlight
                             index={3}
                          styles={styles} />
                         <FeatureRow
@@ -177,8 +188,9 @@ export default function PremiumCompareModal({ visible, onClose, onSubscribe }: P
                             iconColor="#F59E0B"
                             iconBg="#FEF3C7"
                             label={t("premium.feat_priority")}
-                            freeValue="?"
-                            premiumValue="?"
+                            freeValue={CROSS}
+                            premiumValue={CHECK}
+                            premiumHighlight
                             index={4}
                          styles={styles} />
                     </View>

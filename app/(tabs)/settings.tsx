@@ -69,9 +69,23 @@ export default function SettingsScreen() {
   const [deleteDataModalVisible, setDeleteDataModalVisible] = useState(false);
   const [deleteAccountModalVisible, setDeleteAccountModalVisible] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingPaywall, setPendingPaywall] = useState(false);
 
   const isAnonymous = user?.isAnonymous ?? true;
   const isLoggedIn = user && !isAnonymous;
+
+  // Auth sonrası paywall açma kontrolü
+  React.useEffect(() => {
+    if (pendingPaywall && isLoggedIn) {
+      setPendingPaywall(false);
+      // PremiumCompareModal'ın kapalı olduğundan emin ol
+      setPremiumModalVisible(false);
+      // Kısa gecikme ile Paywall aç (modal kapanma animasyonu için)
+      setTimeout(() => {
+        setShowPaywall(true);
+      }, 100);
+    }
+  }, [user, isLoggedIn, pendingPaywall]);
 
   // Usage calculations
   const unlimited = String.fromCharCode(8734);
@@ -556,13 +570,29 @@ export default function SettingsScreen() {
         visible={premiumModalVisible}
         onClose={() => setPremiumModalVisible(false)}
         onSubscribe={() => {
+          // Önce modalı kapat
           setPremiumModalVisible(false);
-          setShowPaywall(true);
+          // Kısa gecikme ile sonraki adıma geç
+          setTimeout(() => {
+            if (isAnonymous) {
+              // Misafir kullanıcı önce auth yapmalı
+              setShowAuthModal(true);
+              setPendingPaywall(true);
+            } else {
+              // Giriş yapmış kullanıcı direkt paywall'e gider
+              setShowPaywall(true);
+            }
+          }, 150);
         }}
       />
       <PaywallModal
         visible={showPaywall}
         onClose={() => setShowPaywall(false)}
+        onAuthRequired={() => {
+          setShowPaywall(false);
+          setShowAuthModal(true);
+          setPendingPaywall(true);
+        }}
       />
       <ConfirmDeleteModal
         visible={deleteDataModalVisible}
@@ -578,7 +608,13 @@ export default function SettingsScreen() {
         }}
         type="account"
       />
-      <AuthModal visible={showAuthModal} onClose={() => setShowAuthModal(false)} />
+      <AuthModal 
+        visible={showAuthModal} 
+        onClose={() => {
+          setShowAuthModal(false);
+          setPendingPaywall(false);
+        }} 
+      />
     </View>
   );
 }

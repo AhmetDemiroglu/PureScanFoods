@@ -741,8 +741,14 @@
         "restore": "Restore Purchase",
         "terms": "Terms & Privacy",
         "maybe_later": "Maybe Later",
-        "dev_notice_title": "Coming Soon",
-        "dev_notice_desc": "The subscription system is currently under development. For premium access requests, please contact the developer.",
-        "dev_notice_ok": "Got It"
+        "loading": "Loading...",
+        "noPackages": "Packages could not be loaded",
+        "comingSoon": "Coming soon",
+        "selectPackage": "Please select a package",
+        "purchaseError": "An error occurred. Please try again.",
+        "restoring": "Loading...",
+        "noRestore": "No purchases found to restore.",
+        "successTitle": "Awesome!",
+        "successSubtitle": "Premium Features Active"
     }
 }

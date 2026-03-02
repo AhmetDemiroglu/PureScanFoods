@@ -741,8 +741,14 @@
         "restore": "Restaurar Compra",
         "terms": "Términos y Privacidad",
         "maybe_later": "Quizás Después",
-        "dev_notice_title": "Próximamente",
-        "dev_notice_desc": "El sistema de suscripción está actualmente en desarrollo. Para solicitudes de acceso premium, por favor contacta al desarrollador.",
-        "dev_notice_ok": "Entendido"
+        "loading": "Cargando...",
+        "noPackages": "No se pudieron cargar los paquetes",
+        "comingSoon": "Próximamente",
+        "selectPackage": "Por favor selecciona un paquete",
+        "purchaseError": "Ocurrió un error. Por favor intenta de nuevo.",
+        "restoring": "Cargando...",
+        "noRestore": "No se encontraron compras para restaurar.",
+        "successTitle": "¡Excelente!",
+        "successSubtitle": "Funciones Premium Activas"
     }
 }

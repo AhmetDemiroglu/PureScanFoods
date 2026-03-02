@@ -741,8 +741,14 @@
         "restore": "Satın Almayı Geri Yükle",
         "terms": "Şartlar ve Gizlilik",
         "maybe_later": "Daha Sonra",
-        "dev_notice_title": "Çok Yakında",
-        "dev_notice_desc": "Abonelik sistemi şu anda geliştirme aşamasındadır. Premium erişim talepleriniz için lütfen geliştirici ile iletişime geçin.",
-        "dev_notice_ok": "Anladım"
+        "loading": "Yükleniyor...",
+        "noPackages": "Paketler yüklenemedi",
+        "comingSoon": "Çok yakında hizmetinizde",
+        "selectPackage": "Lütfen bir paket seçin",
+        "purchaseError": "İşlem sırasında bir hata oluştu. Lütfen tekrar deneyin.",
+        "restoring": "Yükleniyor...",
+        "noRestore": "Geri yüklenecek satın alma bulunamadı.",
+        "successTitle": "Harika!",
+        "successSubtitle": "Premium Özellikler Aktif"
     }
 }

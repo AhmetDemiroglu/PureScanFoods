@@ -10,7 +10,8 @@ import {
     GoogleAuthProvider,
     signInWithCredential
 } from "firebase/auth";
-import { initializeUser, getUserProfile, checkDeviceLimit, getUserStats, UserProfile, UsageStats } from "../lib/firestore"
+import { initializeUser, getUserProfile, checkDeviceLimit, getUserStats, UserProfile, UsageStats } from "../lib/firestore";
+import { initializeRevenueCat, checkSubscriptionStatus, logoutRevenueCat, addCustomerInfoUpdateListener } from "../lib/revenuecat";
 import * as Application from "expo-application";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
@@ -27,6 +28,8 @@ interface AuthContextType {
     usageStats: UsageStats;
     deviceId: string | null;
     isPremium: boolean;
+    isRevenueCatPremium: boolean;
+    refreshPremiumStatus: () => Promise<void>;
     login: (email: string, pass: string) => Promise<void>;
     register: (email: string, pass: string) => Promise<void>;
     loginWithGoogle: () => Promise<void>;
@@ -70,6 +73,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [deviceId, setDeviceId] = useState<string | null>(null);
+    const [isRevenueCatPremium, setIsRevenueCatPremium] = useState(false);
 
     const [usageStats, setUsageStats] = useState<UsageStats>({
         scanCount: 0,
@@ -399,12 +403,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const logout = async () => {
         setLoading(true);
         try {
+            await logoutRevenueCat();
             await signOut(auth);
             setUser(null);
             setUserProfile(null);
+            setIsRevenueCatPremium(false);
         } catch (error: any) {
             console.error("Logout error:", error);
             setLoading(false);
+        }
+    };
+
+    // RevenueCat premium durumunu yenile
+    const refreshPremiumStatus = async () => {
+        try {
+            const isPremium = await checkSubscriptionStatus();
+            setIsRevenueCatPremium(isPremium);
+            console.log("[AuthContext] refreshPremiumStatus:", isPremium ? "PREMIUM" : "FREE");
+        } catch (error) {
+            console.error("[AuthContext] refreshPremiumStatus HATA:", error);
         }
     };
 
@@ -423,11 +440,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     console.log("✅ User Authenticated:", currentUser.uid, "IsAnon:", currentUser.isAnonymous);
                     setUser(currentUser);
 
+                    // RevenueCat'i başlat
+                    await initializeRevenueCat(currentUser.uid);
+
+                    // RevenueCat customer info değişikliklerini dinle
+                    const unsubscribeRC: any = addCustomerInfoUpdateListener((customerInfo) => {
+                        const hasPremium = typeof customerInfo.entitlements.active["premium"] !== "undefined";
+                        setIsRevenueCatPremium(hasPremium);
+                        console.log("[RevenueCat] Listener - Premium:", hasPremium ? "AKTİF" : "YOK");
+                    });
+
+                    // İlk premium kontrolü
+                    await refreshPremiumStatus();
+
                     await initializeUser(currentUser);
                     const profile = await getUserProfile(currentUser.uid);
                     if (mounted) setUserProfile(profile);
 
                     if (mounted) setLoading(false);
+
+                    // Cleanup RC listener on auth change
+                    return () => {
+                        if (typeof unsubscribeRC === 'function') {
+                            unsubscribeRC();
+                        }
+                    };
                 } else {
                     console.log("👤 No user, signing in anonymously...");
                     try {
@@ -448,13 +485,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         };
     }, []);
 
+    // Premium durumu: RevenueCat öncelikli, Firebase VIP ikincil
+    const isFirebaseVip = userProfile?.subscriptionStatus === "premium";
+    const finalIsPremium = isRevenueCatPremium || isFirebaseVip;
+
     const value = {
         user,
         userProfile,
         loading,
         usageStats,
         deviceId,
-        isPremium: userProfile?.subscriptionStatus === "premium",
+        isPremium: finalIsPremium,
+        isRevenueCatPremium,
+        refreshPremiumStatus,
         login,
         register,
         loginWithGoogle,
