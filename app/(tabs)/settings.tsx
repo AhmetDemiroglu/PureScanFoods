@@ -78,12 +78,13 @@ export default function SettingsScreen() {
   React.useEffect(() => {
     if (pendingPaywall && isLoggedIn) {
       setPendingPaywall(false);
-      // PremiumCompareModal'ın kapalı olduğundan emin ol
+      // Önce tüm modalları kapat
       setPremiumModalVisible(false);
-      // Kısa gecikme ile Paywall aç (modal kapanma animasyonu için)
+      setShowAuthModal(false);
+      // Kısa gecikme ile Paywall aç
       setTimeout(() => {
         setShowPaywall(true);
-      }, 100);
+      }, 200);
     }
   }, [user, isLoggedIn, pendingPaywall]);
 
@@ -572,9 +573,9 @@ export default function SettingsScreen() {
         onSubscribe={() => {
           // Önce modalı kapat
           setPremiumModalVisible(false);
-          // Kısa gecikme ile sonraki adıma geç
+          // Modal kapanma animasyonu için bekle
           setTimeout(() => {
-            if (isAnonymous) {
+            if (user?.isAnonymous) {
               // Misafir kullanıcı önce auth yapmalı
               setShowAuthModal(true);
               setPendingPaywall(true);
@@ -582,7 +583,7 @@ export default function SettingsScreen() {
               // Giriş yapmış kullanıcı direkt paywall'e gider
               setShowPaywall(true);
             }
-          }, 150);
+          }, 300);
         }}
       />
       <PaywallModal
@@ -612,7 +613,10 @@ export default function SettingsScreen() {
         visible={showAuthModal} 
         onClose={() => {
           setShowAuthModal(false);
-          setPendingPaywall(false);
+          // Eğer kullanıcı giriş yapmadan kapattıysa pending'i sıfırla
+          if (!user || user.isAnonymous) {
+            setPendingPaywall(false);
+          }
         }} 
       />
     </View>
