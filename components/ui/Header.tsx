@@ -86,13 +86,6 @@ export default function Header({ onHistoryPress }: HeaderProps) {
         </Pressable>
 
         <Pressable
-          style={({ pressed }) => [styles.iconButton, pressed && styles.buttonPressed]}
-          onPress={onHistoryPress}
-        >
-          <MaterialCommunityIcons name="history" size={22} color={colors.secondary} />
-        </Pressable>
-
-        <Pressable
           style={({ pressed }) => [styles.langButton, pressed && styles.buttonPressed]}
           onPress={toggleLanguage}
         >
