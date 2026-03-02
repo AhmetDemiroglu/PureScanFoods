@@ -1,10 +1,8 @@
-﻿import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { View, Text, StyleSheet, Animated, Easing } from "react-native";
-import Svg, { Circle, G } from "react-native-svg";
-import { AppColors } from "../../constants/colors";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../../context/ThemeContext";
-
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 interface ScoreRingProps {
   score: number;
@@ -14,12 +12,9 @@ interface ScoreRingProps {
   type?: "safety" | "compatibility";
 }
 
-export default function ScoreRing({ score, size = 120, strokeWidth = 10, label, type = "safety" }: ScoreRingProps) {
+export default function ScoreRing({ score, label, type = "safety" }: ScoreRingProps) {
   const animatedValue = useRef(new Animated.Value(0)).current;
   const { colors, isDark } = useTheme();
-  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
 
   const getColor = (val: number) => {
     if (val >= 80) return "#10B981";
@@ -29,82 +24,105 @@ export default function ScoreRing({ score, size = 120, strokeWidth = 10, label, 
     return "#EF4444";
   };
 
+  const getGradient = (val: number): [string, string] => {
+    if (val >= 80) return ["#059669", "#34D399"];
+    if (val >= 60) return ["#65A30D", "#A3E635"];
+    if (val >= 40) return ["#D97706", "#FBBF24"];
+    if (val >= 20) return ["#EA580C", "#FB923C"];
+    return ["#DC2626", "#F87171"];
+  };
+
   const color = getColor(score);
+  const gradient = getGradient(score);
+  const icon: keyof typeof Ionicons.glyphMap = type === "safety" ? "shield-checkmark" : "people";
 
   useEffect(() => {
     Animated.timing(animatedValue, {
       toValue: score,
-      duration: 1500,
+      duration: 1200,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
-  }, [score, animatedValue]);
+  }, [score]);
 
-  const animatedStrokeDashoffset = animatedValue.interpolate({
+  const barWidth = animatedValue.interpolate({
     inputRange: [0, 100],
-    outputRange: [circumference, 0],
-    extrapolate: "clamp",
+    outputRange: ['0%', '100%'],
+    extrapolate: 'clamp',
   });
 
   return (
-    <View style={[styles.container, { width: size, height: size + 34 }]}>
-      <Svg width={size} height={size}>
-        <G rotation="-90" origin={`${size / 2}, ${size / 2}`}>
-          <Circle cx={size / 2} cy={size / 2} r={radius} stroke={colors.gray[200]} strokeWidth={strokeWidth} fill="transparent" />
-          <AnimatedCircle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            stroke={color}
-            strokeWidth={strokeWidth}
-            fill="transparent"
-            strokeDasharray={circumference}
-            strokeDashoffset={animatedStrokeDashoffset as any}
-            strokeLinecap="round"
-          />
-        </G>
-      </Svg>
-
-      <View style={styles.textContainer}>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <View style={styles.labelRow}>
+          <View style={[styles.iconWrap, { backgroundColor: color + '18' }]}>
+            <Ionicons name={icon} size={16} color={color} />
+          </View>
+          <Text style={[styles.label, { color: isDark ? colors.gray[600] : colors.gray[500] }]}>
+            {label}
+          </Text>
+        </View>
         <Text style={[styles.scoreText, { color }]}>{score}</Text>
-        <Text style={styles.scoreSub}>/100</Text>
       </View>
-
-      <Text style={styles.label}>{label}</Text>
+      <View style={[styles.barTrack, {
+        backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'
+      }]}>
+        <Animated.View style={[styles.barFill, { width: barWidth as any }]}>
+          <LinearGradient
+            colors={gradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.barGradient}
+          />
+        </Animated.View>
+      </View>
     </View>
   );
 }
 
-const createStyles = (colors: AppColors, isDark: boolean) =>
-  StyleSheet.create({
-    container: {
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    textContainer: {
-      position: "absolute",
-      top: "33%",
-      alignItems: "center",
-      justifyContent: "center",
-      flexDirection: "row",
-      gap: 2,
-    },
-    scoreText: {
-      fontSize: 30,
-      fontWeight: "800",
-    },
-    scoreSub: {
-      fontSize: 14,
-      color: colors.gray[400],
-      fontWeight: "500",
-      marginTop: 8,
-    },
-    label: {
-      fontSize: 13,
-      color: colors.gray[600],
-      fontWeight: "700",
-      marginTop: 8,
-      textTransform: "uppercase",
-      letterSpacing: 0.4,
-    },
-  });
+const styles = StyleSheet.create({
+  container: {
+    gap: 10,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  iconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  scoreText: {
+    fontSize: 32,
+    fontWeight: '900',
+    letterSpacing: -1,
+  },
+  barTrack: {
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  barFill: {
+    height: '100%',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  barGradient: {
+    flex: 1,
+  },
+});

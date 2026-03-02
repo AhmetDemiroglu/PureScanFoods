@@ -600,23 +600,16 @@ export default function ProductResultScreen() {
 
                     <View style={styles.divider} />
 
-                    <View style={styles.scoresRow}>
+                    <View style={styles.scoresContainer}>
                         <ScoreRing
                             score={scores.safety?.value || 0}
                             label={t("results.scores.safety")}
                             type="safety"
-                            size={90}
-                            strokeWidth={8}
                         />
-
-                        <View style={styles.scoreDivider} />
-
                         <ScoreRing
                             score={displayScore}
                             label={t("results.scores.compatibility")}
                             type="compatibility"
-                            size={90}
-                            strokeWidth={8}
                         />
                     </View>
 
@@ -653,17 +646,15 @@ export default function ProductResultScreen() {
                     {/* --- BÖLÜM 1: KİŞİSEL UYUM ANALİZİ --- */}
                     <View style={[styles.verdictBox, {
                         backgroundColor: scoreStyles.bg,
-                        borderColor: scoreStyles.border,
                         borderBottomLeftRadius: criticalBadges.length > 0 ? 4 : 16,
                         borderBottomRightRadius: criticalBadges.length > 0 ? 4 : 16,
-                        borderBottomWidth: criticalBadges.length > 0 ? 0 : 1,
                     }]}>
                         <Ionicons
                             name={displayScore >= 80 ? "checkmark-circle" : "alert-circle"}
-                            size={24}
+                            size={22}
                             color={displayScore >= 80 ? colors.success : (displayScore >= 50 ? '#EA580C' : colors.error)}
                         />
-                        <View style={{ flex: 1, gap: 4 }}>
+                        <View style={{ flex: 1, gap: 3 }}>
                             <Text style={[styles.verdictTitle, {
                                 color: displayScore >= 80 ? '#15803D' : (displayScore >= 50 ? '#9A3412' : '#B91C1C')
                             }]}>
@@ -711,32 +702,36 @@ export default function ProductResultScreen() {
                     <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}
+                        contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
                     >
                         {familyAnalysis.map((item) => {
                             const mScore = item.report.score;
-                            // Renk belirleme (Basit mantık)
                             const ringColor = getScoreColor(mScore);
+                            const cardBg = mScore >= 80
+                                ? (isDark ? "rgba(16,185,129,0.08)" : "rgba(16,185,129,0.04)")
+                                : (mScore >= 50
+                                    ? (isDark ? "rgba(245,158,11,0.08)" : "rgba(245,158,11,0.04)")
+                                    : (isDark ? "rgba(239,68,68,0.08)" : "rgba(239,68,68,0.04)"));
 
                             return (
                                 <TouchableOpacity
                                     key={item.member.id}
-                                    style={styles.memberCard}
+                                    style={[styles.memberCard, {
+                                        backgroundColor: cardBg,
+                                        borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)',
+                                    }]}
                                     onPress={() => handleMemberPress(item)}
+                                    activeOpacity={0.7}
                                 >
-                                    <View style={[styles.memberAvatarRing, { borderColor: ringColor }]}>
-                                        <View style={[styles.memberAvatar, { backgroundColor: item.member.color }]}>
-                                            <MaterialCommunityIcons
-                                                name={item.member.avatarIcon as any}
-                                                size={20}
-                                                color="#FFF"
-                                            />
-                                        </View>
-                                        <View style={[styles.miniScoreBadge, { backgroundColor: ringColor }]}>
-                                            <Text style={styles.miniScoreText}>{mScore}</Text>
-                                        </View>
+                                    <View style={[styles.memberAvatar, { backgroundColor: item.member.color }]}>
+                                        <MaterialCommunityIcons
+                                            name={item.member.avatarIcon as any}
+                                            size={20}
+                                            color="#FFF"
+                                        />
                                     </View>
-                                    <Text style={styles.memberName} numberOfLines={2}>{item.member.name}</Text>
+                                    <Text style={[styles.memberScore, { color: ringColor }]}>{mScore}</Text>
+                                    <Text style={styles.memberName} numberOfLines={1}>{item.member.name}</Text>
                                 </TouchableOpacity>
                             );
                         })}
@@ -1180,25 +1175,17 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
         marginVertical: 20,
     },
 
-    scoresRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-around',
-    },
-    scoreDivider: {
-        width: 1,
-        height: 60,
-        backgroundColor: colors.gray[200],
+    scoresContainer: {
+        gap: 20,
     },
 
     verdictBox: {
         flexDirection: 'row',
         alignItems: 'flex-start',
         gap: 12,
-        marginTop: 12,
+        marginTop: 20,
         padding: 16,
         borderRadius: 16,
-        borderWidth: 1,
     },
     verdictTitle: {
         fontSize: 14,
@@ -1228,47 +1215,31 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     },
     memberCard: {
         alignItems: 'center',
-        width: 64,
+        paddingVertical: 12,
+        paddingHorizontal: 14,
+        borderRadius: 16,
+        borderWidth: 1,
+        minWidth: 76,
     },
-    memberAvatarRing: {
-        width: 54,
-        height: 54,
-        borderRadius: 27,
-        borderWidth: 2,
+    memberAvatar: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 6,
-        backgroundColor: colors.card,
     },
-    memberAvatar: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    miniScoreBadge: {
-        position: 'absolute',
-        bottom: -4,
-        right: -4,
-        width: 20,
-        height: 20,
-        borderRadius: 10,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 2,
-        borderColor: colors.card,
-    },
-    miniScoreText: {
-        fontSize: 9,
-        fontWeight: 'bold',
-        color: '#FFF',
+    memberScore: {
+        fontSize: 18,
+        fontWeight: '800',
+        letterSpacing: -0.5,
     },
     memberName: {
         fontSize: 11,
-        color: colors.gray[600],
+        color: colors.gray[500],
         fontWeight: '600',
         textAlign: 'center',
+        marginTop: 2,
     },
     // --- MODAL STİLLERİ ---
     modalOverlay: {

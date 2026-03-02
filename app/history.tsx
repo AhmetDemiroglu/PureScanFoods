@@ -77,6 +77,7 @@ export default function HistorySidebar({ visible, onClose }: HistorySidebarProps
 
   const slideAnim = useRef(new Animated.Value(SIDEBAR_WIDTH)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
+  const isNavigatingRef = useRef(false);
 
   // --- PAN RESPONDER (Swipe to close) ---
   const panResponder = useRef(
@@ -108,6 +109,7 @@ export default function HistorySidebar({ visible, onClose }: HistorySidebarProps
   // --- ANIMATIONS ---
   useEffect(() => {
     if (visible) {
+      isNavigatingRef.current = false;
       loadHistory();
       Animated.parallel([
         Animated.spring(slideAnim, {
@@ -125,7 +127,7 @@ export default function HistorySidebar({ visible, onClose }: HistorySidebarProps
     }
   }, [visible]);
 
-  const closeWithAnimation = useCallback(() => {
+  const closeWithAnimation = useCallback((afterClose?: () => void) => {
     Animated.parallel([
       Animated.timing(slideAnim, {
         toValue: SIDEBAR_WIDTH,
@@ -137,13 +139,17 @@ export default function HistorySidebar({ visible, onClose }: HistorySidebarProps
         duration: 180,
         useNativeDriver: true
       })
-    ]).start(() => onClose());
+    ]).start(() => {
+      onClose();
+      afterClose?.();
+    });
   }, [onClose]);
 
   // --- DATA ---
   const loadHistory = async () => {
     if (!user) return;
-    setLoading(true);
+    const shouldBlockUI = history.length === 0;
+    if (shouldBlockUI) setLoading(true);
     try {
       const { data } = await getScanHistoryFromDB(user.uid, null, 50);
       setHistory(data);
@@ -185,9 +191,10 @@ export default function HistorySidebar({ visible, onClose }: HistorySidebarProps
   };
 
   const openDetail = (item: ScanResult) => {
-    try {
-      closeWithAnimation();
+    if (isNavigatingRef.current) return;
+    isNavigatingRef.current = true;
 
+    try {
       const rawProduct = JSON.parse(item.miniData);
       const isNewFormat = rawProduct.product !== undefined;
 
@@ -212,14 +219,18 @@ export default function HistorySidebar({ visible, onClose }: HistorySidebarProps
 
       TempStore.setResult(resultData, item.imageUrl || "");
 
-      setTimeout(() => {
+      closeWithAnimation(() => {
         router.push({
           pathname: "/product-result",
           params: { viewMode: "history" }
         });
-      }, 220);
+        setTimeout(() => {
+          isNavigatingRef.current = false;
+        }, 500);
+      });
 
     } catch (e) {
+      isNavigatingRef.current = false;
       console.error("Veri hatası", e);
     }
   };
@@ -378,13 +389,13 @@ export default function HistorySidebar({ visible, onClose }: HistorySidebarProps
   if (!visible) return null;
 
   return (
-    <Modal transparent visible={visible} animationType="none" onRequestClose={closeWithAnimation}>
+    <Modal transparent visible={visible} animationType="none" onRequestClose={() => closeWithAnimation()}>
       <View style={styles.container}>
         {/* Backdrop */}
         <Animated.View
           style={[styles.backdrop, { opacity: backdropAnim }]}
         >
-          <Pressable style={StyleSheet.absoluteFill} onPress={closeWithAnimation} />
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => closeWithAnimation()} />
         </Animated.View>
 
         {/* Sidebar */}
@@ -402,14 +413,14 @@ export default function HistorySidebar({ visible, onClose }: HistorySidebarProps
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>{t("history.title")}</Text>
-            <TouchableOpacity style={styles.closeBtn} onPress={closeWithAnimation}>
+            <TouchableOpacity style={styles.closeBtn} onPress={() => closeWithAnimation()}>
               <Ionicons name="close" size={18} color={colors.gray[600]} />
             </TouchableOpacity>
           </View>
 
           {/* List */}
           <View style={styles.listWrap}>
-            {loading ? (
+            {loading && history.length === 0 ? (
               <View style={styles.loadingWrap}>
                 <ActivityIndicator size="small" color={colors.primary} />
               </View>
@@ -423,6 +434,8 @@ export default function HistorySidebar({ visible, onClose }: HistorySidebarProps
                 numColumns={1}
                 contentContainerStyle={styles.listContent}
                 showsVerticalScrollIndicator={false}
+                refreshing={loading}
+                onRefresh={loadHistory}
               />
             )}
           </View>
