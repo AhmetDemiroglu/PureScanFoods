@@ -412,7 +412,7 @@ export default function ProductResultScreen() {
     return (
         <View style={styles.container}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} bounces={false}>
+            <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom + 20, 36) }]} showsVerticalScrollIndicator={false} bounces={false}>
                 {/* Image Header */}
                 <View style={styles.imageContainer}>
                     <Image source={imageUri ? { uri: imageUri } : require('../assets/placeholder.png')} style={styles.productImage} resizeMode="cover" />
@@ -589,7 +589,6 @@ export default function ProductResultScreen() {
                     </View>
                 )}
 
-                <View style={{ height: 50 }} />
             </ScrollView>
 
             {/* Detail Modal */}

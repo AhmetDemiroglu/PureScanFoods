@@ -123,8 +123,7 @@ export default function ScoreRing({
             strokeLinecap="round"
             strokeDasharray={isPartial ? `${arcLen} ${gapLen}` : undefined}
             strokeDashoffset={0}
-            rotation={arcRotation}
-            origin={`${size / 2}, ${size / 2}`}
+            transform={`rotate(${arcRotation}, ${size / 2}, ${size / 2})`}
           />
 
           {/* Progress (animated fill) */}
@@ -138,8 +137,7 @@ export default function ScoreRing({
             strokeLinecap="round"
             strokeDasharray={animatedDashArray as any}
             strokeDashoffset={0}
-            rotation={arcRotation}
-            origin={`${size / 2}, ${size / 2}`}
+            transform={`rotate(${arcRotation}, ${size / 2}, ${size / 2})`}
           />
         </Svg>
 
@@ -192,7 +190,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 1,
-    marginTop: 6,
+    marginTop: 4,
     textAlign: "center",
   },
 });
