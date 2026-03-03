@@ -27,16 +27,16 @@ interface HistorySidebarProps {
 }
 
 // --- UTILS ---
-const getScoreColor = (score: number): string => {
+const getScoreColor = (score: number, isDark?: boolean): string => {
   if (score >= 80) return "#10B981";
   if (score >= 50) return "#F59E0B";
   return "#EF4444";
 };
 
-const getScoreBg = (score: number): string => {
-  if (score >= 80) return "#ECFDF5";
-  if (score >= 50) return "#FFFBEB";
-  return "#FEF2F2";
+const getScoreBg = (score: number, isDark?: boolean): string => {
+  if (score >= 80) return isDark ? "rgba(22,163,74,0.20)" : "#ECFDF5";
+  if (score >= 50) return isDark ? "rgba(245,158,11,0.20)" : "#FFFBEB";
+  return isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2";
 };
 
 const formatDate = (
@@ -619,10 +619,10 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     justifyContent: 'center',
   },
   miniBadgeDanger: {
-    backgroundColor: '#FEF2F2',
+    backgroundColor: isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2",
   },
   miniBadgeSuccess: {
-    backgroundColor: '#F0FDF4',
+    backgroundColor: isDark ? "rgba(22,163,74,0.20)" : "#F0FDF4",
   },
   moreBadgesText: {
     fontSize: 9,

@@ -298,7 +298,7 @@ export default function SettingsScreen() {
               onPress={() => setShowAuthModal(true)}
             >
               <LinearGradient
-                colors={[colors.primary, "#E65100"]}
+                colors={isDark ? ["#D97706", "#9A3412"] : [colors.primary, "#E65100"]}
                 style={styles.loginGradient}
               >
                 <View style={styles.loginIconBox}>
@@ -321,7 +321,7 @@ export default function SettingsScreen() {
             onPress={() => setPremiumModalVisible(true)}
           >
             <LinearGradient
-              colors={["#FFF7ED", "#FFEDD5"]}
+              colors={isDark ? ["rgba(251,191,36,0.15)", "rgba(245,158,11,0.08)"] : ["#FFF7ED", "#FFEDD5"]}
               style={styles.premiumGradient}
             >
               <View style={styles.premiumIconBox}>
@@ -726,7 +726,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     marginTop: 8,
   },
   memberBadgePremium: {
-    backgroundColor: "#FEF3C7",
+    backgroundColor: isDark ? "rgba(251,191,36,0.20)" : "#FEF3C7",
   },
   memberText: {
     fontSize: 11,
@@ -734,7 +734,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     color: colors.gray[600],
   },
   memberTextPremium: {
-    color: "#D97706",
+    color: isDark ? "#FBBF24" : "#D97706",
   },
 
   // Usage Section
@@ -817,7 +817,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 14,
-    backgroundColor: "#FEF3C7",
+    backgroundColor: isDark ? "rgba(251,191,36,0.20)" : "#FEF3C7",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -828,11 +828,11 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
   premiumTitle: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#C2410C",
+    color: isDark ? "#FBBF24" : "#C2410C",
   },
   premiumDesc: {
     fontSize: 12,
-    color: "#EA580C",
+    color: isDark ? "#FDBA74" : "#EA580C",
     marginTop: 2,
   },
 

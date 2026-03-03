@@ -9,6 +9,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LANGUAGE_STORAGE_KEY } from "../../lib/i18n";
 import { useTheme } from "../../context/ThemeContext";
 import ThemeToggle from "../ui/ThemeToggle";
+import AnimatedDiamond from "../ui/AnimatedDiamond";
 
 interface HeaderProps {
   onHistoryPress?: () => void;
@@ -43,7 +44,7 @@ export default function Header({ onHistoryPress }: HeaderProps) {
       <View style={styles.headerRight}>
         {isPremium && (
           <View style={styles.premiumBadge}>
-            <Ionicons name="diamond" size={16} color="#F59E0B" />
+            <AnimatedDiamond size={20} />
           </View>
         )}
 
@@ -164,11 +165,11 @@ const createStyles = (colors: AppColors, isDark: boolean) =>
       width: 40,
       height: 40,
       borderRadius: 20,
-      backgroundColor: isDark ? "#3A2E11" : "#FFFBEB",
+      backgroundColor: isDark ? "rgba(251,191,36,0.15)" : "#FFFBEB",
       alignItems: "center",
       justifyContent: "center",
       borderWidth: 1,
-      borderColor: isDark ? "#5B4615" : "#FDE68A",
+      borderColor: isDark ? "rgba(251,191,36,0.35)" : "#FDE68A",
     },
 
     profileButton: {
@@ -215,7 +216,7 @@ const createStyles = (colors: AppColors, isDark: boolean) =>
       lineHeight: 12,
     },
     profileRolePremium: {
-      color: "#F59E0B",
+      color: isDark ? "#FBBF24" : "#F59E0B",
     },
     avatarMini: {
       width: 28,

@@ -434,7 +434,7 @@ export default function NutritionScreen() {
           return (
             <View key={type} style={[styles.novaCard, { borderLeftColor: colors.error, paddingVertical: 12 }]}>
               <View style={styles.novaHeader}>
-                <View style={[styles.novaGroupBadge, { backgroundColor: "#FEF2F2" }]}>
+                <View style={[styles.novaGroupBadge, { backgroundColor: isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2" }]}>
                   <Ionicons name="warning" size={20} color={colors.error} />
                 </View>
                 <View style={styles.novaTitleArea}>
@@ -457,7 +457,7 @@ export default function NutritionScreen() {
 
       {/* --- HEADER --- */}
       <LinearGradient
-        colors={isDark ? ["#B45309", "#9A3412"] : [colors.primary, "#E65100"]}
+        colors={isDark ? ["#D97706", "#9A3412"] : [colors.primary, "#E65100"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.header}
@@ -1118,7 +1118,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
   headerSubtitle: { fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 2 },
   profileContainer: { flexDirection: "row", alignItems: "center", marginHorizontal: 20, backgroundColor: "rgba(255,255,255,0.15)", padding: 12, borderRadius: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.2)" },
   avatarBox: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", marginRight: 12 },
-  premiumBadge: { position: "absolute", bottom: -2, right: -2, backgroundColor: "#F59E0B", width: 16, height: 16, borderRadius: 8, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#FFF" },
+  premiumBadge: { position: "absolute", bottom: -2, right: -2, backgroundColor: "#F59E0B", width: 16, height: 16, borderRadius: 8, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: colors.card },
   nameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   profileName: { fontSize: 16, fontWeight: "700", color: "#FFF" },
   profileInput: { fontSize: 16, fontWeight: "700", color: "#FFF", borderBottomWidth: 1, borderBottomColor: "#FFF", paddingVertical: 0, height: 24 },
@@ -1156,10 +1156,10 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
   aiHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 6 },
   aiTitle: { fontSize: 13, fontWeight: '700', color: colors.secondary },
   aiText: { fontSize: 12, color: colors.gray[600], lineHeight: 18 },
-  tipRow: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#FEF2F2", padding: 8, borderRadius: 8 },
+  tipRow: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: isDark ? "rgba(220,38,38,0.15)" : "#FEF2F2", padding: 8, borderRadius: 8 },
   tipText: { fontSize: 12 },
 
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
+  modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: "flex-end" },
   modalDismiss: { flex: 1 },
   bottomSheet: { backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%', paddingTop: 12, shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 20 },
   bottomSheetHandle: { width: 40, height: 5, backgroundColor: colors.gray[300], borderRadius: 2.5, alignSelf: 'center', marginBottom: 20 },
@@ -1175,7 +1175,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
   roleChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   roleText: { fontSize: 13, fontWeight: '600', color: colors.gray[600] },
   saveButton: { backgroundColor: colors.primary, padding: 16, borderRadius: 16, alignItems: 'center', marginTop: 32, shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 },
-  saveButtonText: { color: '#FFF', fontWeight: '700', fontSize: 16 },
+  saveButtonText: { color: colors.white, fontWeight: '700', fontSize: 16 },
 
   // AVATAR SELECTOR STYLES
   modalPreviewContainer: {
@@ -1267,7 +1267,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
   avatarHeroName: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors.gray[800],
+    color: colors.text,
     marginBottom: 8,
   },
   randomButton: {
@@ -1310,7 +1310,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     color: colors.gray[500],
   },
   segmentTabTextActive: {
-    color: '#FFF',
+    color: colors.white,
   },
   avatarContentArea: {
     flex: 1,
@@ -1352,7 +1352,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     lineHeight: 14,
   },
   categoryChipTextActive: {
-    color: '#FFF',
+    color: colors.white,
   },
   colorGrid: {
     flexDirection: 'row',
@@ -1369,7 +1369,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
   },
   colorItemSelected: {
     borderWidth: 3,
-    borderColor: '#FFF',
+    borderColor: colors.white,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
@@ -1380,7 +1380,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1414,7 +1414,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#FFF'
+    borderColor: colors.card
   },
   headerDraggableArea: {
     paddingBottom: 10,
@@ -1466,7 +1466,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#FFF',
+    borderColor: colors.card,
   },
   avatarHintText: {
     fontSize: 12,

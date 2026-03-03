@@ -521,13 +521,13 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
   },
   disclaimerBox: {
     width: "100%",
-    backgroundColor: isDark ? "rgba(245,158,11,0.14)" : "#FFFBF5",
+    backgroundColor: isDark ? "rgba(245,158,11,0.12)" : "#FFFBF5",
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 12,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: isDark ? "rgba(252,211,77,0.45)" : "#FFE4C4",
+    borderColor: isDark ? "rgba(251,191,36,0.35)" : "#FFE4C4",
   },
   disclaimerBody: {
     fontSize: 12,
@@ -561,7 +561,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: isDark ? "rgba(252,211,77,0.45)" : "#FFE4C4",
+    borderTopColor: isDark ? "rgba(251,191,36,0.35)" : "#FFE4C4",
   },
   checkbox: {
     width: 22,

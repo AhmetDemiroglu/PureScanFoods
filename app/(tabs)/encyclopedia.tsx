@@ -46,11 +46,23 @@ const { width } = Dimensions.get("window");
 type TabType = "additives" | "nova" | "nutriscore";
 type RiskFilter = "ALL" | AdditiveRisk;
 
-const RISK_CONFIG: Record<AdditiveRisk, { color: string; bg: string; icon: keyof typeof Ionicons.glyphMap }> = {
-    HAZARDOUS: { color: "#DC2626", bg: "#FEF2F2", icon: "skull" },
-    CAUTION: { color: "#D97706", bg: "#FFFBEB", icon: "warning" },
-    SAFE: { color: "#16A34A", bg: "#F0FDF4", icon: "checkmark-circle" },
-};
+const getRiskConfig = (isDark: boolean): Record<AdditiveRisk, { color: string; bg: string; icon: keyof typeof Ionicons.glyphMap }> => ({
+    HAZARDOUS: { 
+        color: "#DC2626", 
+        bg: isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2", 
+        icon: "skull" 
+    },
+    CAUTION: { 
+        color: "#D97706", 
+        bg: isDark ? "rgba(217,119,6,0.20)" : "#FFFBEB", 
+        icon: "warning" 
+    },
+    SAFE: { 
+        color: "#16A34A", 
+        bg: isDark ? "rgba(22,163,74,0.20)" : "#F0FDF4", 
+        icon: "checkmark-circle" 
+    },
+});
 
 const STATUS_CONFIG = {
     BANNED: { color: "#DC2626", label: "Banned", labelTr: "Yasaklı", labelEs: "Prohibido" },
@@ -68,7 +80,7 @@ export default function AdditivesLibraryScreen() {
     const isTr = i18n.language === "tr";
     const isEs = i18n.language?.startsWith("es");
 
-    const [activeTab, setActiveTab] = useState<TabType>("nova");
+    const [activeTab, setActiveTab] = useState<TabType>("additives");
     const [searchQuery, setSearchQuery] = useState("");
     const [riskFilter, setRiskFilter] = useState<RiskFilter>("ALL");
     const [expandedAdditive, setExpandedAdditive] = useState<string | null>(null);
@@ -138,16 +150,12 @@ export default function AdditivesLibraryScreen() {
         setExpandedNova(expandedNova === group ? null : group);
     };
 
+    const riskConfig = getRiskConfig(isDark);
+
     const renderAdditiveCard = (additive: AdditiveInfo) => {
         const isExpanded = expandedAdditive === additive.code;
-        const config = RISK_CONFIG[additive.risk];
-        const riskBg = isDark
-            ? (additive.risk === "HAZARDOUS"
-                ? "rgba(220,38,38,0.18)"
-                : additive.risk === "CAUTION"
-                    ? "rgba(217,119,6,0.18)"
-                    : "rgba(22,163,74,0.18)")
-            : config.bg;
+        const config = riskConfig[additive.risk];
+        const riskBg = config.bg;
 
         return (
             <TouchableOpacity
@@ -338,7 +346,7 @@ export default function AdditivesLibraryScreen() {
 
             {/* Header */}
             <LinearGradient
-                colors={isDark ? ["#B45309", "#9A3412"] : [colors.primary, "#E65100"]}
+                colors={isDark ? ["#D97706", "#9A3412"] : [colors.primary, "#E65100"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.header}
@@ -442,16 +450,16 @@ export default function AdditivesLibraryScreen() {
 
                             {/* Stats */}
                             <View style={styles.statsRow}>
-                                <View style={[styles.statBox, { backgroundColor: isDark ? "rgba(220,38,38,0.18)" : "#FEF2F2" }]}>
-                                    <Text style={[styles.statNumber, { color: "#DC2626" }]}>{stats.hazardous}</Text>
+                                <View style={[styles.statBox, { backgroundColor: riskConfig.HAZARDOUS.bg }]}>
+                                    <Text style={[styles.statNumber, { color: riskConfig.HAZARDOUS.color }]}>{stats.hazardous}</Text>
                                     <Text style={styles.statLabel}>{isTr ? "Tehlikeli" : isEs ? "Peligroso" : "Hazardous"}</Text>
                                 </View>
-                                <View style={[styles.statBox, { backgroundColor: isDark ? "rgba(217,119,6,0.18)" : "#FFFBEB" }]}>
-                                    <Text style={[styles.statNumber, { color: "#D97706" }]}>{stats.caution}</Text>
+                                <View style={[styles.statBox, { backgroundColor: riskConfig.CAUTION.bg }]}>
+                                    <Text style={[styles.statNumber, { color: riskConfig.CAUTION.color }]}>{stats.caution}</Text>
                                     <Text style={styles.statLabel}>{isTr ? "Dikkatli" : isEs ? "Precaución" : "Caution"}</Text>
                                 </View>
-                                <View style={[styles.statBox, { backgroundColor: isDark ? "rgba(22,163,74,0.18)" : "#F0FDF4" }]}>
-                                    <Text style={[styles.statNumber, { color: "#16A34A" }]}>{stats.safe}</Text>
+                                <View style={[styles.statBox, { backgroundColor: riskConfig.SAFE.bg }]}>
+                                    <Text style={[styles.statNumber, { color: riskConfig.SAFE.color }]}>{stats.safe}</Text>
                                     <Text style={styles.statLabel}>{isTr ? "Güvenli" : isEs ? "Seguro" : "Safe"}</Text>
                                 </View>
                             </View>

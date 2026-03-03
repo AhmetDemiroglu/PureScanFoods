@@ -62,7 +62,7 @@ export default function Hero() {
       <View style={styles.logoWrapper}>
         <View style={[styles.tiltedBox, { transform: [{ rotate: "0deg" }] }]}>
           <LinearGradient
-            colors={isDark ? ["#1F2937", "#0F172A"] : [colors.secondary, "#0F172A"]}
+            colors={isDark ? [colors.gray[200], colors.surface] : [colors.secondary, "#0F172A"]}
             style={styles.gradientBox}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -111,11 +111,11 @@ export default function Hero() {
 
       <View style={styles.sloganContainer}>
         <GradientText colors={colors} style={styles.sloganMain}>
-          {t("home.headline", { defaultValue: "Gýdalarýnýzda Neler Var?" })}
+          {t("home.headline", { defaultValue: "Gï¿½dalarï¿½nï¿½zda Neler Var?" })}
         </GradientText>
 
         <Text style={styles.sloganSub}>
-          {t("home.subheadline", { defaultValue: "AI destekli analiz ile anýnda öðren" })}
+          {t("home.subheadline", { defaultValue: "AI destekli analiz ile anï¿½nda ï¿½ï¿½ren" })}
         </Text>
       </View>
     </View>
@@ -174,7 +174,7 @@ const createStyles = (colors: AppColors, isDark: boolean) =>
       fontSize: 28,
       fontFamily: "serif",
       fontStyle: "italic",
-      color: isDark ? "#FB7185" : "#EF4444",
+      color: isDark ? "#F87171" : "#EF4444",
       marginTop: -10,
       marginLeft: 120,
       transform: [{ rotate: "-6deg" }],

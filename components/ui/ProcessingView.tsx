@@ -185,7 +185,7 @@ export default function ProcessingView({ mode = "camera" }: ProcessingViewProps)
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={isDark ? [colors.surface, "#111827"] : [colors.surface, "#FFF8E1"]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={isDark ? [colors.surface, "#0B1220"] : [colors.surface, "#FFF8E1"]} style={StyleSheet.absoluteFill} />
 
       <View style={styles.topSection}>
         <LottieView source={require("../../assets/scanning-character.json")} autoPlay loop style={styles.mainAnimation} />

@@ -473,7 +473,7 @@ export default function PaywallModal({ visible, onClose, onAuthRequired }: Paywa
 const styles = StyleSheet.create({
   successOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(255,255,255,0.95)",
+    backgroundColor: "rgba(15,23,42,0.95)",
     zIndex: 100,
     justifyContent: "center",
     alignItems: "center",
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FEF2F2",
+    backgroundColor: "rgba(220,38,38,0.15)",
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 12,
@@ -568,7 +568,7 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#DC2626",
+    color: "#FCA5A5",
   },
 });
 

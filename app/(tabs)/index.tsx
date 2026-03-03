@@ -442,7 +442,7 @@ export default function ScanScreen() {
                     }}
                   >
                     <LinearGradient
-                      colors={isDark ? ["#B45309", "#7C2D12"] : [colors.primary, "#E65100"]}
+                      colors={isDark ? ["#D97706", "#9A3412"] : [colors.primary, "#E65100"]}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
                       style={styles.mainButton}
@@ -485,7 +485,7 @@ export default function ScanScreen() {
                     }}
                   >
                     <LinearGradient
-                      colors={[colors.secondary, "#0F172A"]}
+                      colors={isDark ? ["#334155", "#0F172A"] : [colors.secondary, "#0F172A"]}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
                       style={styles.mainButton}
@@ -1033,7 +1033,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     justifyContent: "center",
   },
   slimButton: {
-    backgroundColor: colors.secondary,
+    backgroundColor: isDark ? colors.primary : colors.secondary,
     borderRadius: 12,
     height: 48,
     flexDirection: "row",
