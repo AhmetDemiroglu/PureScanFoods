@@ -99,7 +99,12 @@ export default function ConfirmDeleteModal({
         <View style={styles.container}>
           {success ? (
             <View style={styles.successContent}>
-              <View style={[styles.successIcon, { backgroundColor: "#F0FDF4" }]}>
+              <View
+                style={[
+                  styles.successIcon,
+                  { backgroundColor: isDark ? "rgba(22,163,74,0.20)" : "#F0FDF4" },
+                ]}
+              >
                 <Ionicons name="checkmark-circle" size={48} color="#16A34A" />
               </View>
               <Text style={styles.successText}>
@@ -247,12 +252,14 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
   container: {
     width: "88%",
     maxWidth: 400,
-    backgroundColor: "#FFF",
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 24,
+    borderWidth: 1,
+    borderColor: colors.border,
     elevation: 10,
     shadowColor: "#000",
-    shadowOpacity: 0.15,
+    shadowOpacity: isDark ? 0.35 : 0.15,
     shadowRadius: 20,
   },
   header: {
@@ -272,7 +279,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colors.gray[100],
+    backgroundColor: isDark ? colors.gray[200] : colors.gray[100],
     alignItems: "center",
     justifyContent: "center",
   },
@@ -292,7 +299,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "#FFFBEB",
+    backgroundColor: isDark ? "rgba(245,158,11,0.14)" : "#FFFBEB",
     borderWidth: 1,
     borderRadius: 12,
     padding: 12,
@@ -323,7 +330,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
   },
   inputBoxMatch: {
     borderColor: "#16A34A",
-    backgroundColor: "#F0FDF4",
+    backgroundColor: isDark ? "rgba(22,163,74,0.18)" : "#F0FDF4",
   },
   input: {
     flex: 1,
@@ -335,6 +342,10 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: isDark ? "rgba(220,38,38,0.14)" : "rgba(220,38,38,0.08)",
     marginBottom: 12,
   },
   errorText: {
