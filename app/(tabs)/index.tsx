@@ -111,7 +111,7 @@ export default function ScanScreen() {
 
       const systemPrompt = generateBarcodeDataPrompt(currentLang, promptProfile, productData);
 
-      const apiResult = await callGemini("gemini-2.5-flash:generateContent", {
+      const apiResult = await callGemini("gemini-3.1-flash-lite-preview:generateContent", {
         contents: [{
           parts: [{ text: systemPrompt }]
         }]
@@ -156,7 +156,7 @@ export default function ScanScreen() {
 
       const systemPrompt = generateBarcodeDataPrompt(currentLang, promptProfile, productData);
 
-      const apiResult = await callGemini("gemini-2.5-flash:generateContent", {
+      const apiResult = await callGemini("gemini-3.1-flash-lite-preview:generateContent", {
         contents: [{ parts: [{ text: systemPrompt }] }]
       });
 
@@ -197,7 +197,7 @@ export default function ScanScreen() {
       const basePrompt = generateAnalysisPrompt(currentLang, promptProfile);
       const combinedPrompt = `${basePrompt}\n\nAnalyze this ingredient list text:\n"${textInput}"`;
 
-      const apiResult = await callGemini("gemini-2.5-flash:generateContent", {
+      const apiResult = await callGemini("gemini-3.1-flash-lite-preview:generateContent", {
         contents: [{
           parts: [{ text: combinedPrompt }]
         }]
@@ -275,7 +275,7 @@ export default function ScanScreen() {
 
     const systemPrompt = generateAnalysisPrompt(currentLang, promptProfile);
 
-    const apiResult = await callGemini("gemini-2.5-flash:generateContent", {
+    const apiResult = await callGemini("gemini-3.1-flash-lite-preview:generateContent", {
       contents: [{
         parts: [
           { text: systemPrompt },

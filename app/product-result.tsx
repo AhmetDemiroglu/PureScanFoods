@@ -46,9 +46,9 @@ interface KetoAnalysis {
 }
 
 // Sadeleştirilmiş badge config - sadece kritik olanlar
-const getBadgeConfig = (colors: AppColors, isDark: boolean): Record<string, { 
-    icon: keyof typeof Ionicons.glyphMap; 
-    color: string; 
+const getBadgeConfig = (colors: AppColors, isDark: boolean): Record<string, {
+    icon: keyof typeof Ionicons.glyphMap;
+    color: string;
     bg: string;
     labelKey: string;
 }> => ({
@@ -383,7 +383,7 @@ export default function ProductResultScreen() {
 
     const { product, scores } = data;
     const analysisIngredients = data.details?.ingredients || [];
-    const criticalBadges = data.badges?.filter((b: string) => 
+    const criticalBadges = data.badges?.filter((b: string) =>
         ['EU_BANNED', 'FDA_WARN', 'HAZARDOUS_ADDITIVE', 'CONTAINS_ALLERGENS'].includes(b)
     ) || [];
 
@@ -493,14 +493,14 @@ export default function ProductResultScreen() {
                     </View>
 
                     {/* Nutri-Score Bar */}
-                    {data.product?.nutriscore_grade && (
+                    {data.product?.nutriscore_grade ? (
                         <View style={styles.nutriBar}>
                             <NutriScoreGraphic grade={data.product.nutriscore_grade} />
                             <TouchableOpacity onPress={() => setShowNutriInfo(true)} hitSlop={8}>
                                 <Ionicons name="information-circle-outline" size={18} color={colors.gray[400]} />
                             </TouchableOpacity>
                         </View>
-                    )}
+                    ) : null}
 
                     {/* Critical Alerts */}
                     {criticalBadges.length > 0 && (

@@ -50,7 +50,6 @@ export default function AnimatedDiamond({ size = 20 }: AnimatedDiamondProps) {
 
     return (
         <Animated.View style={animatedStyle}>
-            {/* Boyutu, kapsayıcıyı tam dolduracak şekilde ayarladım */}
             <Svg width={size * 1.3} height={size * 1.3} viewBox="0 0 24 24" fill="none">
                 <Defs>
                     <RadialGradient id="shine" cx="50%" cy="50%" rx="50%" ry="50%">
@@ -58,24 +57,14 @@ export default function AnimatedDiamond({ size = 20 }: AnimatedDiamondProps) {
                         <Stop offset="100%" stopColor="#F59E0B" stopOpacity="0.1" />
                     </RadialGradient>
                 </Defs>
-
-                {/* --- Gerçekçi 3D Elmas Vektörü (Poligonlarla Derinlik) --- */}
-
-                {/* Üst Tabla (En Parlak) */}
                 <Polygon points="7,3 17,3 15,9 9,9" fill="#FEF3C7" />
-
-                {/* Üst Yan Fasetler */}
-                <Polygon points="2,9 7,3 9,9" fill="#FDE68A" /> {/* Sol Üst */}
-                <Polygon points="17,3 22,9 15,9" fill="#FCD34D" /> {/* Sağ Üst */}
-                <Polygon points="9,9 15,9 12,12" fill="#FBBF24" /> {/* Ön Tabla */}
-
-                {/* Alt Ana Fasetler (3D Hissi Veren Gölgeleme) */}
-                <Polygon points="2,9 9,9 12,21" fill="#F59E0B" /> {/* Sol Alt */}
-                <Polygon points="22,9 15,9 12,21" fill="#D97706" /> {/* Sağ Alt */}
-                <Polygon points="9,9 15,9 12,21" fill="#FBBF24" /> {/* Orta Ön */}
-                <Polygon points="9,12 12,21 15,12" fill="#F59E0B" fillOpacity="0.4" /> {/* İç Derinlik */}
-
-                {/* Kenar Çizgisi (Netlik İçin) */}
+                <Polygon points="2,9 7,3 9,9" fill="#FDE68A" />
+                <Polygon points="17,3 22,9 15,9" fill="#FCD34D" />
+                <Polygon points="9,9 15,9 12,12" fill="#FBBF24" />
+                <Polygon points="2,9 9,9 12,21" fill="#F59E0B" />
+                <Polygon points="22,9 15,9 12,21" fill="#D97706" />
+                <Polygon points="9,9 15,9 12,21" fill="#FBBF24" />
+                <Polygon points="9,12 12,21 15,12" fill="#F59E0B" fillOpacity="0.4" />
                 <Polygon points="7,3 17,3 22,9 12,21 2,9" stroke="#D97706" strokeWidth="0.5" />
             </Svg>
         </Animated.View>
