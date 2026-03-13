@@ -2,8 +2,8 @@ import { InterstitialAd, RewardedAd, AdEventType, RewardedAdEventType, TestIds }
 
 // --- TEST AD UNIT IDS ---
 const AD_UNITS = {
-    INTERSTITIAL: TestIds.INTERSTITIAL, // ca-app-pub-3940256099942544/1033173712
-    REWARDED: TestIds.REWARDED, // ca-app-pub-3940256099942544/5224354917
+    INTERSTITIAL: "ca-app-pub-5745551393591703/2046586821",
+    REWARDED: "ca-app-pub-5745551393591703/5414481619",
 };
 
 // --- INTERSTITIAL AD (Tarama Sonrası) ---
