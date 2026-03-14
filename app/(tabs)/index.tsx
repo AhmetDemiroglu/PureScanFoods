@@ -33,7 +33,7 @@ export default function ScanScreen() {
   const { t, i18n } = useTranslation();
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
-  const [activeTab, setActiveTab] = useState<ScanTab>("barcode");
+  const [activeTab, setActiveTab] = useState<ScanTab>("camera");
   const { userProfile, usageStats, isPremium } = useAuth();
   const { familyMembers } = useUser();
   const [flashOn, setFlashOn] = useState(false);

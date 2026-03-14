@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../../lib/firebase";
 import PremiumCompareModal from "../ui/PremiumCompareModal";
+import PaywallModal from "../ui/PaywallModal";
 import LottieView from "lottie-react-native";
 import { useTheme } from "../../context/ThemeContext";
 
@@ -67,6 +68,7 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
     });
     const [showAllAllergens, setShowAllAllergens] = useState(false);
     const [showPremiumModal, setShowPremiumModal] = useState(false);
+    const [showPaywall, setShowPaywall] = useState(false);
     const [profileUnlocked, setProfileUnlocked] = useState(false);
     const [forgotLoading, setForgotLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
@@ -450,6 +452,14 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
             <PremiumCompareModal
                 visible={showPremiumModal}
                 onClose={handlePremiumModalClose}
+                onSubscribe={() => {
+                    setShowPremiumModal(false);
+                    setTimeout(() => setShowPaywall(true), 300);
+                }}
+            />
+            <PaywallModal
+                visible={showPaywall}
+                onClose={() => setShowPaywall(false)}
             />
         </>
     );
