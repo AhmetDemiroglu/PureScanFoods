@@ -65,7 +65,8 @@ export function analyzeEngine(
     safetyScore: number = 50,
     t: (key: string, options?: any) => string,
 ): CompatibilityReport {
-    if (!userProfile.diet && userProfile.allergens.length === 0) {
+    const hasLifeStageRules = userProfile.lifeStage && userProfile.lifeStage !== "ADULT";
+    if (!userProfile.diet && userProfile.allergens.length === 0 && !hasLifeStageRules) {
         return {
             score: safetyScore,
             status: "uncertain",
@@ -78,7 +79,12 @@ export function analyzeEngine(
 
     const findings: Finding[] = [];
     const processedIndices = new Set<number>();
-    let score = 100;
+    const VULNERABLE_LIFESTAGES: LifeStageType[] = [
+        "INFANT_0_6", "INFANT_6_12", "TODDLER_1_3", "CHILD_3_12",
+        "PREGNANT", "BREASTFEEDING", "ELDERLY",
+    ];
+    const isVulnerable = !!userProfile.lifeStage && VULNERABLE_LIFESTAGES.includes(userProfile.lifeStage);
+    let score = isVulnerable ? Math.min(100, safetyScore) : 100;
 
     const techIngredients = ingredients.map((i) => i.technical_name.toLowerCase().trim());
 

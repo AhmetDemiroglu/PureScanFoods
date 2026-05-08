@@ -18,7 +18,7 @@
 ## ✨ Key Features
 - **📸 Smart Scanning:** Instantly analyze products via barcode or by taking a photo of the ingredient text via OCR & AI.
 - **🛡️ Family Profiles:** Manage dietary preferences and allergen sensitivities for the whole family under a single account.
-- **🧠 AI Guru Assistant:** Chat with an advanced AI (Gemini 2.5 Flash) trained specifically on food science and ingredient toxicology for context-aware Q&A.
+- **🧠 AI Guru Assistant:** Chat with an advanced AI (Gemini 3.1 Flash-Lite) trained specifically on food science and ingredient toxicology for context-aware Q&A.
 - **📚 Additive Encyclopedia:** Browse an extensive offline-ready database of E-codes, complete with risk filters, FDA/EU bans, and origin data.
 - **📊 Compatibility Scoring:** Get a personalized "Safety & Compatibility Score" based on your exact dietary restrictions and health goals.
 - **🌍 Localization:** Fully translated (i18n) and tailored for regional nutritional standards (Nutri-Score).
@@ -28,7 +28,7 @@
 | -------------- | ------------------------------------------------------------------------- |
 | **Frontend**   | React Native, Expo, NativeWind (Tailwind CSS), Expo Router                |
 | **Backend**    | Firebase (Auth, Firestore, Storage, Cloud Functions)                      |
-| **AI Engine**  | Google Gemini 2.5 Flash API (Proxied securely via Firebase Functions)     |
+| **AI Engine**  | Google Gemini 3.1 Flash-Lite API (Proxied securely via Firebase Functions)|
 | **External APIs**| OpenFoodFacts API (Barcode dataset lookup)                              |
 | **State/Storage**| React Context, AsyncStorage (Persistent local storage)                  |
 

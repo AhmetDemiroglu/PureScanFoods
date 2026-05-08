@@ -1,6 +1,7 @@
 import { storage, auth } from "./firebase";
 import { ref, getDownloadURL, uploadBytes } from "firebase/storage";
 import * as ImageManipulator from "expo-image-manipulator";
+import * as FileSystem from "expo-file-system/legacy";
 
 export const uploadImage = async (uri: string, path: string): Promise<string | null> => {
     if (!auth.currentUser) {
@@ -9,10 +10,18 @@ export const uploadImage = async (uri: string, path: string): Promise<string | n
     }
 
     let blob: Blob | null = null;
+    let localUri = uri;
 
     try {
+        // Harici URL ise (OpenFoodFacts vb.) önce yerel dosyaya indir
+        if (uri.startsWith("http://") || uri.startsWith("https://")) {
+            const filename = `${FileSystem.cacheDirectory}tmp_${Date.now()}.jpg`;
+            const downloadRes = await FileSystem.downloadAsync(uri, filename);
+            localUri = downloadRes.uri;
+        }
+
         // 1. Resmi sıkıştır
-        const manipResult = await ImageManipulator.manipulateAsync(uri, [{ resize: { width: 800 } }], { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG });
+        const manipResult = await ImageManipulator.manipulateAsync(localUri, [{ resize: { width: 800 } }], { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG });
 
         // 2. Dosyayı Blob'a çevir
         blob = await new Promise<Blob>((resolve, reject) => {

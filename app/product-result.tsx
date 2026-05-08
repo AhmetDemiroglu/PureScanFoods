@@ -94,7 +94,6 @@ export default function ProductResultScreen() {
     const { user, deviceId, userProfile, isPremium } = useAuth();
     const [showNutriInfo, setShowNutriInfo] = useState(false);
 
-    const hasSaved = useRef(false);
     const insets = useSafeAreaInsets();
     const params = useLocalSearchParams();
     const isHistoryView = params.viewMode === 'history';
@@ -253,8 +252,9 @@ export default function ProductResultScreen() {
 
     useEffect(() => {
         if (params.viewMode === 'history') return;
-        if (!user || !data || hasSaved.current) return;
-        hasSaved.current = true;
+        if (!user || !data) return;
+        if (TempStore.getSaveState() !== 'idle') return;
+        TempStore.markSaving();
         const saveScan = async () => {
             try {
                 await incrementScanCount(user.uid, deviceId);
@@ -282,9 +282,9 @@ export default function ProductResultScreen() {
                         keto_analysis: data.keto_analysis
                     })
                 });
+                TempStore.markSaved();
             } catch (error) {
                 console.error("CRITICAL SCAN ERROR:", error);
-                hasSaved.current = false;
             }
         };
         saveScan();

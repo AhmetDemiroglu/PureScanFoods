@@ -8,9 +8,16 @@ build/
 .idea
 .gradle
 local.properties
+key.properties
 *.iml
 *.hprof
 .cxx/
+app/.cxx/
+app/release/
+*.apk
+*.aab
+*.jks
+*.keystore
 
 # Bundle artifacts
 *.jsbundle

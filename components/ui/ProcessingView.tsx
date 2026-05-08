@@ -8,6 +8,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../../context/ThemeContext";
 
 const { width, height } = Dimensions.get("window");
+const STEP_ADVANCE_MS = 1800;
+const STEP_ANIMATION_MS = 350;
 
 export type ProcessingMode = "camera" | "text" | "barcode" | "ad";
 
@@ -131,12 +133,12 @@ export default function ProcessingView({ mode = "camera" }: ProcessingViewProps)
         const next = prev < steps.length - 1 ? prev + 1 : prev;
         Animated.timing(stepProgressAnim, {
           toValue: next / Math.max(1, steps.length - 1),
-          duration: 500,
+          duration: STEP_ANIMATION_MS,
           useNativeDriver: false,
         }).start();
         return next;
       });
-    }, 2500);
+    }, STEP_ADVANCE_MS);
 
     return () => clearInterval(interval);
   }, [steps.length, stepProgressAnim]);

@@ -15,6 +15,25 @@ export const initializeRevenueCat = async (uid?: string) => {
     try {
         Purchases.setLogLevel(LOG_LEVEL.DEBUG);
 
+        // Dev modda billing hatalarını console.error'a düşürme (Metro HMR overlay tetikler)
+        if (__DEV__) {
+            Purchases.setLogHandler((logLevel, message) => {
+                if (
+                    message.includes("BILLING_UNAVAILABLE") ||
+                    message.includes("billing client") ||
+                    message.includes("Billing is not available") ||
+                    message.includes("Billing service unavailable")
+                ) {
+                    return; // emülatörde beklenen hata, bastır
+                }
+                if (logLevel === LOG_LEVEL.ERROR || logLevel === LOG_LEVEL.WARN) {
+                    console.warn("[RevenueCat]", message);
+                } else {
+                    console.log("[RevenueCat]", message);
+                }
+            });
+        }
+
         const apiKey = Platform.OS === "ios" ? API_KEYS.apple : API_KEYS.google;
 
         if (!apiKey) {
