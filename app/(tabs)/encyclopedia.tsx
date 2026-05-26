@@ -380,10 +380,15 @@ export default function AdditivesLibraryScreen() {
                         >
                             <Ionicons
                                 name="flask"
-                                size={18}
+                                size={16}
                                 color={activeTab === "additives" ? colors.primary : "#FFF"}
                             />
-                            <Text style={[styles.tabText, activeTab === "additives" && styles.tabTextActive]}>
+                            <Text
+                                style={[styles.tabText, activeTab === "additives" && styles.tabTextActive]}
+                                numberOfLines={2}
+                                adjustsFontSizeToFit
+                                minimumFontScale={0.85}
+                            >
                                 {isTr ? "Katkı Maddeleri" : isEs ? "Aditivos" : "Additives"}
                             </Text>
                         </TouchableOpacity>
@@ -393,10 +398,15 @@ export default function AdditivesLibraryScreen() {
                         >
                             <Ionicons
                                 name="nutrition"
-                                size={18}
+                                size={16}
                                 color={activeTab === "nova" ? colors.primary : "#FFF"}
                             />
-                            <Text style={[styles.tabText, activeTab === "nova" && styles.tabTextActive]}>
+                            <Text
+                                style={[styles.tabText, activeTab === "nova" && styles.tabTextActive]}
+                                numberOfLines={2}
+                                adjustsFontSizeToFit
+                                minimumFontScale={0.85}
+                            >
                                 {isTr ? "NOVA Rehberi" : isEs ? "Guía NOVA" : "NOVA Guide"}
                             </Text>
                         </TouchableOpacity>
@@ -406,10 +416,15 @@ export default function AdditivesLibraryScreen() {
                         >
                             <Ionicons
                                 name="stats-chart"
-                                size={18}
+                                size={16}
                                 color={activeTab === "nutriscore" ? colors.primary : "#FFF"}
                             />
-                            <Text style={[styles.tabText, activeTab === "nutriscore" && styles.tabTextActive]}>
+                            <Text
+                                style={[styles.tabText, activeTab === "nutriscore" && styles.tabTextActive]}
+                                numberOfLines={2}
+                                adjustsFontSizeToFit
+                                minimumFontScale={0.85}
+                            >
                                 Nutri-Score
                             </Text>
                         </TouchableOpacity>
@@ -631,17 +646,22 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        gap: 8,
-        paddingVertical: 12,
+        gap: 4,
+        paddingVertical: 10,
+        paddingHorizontal: 4,
         borderRadius: 10,
+        minHeight: 52,
     },
     tabActive: {
         backgroundColor: colors.card,
     },
     tabText: {
-        fontSize: 13,
+        fontSize: 12,
+        lineHeight: 14,
         fontWeight: "600",
         color: "#FFF",
+        textAlign: "center",
+        flexShrink: 1,
     },
     tabTextActive: {
         color: colors.primary,

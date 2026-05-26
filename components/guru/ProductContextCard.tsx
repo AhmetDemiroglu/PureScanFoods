@@ -23,15 +23,19 @@ export const ProductContextCard = ({ product, onClose }: ProductContextCardProps
   };
 
   const scoreColor = getScoreColor(product.score);
-  const displayName = product.name?.trim() || product.brand?.trim() || "Bilinmeyen Ürün";
+  const displayName = product.name?.trim() || product.brand?.trim() || "Bilinmeyen ï¿½rï¿½n";
 
   return (
     <View style={styles.container}>
-      <Pressable onPress={onClose} hitSlop={12} style={styles.closeBtn}>
+      <Pressable
+        onPress={onClose}
+        hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+        style={({ pressed }) => [styles.closeBtn, pressed && { opacity: 0.6 }]}
+      >
         <Ionicons name="close" size={18} color={colors.gray[500]} />
       </Pressable>
 
-      <Text style={styles.label}>{t("guru.activeProduct", { defaultValue: "Aktif Ürün" })}</Text>
+      <Text style={styles.label}>{t("guru.activeProduct", { defaultValue: "Aktif ï¿½rï¿½n" })}</Text>
 
       <View style={styles.contentRow}>
         <View style={[styles.scoreBadge, { backgroundColor: scoreColor }]}>
@@ -58,17 +62,21 @@ const createStyles = (colors: AppColors, isDark: boolean) =>
       borderWidth: 1,
       borderColor: colors.border,
       padding: 12,
+      paddingRight: 44,
       position: "relative",
     },
     closeBtn: {
       position: "absolute",
-      right: 8,
-      top: 8,
-      width: 24,
-      height: 24,
-      borderRadius: 12,
+      right: 6,
+      top: 6,
+      width: 32,
+      height: 32,
+      borderRadius: 16,
       alignItems: "center",
       justifyContent: "center",
+      zIndex: 10,
+      elevation: 3,
+      backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
     },
     label: {
       fontSize: 11,

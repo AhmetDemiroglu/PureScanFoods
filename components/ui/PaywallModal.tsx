@@ -9,6 +9,7 @@ import {
   ScrollView,
   Linking,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { AppColors } from "../../constants/colors";
@@ -27,8 +28,15 @@ import { useTranslation } from "react-i18next";
 import LottieView from "lottie-react-native";
 import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
-import { getOfferings, purchasePackage, restorePurchases } from "../../lib/revenuecat";
+import { getOfferings, purchasePackage, restorePurchases, isRevenueCatAvailable } from "../../lib/revenuecat";
 import { PurchasesPackage } from "react-native-purchases";
+
+const TERMS_URL = "https://purescan-foods.septimuslab.com/terms/";
+const PRIVACY_URL = "https://purescan-foods.septimuslab.com/privacy-policy/";
+const MANAGE_SUBSCRIPTION_URL =
+  Platform.OS === "ios"
+    ? "https://apps.apple.com/account/subscriptions"
+    : "https://play.google.com/store/account/subscriptions";
 
 interface PaywallModalProps {
   visible: boolean;
@@ -317,7 +325,11 @@ export default function PaywallModal({ visible, onClose, onAuthRequired }: Paywa
             />
           )}
 
-          <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={12}>
+          <Pressable
+            style={({ pressed }) => [styles.closeBtn, pressed && { opacity: 0.6 }]}
+            onPress={onClose}
+            hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+          >
             <Ionicons name="close" size={20} color={colors.gray[500]} />
           </Pressable>
 
@@ -334,7 +346,22 @@ export default function PaywallModal({ visible, onClose, onAuthRequired }: Paywa
             <Text style={styles.subtitle}>{t("paywall.subtitle")}</Text>
           </Animated.View>
 
-          {loading ? (
+          {!isRevenueCatAvailable() ? (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="time-outline" size={48} color={colors.gray[300]} />
+              <Text style={[styles.emptyTitle, { color: colors.gray[500], marginTop: 16 }]}>
+                {t("paywall.platformUnavailableTitle", "Coming Soon")}
+              </Text>
+              <Text style={[styles.emptySubtitle, { color: colors.gray[400] }]}>
+                {Platform.OS === "ios"
+                  ? t(
+                      "paywall.iosUnavailable",
+                      "Premium subscriptions are not yet available on iOS. We are finalizing setup — please check back soon."
+                    )
+                  : t("paywall.comingSoon")}
+              </Text>
+            </View>
+          ) : loading ? (
             <View style={styles.emptyContainer}>
               <ActivityIndicator size="large" color={colors.primary} />
               <Text style={[styles.emptyTitle, { color: colors.gray[500] }]}>
@@ -446,14 +473,46 @@ export default function PaywallModal({ visible, onClose, onAuthRequired }: Paywa
                   </Pressable>
 
                   <View style={styles.footerLinks}>
-                    <Pressable style={({ pressed }) => [pressed && { opacity: 0.6 }]} onPress={handleRestore} disabled={restoring}>
+                    <Pressable
+                      style={({ pressed }) => [pressed && { opacity: 0.6 }]}
+                      onPress={handleRestore}
+                      disabled={restoring}
+                      hitSlop={8}
+                    >
                       <Text style={styles.footerLink}>
                         {restoring ? t("paywall.restoring", "Yükleniyor...") : t("paywall.restore")}
                       </Text>
                     </Pressable>
                     <Text style={styles.footerDot}>·</Text>
-                    <Pressable style={({ pressed }) => [pressed && { opacity: 0.6 }]} onPress={() => Linking.openURL("https://septimuslab.com/privacy")}>
-                      <Text style={styles.footerLink}>{t("paywall.terms")}</Text>
+                    <Pressable
+                      style={({ pressed }) => [pressed && { opacity: 0.6 }]}
+                      onPress={() => Linking.openURL(TERMS_URL)}
+                      hitSlop={8}
+                    >
+                      <Text style={styles.footerLink}>
+                        {t("paywall.termsOfUse", "Terms of Use")}
+                      </Text>
+                    </Pressable>
+                    <Text style={styles.footerDot}>·</Text>
+                    <Pressable
+                      style={({ pressed }) => [pressed && { opacity: 0.6 }]}
+                      onPress={() => Linking.openURL(PRIVACY_URL)}
+                      hitSlop={8}
+                    >
+                      <Text style={styles.footerLink}>
+                        {t("paywall.privacyPolicy", "Privacy Policy")}
+                      </Text>
+                    </Pressable>
+                  </View>
+                  <View style={styles.footerLinks}>
+                    <Pressable
+                      style={({ pressed }) => [pressed && { opacity: 0.6 }]}
+                      onPress={() => Linking.openURL(MANAGE_SUBSCRIPTION_URL)}
+                      hitSlop={8}
+                    >
+                      <Text style={styles.footerLink}>
+                        {t("paywall.manageSubscription", "Manage Subscription")}
+                      </Text>
                     </Pressable>
                   </View>
                 </>
@@ -645,11 +704,15 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
   },
   closeBtn: {
     position: "absolute",
-    top: 10,
-    right: 10,
+    top: 8,
+    right: 8,
     zIndex: 20,
-    padding: 6,
-    borderRadius: 14,
+    elevation: 6,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.gray[200],

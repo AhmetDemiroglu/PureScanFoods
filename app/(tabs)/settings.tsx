@@ -460,7 +460,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* === SECTION 5.5: Data Management === */}
-        {isLoggedIn && (
+        {user && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t("settings.data_management")}</Text>
 
@@ -520,22 +520,24 @@ export default function SettingsScreen() {
                   <Ionicons name="chevron-forward" size={18} color={colors.gray[400]} style={styles.chevronRight} />
                 </Pressable>
 
-                {/* Logout */}
-                <Pressable
-                  style={({ pressed }) => [styles.subMenuItem, styles.subMenuItemLast, pressed && styles.menuItemPressed]}
-                  onPress={logout}
-                >
-                  <View style={styles.menuItemLeft}>
-                    <View style={[styles.menuIconBox, { backgroundColor: isDark ? "rgba(37,99,235,0.22)" : "#EFF6FF" }]}>
-                      <Ionicons name="log-out-outline" size={18} color="#2563EB" />
+                {/* Logout (only for non-anonymous users) */}
+                {isLoggedIn && (
+                  <Pressable
+                    style={({ pressed }) => [styles.subMenuItem, styles.subMenuItemLast, pressed && styles.menuItemPressed]}
+                    onPress={logout}
+                  >
+                    <View style={styles.menuItemLeft}>
+                      <View style={[styles.menuIconBox, { backgroundColor: isDark ? "rgba(37,99,235,0.22)" : "#EFF6FF" }]}>
+                        <Ionicons name="log-out-outline" size={18} color="#2563EB" />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.menuItemText}>{t("settings.logout_label")}</Text>
+                        <Text style={styles.menuItemSubtext}>{t("settings.logout_sublabel")}</Text>
+                      </View>
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.menuItemText}>{t("settings.logout_label")}</Text>
-                      <Text style={styles.menuItemSubtext}>{t("settings.logout_sublabel")}</Text>
-                    </View>
-                  </View>
-                  <Ionicons name="chevron-forward" size={18} color={colors.gray[400]} style={styles.chevronRight} />
-                </Pressable>
+                    <Ionicons name="chevron-forward" size={18} color={colors.gray[400]} style={styles.chevronRight} />
+                  </Pressable>
+                )}
               </View>
             )}
           </View>

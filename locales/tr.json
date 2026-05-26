@@ -612,7 +612,11 @@
         "enter_email_first": "Önce e-posta adresinizi girin",
         "reset_email_sent": "Şifre sıfırlama bağlantısı gönderildi",
         "user_not_found": "Bu e-posta ile kayıtlı kullanıcı bulunamadı",
-        "reset_email_error": "E-posta gönderilemedi"
+        "reset_email_error": "E-posta gönderilemedi",
+        "apple_button": "Apple ile Devam Et",
+        "errors": {
+            "apple_failed": "Apple ile giriş başarısız oldu. Lütfen tekrar deneyin."
+        }
     },
     "profile": {
         "my_account": "Hesabım",

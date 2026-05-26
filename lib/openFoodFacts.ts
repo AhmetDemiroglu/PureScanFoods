@@ -1,3 +1,6 @@
+import { Platform } from "react-native";
+import * as Application from "expo-application";
+
 export interface FoodProduct {
     found: boolean;
     productName?: string;
@@ -10,13 +13,17 @@ export interface FoodProduct {
     nutrient_levels?: any;
 }
 
+const PLATFORM_LABEL = Platform.OS === "ios" ? "iOS" : Platform.OS === "android" ? "Android" : Platform.OS;
+const APP_VERSION = Application.nativeApplicationVersion ?? "1.0";
+const USER_AGENT = `PureScanFoods - ${PLATFORM_LABEL} - Version ${APP_VERSION}`;
+
 export const getIngredientsByBarcode = async (barcode: string): Promise<FoodProduct> => {
     const url = `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`;
 
     try {
         const response = await fetch(url, {
             method: "GET",
-            headers: { "User-Agent": "PureScanFoods - Android - Version 1.0" },
+            headers: { "User-Agent": USER_AGENT },
         });
 
         if (!response.ok) return { found: false };

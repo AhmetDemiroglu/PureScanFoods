@@ -192,7 +192,11 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium, stats
             <View style={styles.overlay}>
                 <Pressable style={styles.backdrop} onPress={onClose} />
                 <Animated.View style={[styles.container, animatedStyle]}>
-                    <Pressable style={styles.closeIconBtn} onPress={onClose}>
+                    <Pressable
+                        style={({ pressed }) => [styles.closeIconBtn, pressed && { opacity: 0.6 }]}
+                        onPress={onClose}
+                        hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+                    >
                         <Ionicons name="close" size={20} color={colors.gray[500]} />
                     </Pressable>
 
@@ -333,7 +337,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     statusTextError: { color: colors.error },
     container: { width: width * 0.88, maxWidth: 380, backgroundColor: colors.card, borderRadius: 24, padding: 24, alignItems: 'center' },
     backdrop: { ...StyleSheet.absoluteFillObject },
-    closeIconBtn: { position: 'absolute', top: 16, right: 16, zIndex: 10, padding: 4 },
+    closeIconBtn: { position: 'absolute', top: 12, right: 12, zIndex: 10, elevation: 3, width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
     headerIconContainer: { marginBottom: 16, marginTop: 8 },
     headerIconBg: { width: 64, height: 64, borderRadius: 20, backgroundColor: isDark ? 'rgba(220,38,38,0.20)' : '#FEF2F2', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: isDark ? 'rgba(248,113,113,0.5)' : '#FECACA', borderStyle: 'dashed' },
     mainTitle: { fontSize: 20, fontWeight: '800', color: colors.text, textAlign: 'center', marginBottom: 8 },

@@ -413,7 +413,11 @@ export default function HistorySidebar({ visible, onClose }: HistorySidebarProps
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>{t("history.title")}</Text>
-            <TouchableOpacity style={styles.closeBtn} onPress={() => closeWithAnimation()}>
+            <TouchableOpacity
+              style={styles.closeBtn}
+              onPress={() => closeWithAnimation()}
+              hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+            >
               <Ionicons name="close" size={18} color={colors.gray[600]} />
             </TouchableOpacity>
           </View>
@@ -521,12 +525,14 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     color: colors.secondary,
   },
   closeBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: colors.gray[100],
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 10,
+    elevation: 3,
   },
 
   // List

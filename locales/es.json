@@ -612,7 +612,11 @@
         "enter_email_first": "Introduce tu correo primero",
         "reset_email_sent": "El enlace de restablecimiento ha sido enviado",
         "user_not_found": "No se encontró usuario con este correo",
-        "reset_email_error": "Error al enviar el correo"
+        "reset_email_error": "Error al enviar el correo",
+        "apple_button": "Continuar con Apple",
+        "errors": {
+            "apple_failed": "Error al iniciar sesión con Apple. Por favor intenta de nuevo."
+        }
     },
     "profile": {
         "my_account": "Mi Cuenta",

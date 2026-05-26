@@ -29,6 +29,7 @@
         <array>
           <string>purescanfoods</string>
           <string>com.purescan.foods</string>
+          <string>com.googleusercontent.apps.333478186372-45uk46nnrt7a99pu20567aas20noi6dd</string>
         </array>
       </dict>
     </array>
@@ -51,12 +52,10 @@
     </dict>
     <key>NSCameraUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to access your camera to scan barcodes and ingredients.</string>
-    <key>NSFaceIDUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your Face ID biometric data.</string>
-    <key>NSMicrophoneUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your microphone for voice commands.</string>
     <key>NSPhotoLibraryUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your photos</string>
+    <string>Allow $(PRODUCT_NAME) to access your photos to analyze ingredient labels.</string>
+    <key>NSUserTrackingUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to use your device identifier to deliver more relevant ads. Your scan data is never shared.</string>
     <key>NSUserActivityTypes</key>
     <array>
       <string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>

@@ -612,7 +612,11 @@
         "enter_email_first": "Enter your email first",
         "reset_email_sent": "Password reset link has been sent",
         "user_not_found": "No user found with this email",
-        "reset_email_error": "Failed to send email"
+        "reset_email_error": "Failed to send email",
+        "apple_button": "Continue with Apple",
+        "errors": {
+            "apple_failed": "Apple sign-in failed. Please try again."
+        }
     },
     "profile": {
         "my_account": "My Account",

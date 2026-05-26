@@ -1,31 +1,65 @@
+import { Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { InterstitialAd, RewardedAd, AdEventType, RewardedAdEventType, TestIds } from "react-native-google-mobile-ads";
 
-// --- TEST AD UNIT IDS ---
+// --- AD UNIT IDs (platform & env aware) ---
+// iOS production unit ID'leri AdMob panelinden alınıp env'e konacak.
+// Dev'de Google'ın resmi test ID'leri kullanılır (Apple sandbox + AdMob için zorunlu).
 const AD_UNITS = {
-    INTERSTITIAL: "ca-app-pub-5745551393591703/2046586821",
-    REWARDED: "ca-app-pub-5745551393591703/5414481619",
+    INTERSTITIAL:
+        Platform.OS === "ios"
+            ? __DEV__
+                ? TestIds.INTERSTITIAL
+                : (process.env.EXPO_PUBLIC_ADMOB_IOS_INTERSTITIAL_ID ?? "")
+            : "ca-app-pub-5745551393591703/2046586821",
+    REWARDED:
+        Platform.OS === "ios"
+            ? __DEV__
+                ? TestIds.REWARDED
+                : (process.env.EXPO_PUBLIC_ADMOB_IOS_REWARDED_ID ?? "")
+            : "ca-app-pub-5745551393591703/5414481619",
+};
+
+const ATT_STATUS_KEY = "@purescan_att_status";
+
+// ATT durumuna göre personalized ad isteğini ayarla.
+const getNonPersonalizedFlag = async (): Promise<boolean> => {
+    if (Platform.OS !== "ios") return true; // Android'de mevcut davranışı koru
+    try {
+        const status = await AsyncStorage.getItem(ATT_STATUS_KEY);
+        return status !== "granted";
+    } catch {
+        return true;
+    }
 };
 
 // --- INTERSTITIAL AD (Tarama Sonrası) ---
 let interstitialAd: InterstitialAd | null = null;
 let isInterstitialLoaded = false;
 
-export const loadInterstitialAd = (): Promise<void> => {
+export const loadInterstitialAd = async (): Promise<void> => {
+    if (!AD_UNITS.INTERSTITIAL) {
+        if (__DEV__) console.warn("[AdMob] Interstitial ID tanımlı değil, yükleme atlandı.");
+        return;
+    }
+
+    const nonPersonalized = await getNonPersonalizedFlag();
+
     return new Promise((resolve, reject) => {
         try {
             interstitialAd = InterstitialAd.createForAdRequest(AD_UNITS.INTERSTITIAL, {
-                requestNonPersonalizedAdsOnly: true,
+                requestNonPersonalizedAdsOnly: nonPersonalized,
             });
 
             const unsubscribeLoaded = interstitialAd.addAdEventListener(AdEventType.LOADED, () => {
-                console.log("✅ Interstitial Ad Loaded");
+                if (__DEV__) console.log("✅ Interstitial Ad Loaded");
                 isInterstitialLoaded = true;
                 unsubscribeLoaded();
                 resolve();
             });
 
             const unsubscribeError = interstitialAd.addAdEventListener(AdEventType.ERROR, (error) => {
-                console.error("❌ Interstitial Ad Error:", error);
+                if (__DEV__) console.error("❌ Interstitial Ad Error:", error);
                 isInterstitialLoaded = false;
                 unsubscribeError();
                 reject(error);
@@ -33,7 +67,7 @@ export const loadInterstitialAd = (): Promise<void> => {
 
             interstitialAd.load();
         } catch (error) {
-            console.error("❌ Interstitial Ad Creation Error:", error);
+            if (__DEV__) console.error("❌ Interstitial Ad Creation Error:", error);
             reject(error);
         }
     });
@@ -42,13 +76,13 @@ export const loadInterstitialAd = (): Promise<void> => {
 export const showInterstitialAd = (): Promise<boolean> => {
     return new Promise((resolve) => {
         if (!interstitialAd || !isInterstitialLoaded) {
-            console.warn("⚠️ Interstitial Ad not loaded");
+            if (__DEV__) console.warn("⚠️ Interstitial Ad not loaded");
             resolve(false);
             return;
         }
 
         const unsubscribeClosed = interstitialAd.addAdEventListener(AdEventType.CLOSED, () => {
-            console.log("✅ Interstitial Ad Closed (Completed)");
+            if (__DEV__) console.log("✅ Interstitial Ad Closed (Completed)");
             isInterstitialLoaded = false;
             unsubscribeClosed();
             loadInterstitialAd().catch(() => {});
@@ -56,13 +90,13 @@ export const showInterstitialAd = (): Promise<boolean> => {
         });
 
         const unsubscribeError = interstitialAd.addAdEventListener(AdEventType.ERROR, (error) => {
-            console.error("❌ Interstitial Ad Show Error:", error);
+            if (__DEV__) console.error("❌ Interstitial Ad Show Error:", error);
             unsubscribeError();
             resolve(false);
         });
 
         interstitialAd.show().catch((error) => {
-            console.error("❌ Interstitial Ad Show Failed:", error);
+            if (__DEV__) console.error("❌ Interstitial Ad Show Failed:", error);
             resolve(false);
         });
     });
@@ -77,22 +111,28 @@ let rewardedAd: RewardedAd | null = null;
 let isRewardedLoaded = false;
 let isRewardedLoading = false;
 
-export const loadRewardedAd = (): Promise<void> => {
+export const loadRewardedAd = async (): Promise<void> => {
     // Zaten yüklüyse veya yükleniyorsa tekrar yükleme
     if (isRewardedLoaded || isRewardedLoading) {
         return Promise.resolve();
     }
 
+    if (!AD_UNITS.REWARDED) {
+        if (__DEV__) console.warn("[AdMob] Rewarded ID tanımlı değil, yükleme atlandı.");
+        return;
+    }
+
     isRewardedLoading = true;
+    const nonPersonalized = await getNonPersonalizedFlag();
 
     return new Promise((resolve, reject) => {
         try {
             rewardedAd = RewardedAd.createForAdRequest(AD_UNITS.REWARDED, {
-                requestNonPersonalizedAdsOnly: true,
+                requestNonPersonalizedAdsOnly: nonPersonalized,
             });
 
             const unsubscribeLoaded = rewardedAd.addAdEventListener(RewardedAdEventType.LOADED, () => {
-                console.log("✅ Rewarded Ad Loaded");
+                if (__DEV__) console.log("✅ Rewarded Ad Loaded");
                 isRewardedLoaded = true;
                 isRewardedLoading = false;
                 unsubscribeLoaded();
@@ -100,7 +140,7 @@ export const loadRewardedAd = (): Promise<void> => {
             });
 
             const unsubscribeError = rewardedAd.addAdEventListener(AdEventType.ERROR, (error) => {
-                console.error("❌ Rewarded Ad Error:", error);
+                if (__DEV__) console.error("❌ Rewarded Ad Error:", error);
                 isRewardedLoaded = false;
                 isRewardedLoading = false;
                 unsubscribeError();
@@ -109,7 +149,7 @@ export const loadRewardedAd = (): Promise<void> => {
 
             rewardedAd.load();
         } catch (error) {
-            console.error("❌ Rewarded Ad Creation Error:", error);
+            if (__DEV__) console.error("❌ Rewarded Ad Creation Error:", error);
             isRewardedLoading = false;
             reject(error);
         }
@@ -121,7 +161,7 @@ export type RewardType = "scan" | "chat";
 export const showRewardedAd = (rewardType: RewardType): Promise<{ success: boolean; rewardType: RewardType }> => {
     return new Promise((resolve) => {
         if (!rewardedAd || !isRewardedLoaded) {
-            console.warn("⚠️ Rewarded Ad not loaded");
+            if (__DEV__) console.warn("⚠️ Rewarded Ad not loaded");
             resolve({ success: false, rewardType });
             return;
         }
@@ -131,13 +171,13 @@ export const showRewardedAd = (rewardType: RewardType): Promise<{ success: boole
         const currentAd = rewardedAd;
 
         const unsubscribeEarned = currentAd.addAdEventListener(RewardedAdEventType.EARNED_REWARD, (reward) => {
-            console.log("🎁 Reward Earned:", reward);
+            if (__DEV__) console.log("🎁 Reward Earned:", reward);
             rewarded = true;
             unsubscribeEarned();
         });
 
         const unsubscribeClosed = currentAd.addAdEventListener(AdEventType.CLOSED, () => {
-            console.log("✅ Rewarded Ad Closed, Rewarded:", rewarded);
+            if (__DEV__) console.log("✅ Rewarded Ad Closed, Rewarded:", rewarded);
             isRewardedLoaded = false;
             unsubscribeClosed();
             // Sonraki reklam için önceden yükle
@@ -146,13 +186,13 @@ export const showRewardedAd = (rewardType: RewardType): Promise<{ success: boole
         });
 
         const unsubscribeError = currentAd.addAdEventListener(AdEventType.ERROR, (error) => {
-            console.error("❌ Rewarded Ad Show Error:", error);
+            if (__DEV__) console.error("❌ Rewarded Ad Show Error:", error);
             unsubscribeError();
             resolve({ success: false, rewardType });
         });
 
         currentAd.show().catch((error) => {
-            console.error("❌ Rewarded Ad Show Failed:", error);
+            if (__DEV__) console.error("❌ Rewarded Ad Show Failed:", error);
             resolve({ success: false, rewardType });
         });
     });
@@ -164,12 +204,12 @@ export const isRewardedReady = (): boolean => {
 
 // --- PRELOAD ADS (Uygulama Başlangıcında) ---
 export const preloadAds = async (): Promise<void> => {
-    console.log("📺 Preloading Ads...");
+    if (__DEV__) console.log("📺 Preloading Ads...");
 
     try {
         await Promise.allSettled([loadInterstitialAd(), loadRewardedAd()]);
-        console.log("✅ Ads Preloaded");
+        if (__DEV__) console.log("✅ Ads Preloaded");
     } catch (error) {
-        console.error("⚠️ Some ads failed to preload:", error);
+        if (__DEV__) console.error("⚠️ Some ads failed to preload:", error);
     }
 };

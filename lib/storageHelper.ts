@@ -1,5 +1,5 @@
 import { storage, auth } from "./firebase";
-import { ref, getDownloadURL, uploadBytes } from "firebase/storage";
+import { ref, getDownloadURL, uploadBytes, listAll, deleteObject } from "firebase/storage";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as FileSystem from "expo-file-system/legacy";
 
@@ -68,8 +68,50 @@ export const uploadImage = async (uri: string, path: string): Promise<string | n
                 // @ts-ignore
                 blob.close();
             } catch (e) {
-                console.log("Blob kapatılamadı:", e);
+                if (__DEV__) console.log("Blob kapatılamadı:", e);
             }
         }
+    }
+};
+
+// Belirli bir kullanıcıya ait Firebase Storage scan görsellerini siler.
+// Hesap/veri silme akışından çağrılır. Tek tek silme hatalarını yutar.
+export const deleteUserScanImages = async (uid: string): Promise<void> => {
+    if (!uid) return;
+    try {
+        const folderRef = ref(storage, `scans/${uid}`);
+        const listing = await listAll(folderRef);
+
+        await Promise.all(
+            listing.items.map(async (item) => {
+                try {
+                    await deleteObject(item);
+                } catch (err) {
+                    if (__DEV__) console.warn(`[Storage] delete failed for ${item.fullPath}:`, err);
+                }
+            })
+        );
+
+        await Promise.all(
+            listing.prefixes.map(async (sub) => {
+                try {
+                    const subListing = await listAll(sub);
+                    await Promise.all(
+                        subListing.items.map(async (item) => {
+                            try {
+                                await deleteObject(item);
+                            } catch (err) {
+                                if (__DEV__) console.warn(`[Storage] delete failed for ${item.fullPath}:`, err);
+                            }
+                        })
+                    );
+                } catch (err) {
+                    if (__DEV__) console.warn(`[Storage] sub-list failed for ${sub.fullPath}:`, err);
+                }
+            })
+        );
+    } catch (error) {
+        // listAll, klasör yoksa veya rules engellerse hata atabilir; sessizce devam et.
+        if (__DEV__) console.warn(`[Storage] deleteUserScanImages(${uid}) error:`, error);
     }
 };

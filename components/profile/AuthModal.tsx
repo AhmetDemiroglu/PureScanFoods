@@ -5,7 +5,7 @@ import {
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { AppColors } from "../../constants/colors";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth, AppleSignInCancelledError } from "../../context/AuthContext";
 import { useUser } from "../../context/UserContext";
 import { useTranslation } from "react-i18next";
 import { sendPasswordResetEmail } from "firebase/auth";
@@ -14,6 +14,7 @@ import PremiumCompareModal from "../ui/PremiumCompareModal";
 import PaywallModal from "../ui/PaywallModal";
 import LottieView from "lottie-react-native";
 import { useTheme } from "../../context/ThemeContext";
+import * as AppleAuthentication from "expo-apple-authentication";
 
 interface AuthModalProps {
     visible: boolean;
@@ -57,7 +58,7 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
     const { t } = useTranslation();
     const { colors, isDark } = useTheme();
     const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
-    const { user, userProfile, login, register, loginWithGoogle, logout, usageStats, isPremium } = useAuth();
+    const { user, userProfile, login, register, loginWithGoogle, loginWithApple, logout, usageStats, isPremium } = useAuth();
     const { familyMembers } = useUser();
     const [isRegister, setIsRegister] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -72,8 +73,41 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
     const [profileUnlocked, setProfileUnlocked] = useState(false);
     const [forgotLoading, setForgotLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [appleAvailable, setAppleAvailable] = useState(false);
 
     const isLoggedIn = user && !user.isAnonymous;
+
+    useEffect(() => {
+        if (Platform.OS !== "ios") return;
+        let cancelled = false;
+        AppleAuthentication.isAvailableAsync()
+            .then((available) => {
+                if (!cancelled) setAppleAvailable(available);
+            })
+            .catch(() => {
+                if (!cancelled) setAppleAvailable(false);
+            });
+        return () => { cancelled = true; };
+    }, []);
+
+    const handleAppleSignIn = async () => {
+        try {
+            setLoading(true);
+            await loginWithApple();
+            setProfileUnlocked(true);
+        } catch (err: any) {
+            if (err instanceof AppleSignInCancelledError) {
+                // user dismissed — silent
+            } else {
+                showToast(
+                    t("auth.errors.apple_failed", { defaultValue: "Apple ile giriş başarısız oldu." }),
+                    "error"
+                );
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Premium modal kontrolü - giriş yapan kullanıcı premium değilse göster
     useEffect(() => {
@@ -415,6 +449,25 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
                 <Text style={styles.googleText}>{t("auth.google_button")}</Text>
             </Pressable>
 
+            {/* Apple Sign-In (iOS only) */}
+            {Platform.OS === "ios" && appleAvailable && (
+                <AppleAuthentication.AppleAuthenticationButton
+                    buttonType={
+                        isRegister
+                            ? AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP
+                            : AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN
+                    }
+                    buttonStyle={
+                        isDark
+                            ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                            : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+                    }
+                    cornerRadius={12}
+                    style={styles.appleBtn}
+                    onPress={handleAppleSignIn}
+                />
+            )}
+
             {/* Footer */}
             <View style={styles.footer}>
                 <Text style={styles.footerText}>{isRegister ? t("auth.has_account") : t("auth.no_account")}</Text>
@@ -438,7 +491,11 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
                         <View style={styles.modal}>
             <Toast message={toast.message} type={toast.type} visible={toast.visible} styles={styles} />
 
-                            <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={12}>
+                            <Pressable
+                                style={({ pressed }) => [styles.closeBtn, pressed && { opacity: 0.6 }]}
+                                onPress={onClose}
+                                hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+                            >
                                 <Ionicons name="close" size={22} color={colors.gray[400]} />
                             </Pressable>
 
@@ -557,6 +614,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
 
     googleBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, height: 52, borderRadius: 14, backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.gray[200] },
     googleText: { fontSize: 15, fontWeight: "600", color: colors.secondary },
+    appleBtn: { height: 52, marginTop: 12, borderRadius: 14 },
 
     footer: { flexDirection: "row", justifyContent: "center", gap: 6, marginTop: 20 },
     footerText: { fontSize: 14, color: colors.gray[500] },

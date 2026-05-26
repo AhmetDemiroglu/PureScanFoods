@@ -584,19 +584,25 @@ export default function ScanScreen() {
             />
             {/* Üst Gradient Overlay */}
             <LinearGradient
+              pointerEvents="none"
               colors={["rgba(0,0,0,0.7)", "transparent"]}
               style={styles.topOverlay}
             />
 
             {/* Alt Gradient Overlay */}
             <LinearGradient
+              pointerEvents="none"
               colors={["transparent", "rgba(0,0,0,0.8)"]}
               style={styles.bottomOverlay}
             />
 
             {/* Header */}
-            <SafeAreaView style={styles.cameraHeaderNew}>
-              <TouchableOpacity style={styles.closeButtonNew} onPress={() => setShowCamera(false)}>
+            <SafeAreaView style={styles.cameraHeaderNew} edges={["top"]}>
+              <TouchableOpacity
+                style={styles.closeButtonNew}
+                onPress={() => setShowCamera(false)}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              >
                 <Ionicons name="close" size={24} color={colors.white} />
               </TouchableOpacity>
               <View style={styles.headerTitle}>
@@ -607,7 +613,9 @@ export default function ScanScreen() {
             </SafeAreaView>
 
             {/* Tarama Çerçevesi */}
-            <View style={[
+            <View
+              pointerEvents="none"
+              style={[
               styles.scanFrameContainer,
               {
                 width: isLandscape ? width * 0.75 : width * 0.85,
@@ -645,7 +653,7 @@ export default function ScanScreen() {
             </View>
 
             {/* Yönlendirme Metni */}
-            <View style={styles.guidanceContainer}>
+            <View pointerEvents="none" style={styles.guidanceContainer}>
               {!isLandscape && (
                 <View style={styles.rotateWarning}>
                   <Ionicons name="phone-landscape-outline" size={20} color={colors.primary} />
@@ -1056,6 +1064,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     left: 0,
     right: 0,
     height: 150,
+    zIndex: 1,
   },
   bottomOverlay: {
     position: "absolute",
@@ -1063,6 +1072,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     left: 0,
     right: 0,
     height: 200,
+    zIndex: 1,
   },
   cameraHeaderNew: {
     flexDirection: "row",
@@ -1070,14 +1080,17 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingTop: 8,
+    zIndex: 20,
+    elevation: 6,
   },
   closeButtonNew: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: "rgba(255,255,255,0.15)",
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 21,
   },
   headerTitle: {
     flexDirection: "row",
@@ -1180,6 +1193,8 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 40,
+    zIndex: 20,
+    elevation: 6,
   },
   controlButton: {
     width: 50,

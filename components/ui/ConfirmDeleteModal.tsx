@@ -130,9 +130,9 @@ export default function ConfirmDeleteModal({
                   />
                 </View>
                 <Pressable
-                  style={styles.closeBtn}
+                  style={({ pressed }) => [styles.closeBtn, pressed && { opacity: 0.6 }]}
                   onPress={onClose}
-                  hitSlop={8}
+                  hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
                 >
                   <Ionicons
                     name="close"
@@ -276,12 +276,14 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     justifyContent: "center",
   },
   closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: isDark ? colors.gray[200] : colors.gray[100],
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 10,
+    elevation: 3,
   },
   title: {
     fontSize: 18,

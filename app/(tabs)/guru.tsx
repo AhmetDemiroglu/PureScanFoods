@@ -253,10 +253,10 @@ export default function GuruScreen() {
                 </View>
 
                 {/* --- BOTTOM AREA (Warning + Input) --- */}
-                <View style={styles.bottomArea}>
+                <View style={[styles.bottomArea, { paddingBottom: Math.max(insets.bottom, 8) }]}>
                     <View style={styles.warningBox}>
                         <Ionicons name="shield-checkmark-outline" size={12} color={colors.gray[500]} />
-                        <Text style={styles.warningText}>
+                        <Text style={styles.warningText} numberOfLines={2}>
                             {t("guru.fixedWarning")}
                         </Text>
                     </View>
@@ -348,7 +348,6 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     },
     bottomArea: {
         backgroundColor: colors.card,
-        paddingBottom: 8,
     },
     warningBox: {
         flexDirection: "row",
@@ -356,14 +355,17 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
         justifyContent: "center",
         gap: 6,
         paddingVertical: 6,
+        paddingHorizontal: 16,
         backgroundColor: colors.card,
         borderBottomWidth: 1,
         borderBottomColor: colors.gray[200]
     },
     warningText: {
         fontSize: 10,
+        lineHeight: 14,
         color: colors.gray[500],
-        textAlign: "center"
+        textAlign: "center",
+        flexShrink: 1,
     },
 });
 

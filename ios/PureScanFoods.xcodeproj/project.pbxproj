@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0D6AE8E82FC57E3A00026295 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 0D6AE8E72FC57E3A00026295 /* GoogleService-Info.plist */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		287EE6D1496B3001DBBF1D42 /* libPods-PureScanFoods.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D8B70B50AB8DD4C62AD8980A /* libPods-PureScanFoods.a */; };
 		35DFFCDCFE83AE3BAA3BE033 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 4CA7D005E0286939457F9359 /* PrivacyInfo.xcprivacy */; };
@@ -17,12 +18,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0D6AE8E72FC57E3A00026295 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* PureScanFoods.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PureScanFoods.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = PureScanFoods/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = PureScanFoods/Info.plist; sourceTree = "<group>"; };
 		2DD6CFE9A8213BD46E89C72B /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-PureScanFoods/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		469C16D509455248A57BA4C6 /* Pods-PureScanFoods.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PureScanFoods.release.xcconfig"; path = "Target Support Files/Pods-PureScanFoods/Pods-PureScanFoods.release.xcconfig"; sourceTree = "<group>"; };
-		4CA7D005E0286939457F9359 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = PureScanFoods/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		4CA7D005E0286939457F9359 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = PureScanFoods/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = PureScanFoods/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		D6474072F745F8DC6D567C31 /* Pods-PureScanFoods.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PureScanFoods.debug.xcconfig"; path = "Target Support Files/Pods-PureScanFoods/Pods-PureScanFoods.debug.xcconfig"; sourceTree = "<group>"; };
@@ -51,6 +53,7 @@
 				F11748442D0722820044C1D9 /* PureScanFoods-Bridging-Header.h */,
 				BB2F792B24A3F905000567C9 /* Supporting */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
+				0D6AE8E72FC57E3A00026295 /* GoogleService-Info.plist */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
 				4CA7D005E0286939457F9359 /* PrivacyInfo.xcprivacy */,
@@ -128,7 +131,6 @@
 				D6474072F745F8DC6D567C31 /* Pods-PureScanFoods.debug.xcconfig */,
 				469C16D509455248A57BA4C6 /* Pods-PureScanFoods.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -196,6 +198,7 @@
 			files = (
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
+				0D6AE8E82FC57E3A00026295 /* GoogleService-Info.plist in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
 				35DFFCDCFE83AE3BAA3BE033 /* PrivacyInfo.xcprivacy in Resources */,
 			);

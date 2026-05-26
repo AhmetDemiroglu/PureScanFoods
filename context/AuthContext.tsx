@@ -8,14 +8,18 @@ import {
     signOut,
     User,
     GoogleAuthProvider,
+    OAuthProvider,
     signInWithCredential
 } from "firebase/auth";
 import { initializeUser, getUserProfile, checkDeviceLimit, getUserStats, UserProfile, UsageStats } from "../lib/firestore";
 import { initializeRevenueCat, checkSubscriptionStatus, logoutRevenueCat, addCustomerInfoUpdateListener } from "../lib/revenuecat";
+import { deleteUserScanImages } from "../lib/storageHelper";
 import * as Application from "expo-application";
 import * as SecureStore from "expo-secure-store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 import * as Crypto from "expo-crypto";
+import * as AppleAuthentication from "expo-apple-authentication";
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { doc, onSnapshot, updateDoc, serverTimestamp, deleteDoc, collection, getDocs, writeBatch } from "firebase/firestore";
 import { db } from "../lib/firebase";
@@ -33,9 +37,17 @@ interface AuthContextType {
     login: (email: string, pass: string) => Promise<void>;
     register: (email: string, pass: string) => Promise<void>;
     loginWithGoogle: () => Promise<void>;
+    loginWithApple: () => Promise<void>;
     logout: () => Promise<void>;
     deleteUserData: () => Promise<void>;
     deleteAccount: () => Promise<void>;
+}
+
+export class AppleSignInCancelledError extends Error {
+    constructor() {
+        super("Apple sign-in cancelled by user");
+        this.name = "AppleSignInCancelledError";
+    }
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -129,6 +141,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     useEffect(() => {
         GoogleSignin.configure({
             webClientId: "333478186372-mvrgjh408gp3jrpojqtc2kogmf3ha403.apps.googleusercontent.com",
+            iosClientId: "333478186372-45uk46nnrt7a99pu20567aas20noi6dd.apps.googleusercontent.com",
         });
     }, []);
 
@@ -334,8 +347,83 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             // Listener gerisini halleder
         } catch (error: any) {
             setLoading(false);
-            console.error("Google Sign-In Error:", error);
+            if (__DEV__) console.error("Google Sign-In Error:", error);
             throw error;
+        }
+    };
+
+    const loginWithApple = async () => {
+        if (Platform.OS !== "ios") {
+            throw new Error("Apple Sign-In is only available on iOS");
+        }
+
+        setLoading(true);
+        try {
+            const rawNonce = Crypto.randomUUID();
+            const hashedNonce = await Crypto.digestStringAsync(
+                Crypto.CryptoDigestAlgorithm.SHA256,
+                rawNonce
+            );
+
+            const appleCredential = await AppleAuthentication.signInAsync({
+                requestedScopes: [
+                    AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+                    AppleAuthentication.AppleAuthenticationScope.EMAIL,
+                ],
+                nonce: hashedNonce,
+            });
+
+            if (!appleCredential.identityToken) {
+                throw new Error("Apple identity token missing");
+            }
+
+            const provider = new OAuthProvider("apple.com");
+            const credential = provider.credential({
+                idToken: appleCredential.identityToken,
+                rawNonce,
+            });
+
+            const userCred = await signInWithCredential(auth, credential);
+
+            // Apple only returns fullName/email on first sign-in.
+            // Persist them on the user profile immediately so they aren't lost.
+            const fullName = appleCredential.fullName;
+            const displayName = fullName
+                ? [fullName.givenName, fullName.familyName].filter(Boolean).join(" ").trim()
+                : null;
+
+            if (displayName && userCred.user?.uid) {
+                try {
+                    await updateDoc(doc(db, "users", userCred.user.uid), {
+                        displayName,
+                    });
+                } catch (e) {
+                    // user doc may not exist yet (will be created by initializeUser);
+                    // ignore here, displayName will be re-applied on profile creation.
+                    if (__DEV__) console.warn("Apple displayName update deferred:", e);
+                }
+            }
+        } catch (error: any) {
+            setLoading(false);
+            if (error?.code === "ERR_REQUEST_CANCELED" || error?.code === "ERR_CANCELED") {
+                throw new AppleSignInCancelledError();
+            }
+            if (__DEV__) console.error("Apple Sign-In Error:", error);
+            throw error;
+        }
+    };
+
+    // Local cihaz tarafındaki kullanıcı verilerini temizle
+    const clearLocalUserData = async () => {
+        try {
+            await AsyncStorage.removeItem("@purescan_guru_messages");
+        } catch (e) {
+            if (__DEV__) console.warn("clearLocalUserData(guru) error:", e);
+        }
+        try {
+            await AsyncStorage.removeItem("@purescan_att_status");
+        } catch (e) {
+            // optional key
         }
     };
 
@@ -343,6 +431,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const deleteUserData = async () => {
         if (!user) throw new Error("No user");
         const uid = user.uid;
+
+        // Firebase Storage: scan görsellerini önce sil (auth aktifken).
+        await deleteUserScanImages(uid);
 
         const batch = writeBatch(db);
 
@@ -368,12 +459,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             avatarIcon: "account",
             color: null,
         });
+
+        // Local guru mesajlarını da temizle
+        await clearLocalUserData();
     };
 
     // Hesabı tamamen sil
     const deleteAccount = async () => {
         if (!user) throw new Error("No user");
         const uid = user.uid;
+        const devId = deviceId;
+
+        // Storage cleanup MUST run before auth user deletion (rules require auth)
+        await deleteUserScanImages(uid);
 
         const batch = writeBatch(db);
 
@@ -391,10 +489,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // user doc itself
         batch.delete(doc(db, "users", uid));
 
+        // device limits doc (kullanıcıya bağlı olduğu için temizle)
+        if (devId) {
+            batch.delete(doc(db, "device_limits", devId));
+        }
+
         await batch.commit();
 
         // Delete Firebase Auth user
-        await deleteUser(auth.currentUser!);
+        try {
+            await deleteUser(auth.currentUser!);
+        } catch (err: any) {
+            if (err?.code === "auth/requires-recent-login") {
+                // Caller (UI) should handle reauth UX.
+                throw err;
+            }
+            throw err;
+        }
+
+        // Local kullanıcı verileri (Apple/Google/email/anonim hepsi için)
+        await clearLocalUserData();
 
         setUser(null);
         setUserProfile(null);
@@ -419,9 +533,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
             const isPremium = await checkSubscriptionStatus();
             setIsRevenueCatPremium(isPremium);
-            console.log("[AuthContext] refreshPremiumStatus:", isPremium ? "PREMIUM" : "FREE");
+            if (__DEV__) console.log("[AuthContext] refreshPremiumStatus:", isPremium ? "PREMIUM" : "FREE");
         } catch (error) {
-            console.error("[AuthContext] refreshPremiumStatus HATA:", error);
+            if (__DEV__) console.error("[AuthContext] refreshPremiumStatus HATA:", error);
         }
     };
 
@@ -437,7 +551,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 if (!mounted) return;
 
                 if (currentUser) {
-                    console.log("✅ User Authenticated:", currentUser.uid, "IsAnon:", currentUser.isAnonymous);
+                    if (__DEV__) console.log("✅ User Authenticated:", currentUser.uid, "IsAnon:", currentUser.isAnonymous);
                     setUser(currentUser);
 
                     // RevenueCat'i başlat
@@ -447,7 +561,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     const unsubscribeRC: any = addCustomerInfoUpdateListener((customerInfo) => {
                         const hasPremium = typeof customerInfo.entitlements.active["premium"] !== "undefined";
                         setIsRevenueCatPremium(hasPremium);
-                        console.log("[RevenueCat] Listener - Premium:", hasPremium ? "AKTİF" : "YOK");
+                        if (__DEV__) console.log("[RevenueCat] Listener - Premium:", hasPremium ? "AKTİF" : "YOK");
                     });
 
                     // İlk premium kontrolü
@@ -466,11 +580,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                         }
                     };
                 } else {
-                    console.log("👤 No user, signing in anonymously...");
+                    if (__DEV__) console.log("👤 No user, signing in anonymously...");
                     try {
                         await signInAnonymously(auth);
                     } catch (error) {
-                        console.error("Anonymous Sign-In Failed:", error);
+                        if (__DEV__) console.error("Anonymous Sign-In Failed:", error);
                         if (mounted) setLoading(false);
                     }
                 }
@@ -501,6 +615,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         login,
         register,
         loginWithGoogle,
+        loginWithApple,
         logout,
         deleteUserData,
         deleteAccount,
