@@ -409,9 +409,12 @@ export default function HistoryDrawerBody() {
 }
 
 const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
+  // Kayan ana içerikle (ekranlar colors.surface kullanir) AYNI zemin rengi.
+  // Boylece acik durumda dikis yerinde renk basamagi olmaz ve mainin golgesi
+  // tek-renk zemin uzerinde yumusakca fade eder (sert cizgi kaybolur).
   body: {
     flex: 1,
-    backgroundColor: colors.card,
+    backgroundColor: colors.surface,
   },
 
   // Header
