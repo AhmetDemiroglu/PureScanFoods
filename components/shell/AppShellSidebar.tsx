@@ -1,5 +1,6 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useCallback } from "react";
 import { Dimensions, Pressable, StyleSheet, View, BackHandler } from "react-native";
+import { usePathname, useRouter } from "expo-router";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
   useSharedValue,
@@ -40,6 +41,13 @@ interface AppShellSidebarProps {
 export function AppShellSidebar({ children }: AppShellSidebarProps) {
   const { colors } = useTheme();
   const { isSidebarOpen, openSidebar, closeSidebar } = useShell();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  // Sol-kenar geri: home ("/") ve product-result hariç tüm rotalarda eve dön.
+  // product-result kendi native Stack swipe-back'ini kullanır; home'da geri yok.
+  const canGoBack = pathname !== "/" && pathname !== "/product-result";
+  const goBackHome = useCallback(() => router.replace("/"), [router]);
 
   const progress = useSharedValue(0);
 
@@ -113,19 +121,35 @@ export function AppShellSidebar({ children }: AppShellSidebarProps) {
   // Tap-to-close Pressable ile uyumlu olması için Native ile birleştir
   const closeGesture = Gesture.Simultaneous(closePan, Gesture.Native());
 
+  // SOL kenardan sağa sürükle → geri (eve). product-result/home hariç.
+  const backPan = React.useMemo(
+    () =>
+      Gesture.Pan()
+        .enabled(canGoBack && !isSidebarOpen)
+        .activeOffsetX(14)
+        .failOffsetY([-18, 18])
+        .onEnd((e) => {
+          "worklet";
+          if (e.translationX > 70 || e.velocityX > 550) {
+            runOnJS(haptics.impactLight)();
+            runOnJS(goBackHome)();
+          }
+        }),
+    [canGoBack, isSidebarOpen, goBackHome]
+  );
+
   // Drawer: hafif parallax + fade
   const drawerStyle = useAnimatedStyle(() => ({
     transform: [
       { translateX: interpolate(progress.value, [0, 1], [40, 0], Extrapolation.CLAMP) },
     ],
-    opacity: interpolate(progress.value, [0, 0.25, 1], [0, 0.5, 1], Extrapolation.CLAMP),
   }));
 
   // Ana içerik: sola kay + küçül + gölge
   const mainStyle = useAnimatedStyle(() => ({
     transform: [
       { translateX: interpolate(progress.value, [0, 1], [0, -SIDEBAR_WIDTH], Extrapolation.CLAMP) },
-      { scale: interpolate(progress.value, [0, 1], [1, 0.92], Extrapolation.CLAMP) },
+      { scale: interpolate(progress.value, [0, 1], [1, 0.93], Extrapolation.CLAMP) },
     ],
     shadowOpacity: interpolate(progress.value, [0, 1], [0, 0.22], Extrapolation.CLAMP),
     elevation: interpolate(progress.value, [0, 1], [0, 16], Extrapolation.CLAMP),
@@ -137,7 +161,7 @@ export function AppShellSidebar({ children }: AppShellSidebarProps) {
   }));
 
   const scrimStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [0, 1], [0, 0.42], Extrapolation.CLAMP),
+    opacity: interpolate(progress.value, [0, 1], [0, 0.2], Extrapolation.CLAMP),
   }));
 
   return (
@@ -155,7 +179,7 @@ export function AppShellSidebar({ children }: AppShellSidebarProps) {
           {/* Layer 2: Scrim (tap/swipe-to-close) */}
           <GestureDetector gesture={closeGesture}>
             <Animated.View
-              style={[StyleSheet.absoluteFill, styles.scrim, scrimStyle]}
+              style={[StyleSheet.absoluteFill, styles.scrim, { backgroundColor: colors.surface }, scrimStyle]}
               pointerEvents={isSidebarOpen ? "auto" : "none"}
             >
               <Pressable style={StyleSheet.absoluteFill} onPress={closeSidebar} />
@@ -168,6 +192,13 @@ export function AppShellSidebar({ children }: AppShellSidebarProps) {
       {!isSidebarOpen && (
         <GestureDetector gesture={openPan}>
           <View style={styles.edgeStrip} />
+        </GestureDetector>
+      )}
+
+      {/* Sol kenar geri şeridi (home/product-result hariç) */}
+      {canGoBack && !isSidebarOpen && (
+        <GestureDetector gesture={backPan}>
+          <View style={styles.backEdgeStrip} />
         </GestureDetector>
       )}
     </View>
@@ -189,13 +220,21 @@ const styles = StyleSheet.create({
     zIndex: 2,
     shadowColor: "#000",
     shadowRadius: 24,
-    shadowOffset: { width: 4, height: 0 },
+    shadowOffset: { width: 6, height: 3 },
   },
   mainClip: { flex: 1, overflow: "hidden" },
-  scrim: { zIndex: 3, backgroundColor: "#000" },
+  scrim: { zIndex: 3 },
   edgeStrip: {
     position: "absolute",
     right: 0,
+    top: 0,
+    bottom: 0,
+    width: EDGE_STRIP_WIDTH,
+    zIndex: 4,
+  },
+  backEdgeStrip: {
+    position: "absolute",
+    left: 0,
     top: 0,
     bottom: 0,
     width: EDGE_STRIP_WIDTH,

@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { View, Pressable, StyleSheet, Dimensions, TextInput, ActivityIndicator, Modal, TouchableOpacity, Animated, ScrollView, useWindowDimensions } from "react-native";
+import { View, Pressable, StyleSheet, Dimensions, TextInput, ActivityIndicator, Modal, TouchableOpacity, Animated, ScrollView, Keyboard, useWindowDimensions } from "react-native";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Text } from "../../components/ui/AppText";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -56,6 +57,27 @@ export default function ScanScreen() {
   const [barcodeInput, setBarcodeInput] = useState("");
   const [textInput, setTextInput] = useState("");
   const { openSidebar } = useShell();
+  const tabBarHeight = useBottomTabBarHeight();
+  // Klavye açılınca input görünür olsun: alt boşluk aç + focus'ta scrollToEnd.
+  // Kapalıyken EKSTRA boşluk YOK → ana sayfa dengesi birebir korunur.
+  // İçerik tab bar'da bittiği, keyboard yüksekliği ekran altından ölçüldüğü için
+  // tabBarHeight çıkarılır (yoksa tab bar kadar fazla boşluk kalır).
+  const scrollRef = useRef<ScrollView>(null);
+  const [kbHeight, setKbHeight] = useState(0);
+  useEffect(() => {
+    const s = Keyboard.addListener("keyboardDidShow", (e) =>
+      setKbHeight(e.endCoordinates?.height ?? 0)
+    );
+    const h = Keyboard.addListener("keyboardDidHide", () => setKbHeight(0));
+    return () => {
+      s.remove();
+      h.remove();
+    };
+  }, []);
+  const kbPad = Math.max(20, kbHeight - tabBarHeight);
+  const onInputFocus = useCallback(() => {
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 220);
+  }, []);
   const [showNotFoundModal, setShowNotFoundModal] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
@@ -376,10 +398,10 @@ export default function ScanScreen() {
 
         {/* 2. Orta Alan: Hero ve Kart'ı kapsar ve ortalar — klavye açılınca input'lar görünür kalsın diye ScrollView */}
         <ScrollView
+          ref={scrollRef}
           style={{ flex: 1 }}
-          contentContainerStyle={styles.centerContainer}
+          contentContainerStyle={[styles.centerContainer, { paddingBottom: kbPad }]}
           keyboardShouldPersistTaps="handled"
-          automaticallyAdjustKeyboardInsets
           showsVerticalScrollIndicator={false}
         >
           <Hero />
@@ -520,6 +542,7 @@ export default function ScanScreen() {
                         keyboardType="numeric"
                         value={barcodeInput}
                         onChangeText={setBarcodeInput}
+                        onFocus={onInputFocus}
                       />
                       {barcodeInput.length > 0 && (
                         <Pressable onPress={() => setBarcodeInput("")} style={styles.clearIcon}>
@@ -548,6 +571,7 @@ export default function ScanScreen() {
                       textAlignVertical="top"
                       value={textInput}
                       onChangeText={setTextInput}
+                      onFocus={onInputFocus}
                     />
                     {textInput.length > 0 && (
                       <Pressable onPress={() => setTextInput("")} style={styles.clearIconTopRight}>

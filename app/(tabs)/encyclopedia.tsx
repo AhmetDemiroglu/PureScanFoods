@@ -394,7 +394,7 @@ export default function AdditivesLibraryScreen() {
                     <View style={styles.tabContainer}>
                         <TouchableOpacity
                             style={[styles.tab, activeTab === "additives" && styles.tabActive]}
-                            onPress={() => setActiveTab("additives")}
+                            onPress={() => { haptics.selection(); setActiveTab("additives"); }}
                         >
                             <Ionicons
                                 name="flask"
@@ -412,7 +412,7 @@ export default function AdditivesLibraryScreen() {
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={[styles.tab, activeTab === "nova" && styles.tabActive]}
-                            onPress={() => setActiveTab("nova")}
+                            onPress={() => { haptics.selection(); setActiveTab("nova"); }}
                         >
                             <Ionicons
                                 name="nutrition"
@@ -430,7 +430,7 @@ export default function AdditivesLibraryScreen() {
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={[styles.tab, activeTab === "nutriscore" && styles.tabActive]}
-                            onPress={() => setActiveTab("nutriscore")}
+                            onPress={() => { haptics.selection(); setActiveTab("nutriscore"); }}
                         >
                             <Ionicons
                                 name="stats-chart"

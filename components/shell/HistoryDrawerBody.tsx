@@ -199,7 +199,7 @@ export default function HistoryDrawerBody() {
     return (
       <TouchableOpacity
         style={styles.card}
-        onPress={() => openDetail(item)}
+        onPress={() => { haptics.impactLight(); openDetail(item); }}
         onLongPress={() => {
           haptics.impactMedium();
           setDeleteTarget(item);

@@ -1,6 +1,8 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import { View, Pressable, StyleSheet, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Keyboard, Dimensions } from "react-native";
 import { Text } from "../../components/ui/AppText";
+import Animated, { useAnimatedKeyboard, useAnimatedStyle } from "react-native-reanimated";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getScanHistoryFromDB } from '../../lib/firestore';
 import { useAuth } from '../../context/AuthContext';
@@ -35,7 +37,14 @@ export default function GuruScreen() {
     const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const router = useRouter();
     const insets = useSafeAreaInsets();
-    const [headerH, setHeaderH] = useState(0);
+    const tabBarHeight = useBottomTabBarHeight();
+    const keyboard = useAnimatedKeyboard();
+    // Guru içeriği tab bar'ın ÜSTÜNDE biter; keyboard.height ise ekranın altından
+    // ölçülür → tabBarHeight çıkarılmazsa input klavyeden tabBar kadar yukarıda kalır
+    // (kocaman boşluk). Kapalıyken 28px: merkez tarama butonu input'u kapatmasın.
+    const inputAreaStyle = useAnimatedStyle(() => ({
+        paddingBottom: Math.max(28, keyboard.height.value - tabBarHeight),
+    }));
     const { user } = useAuth();
     const [recentScans, setRecentScans] = useState<any[]>([]);
     const [loadingScans, setLoadingScans] = useState(false);
@@ -172,10 +181,7 @@ export default function GuruScreen() {
     return (
         <View style={{ flex: 1, backgroundColor: colors.surface }}>
             {/* --- HEADER --- */}
-            <View
-                style={{ backgroundColor: colors.surface }}
-                onLayout={(e) => setHeaderH(e.nativeEvent.layout.height)}
-            >
+            <View style={{ backgroundColor: colors.surface }}>
                 {/* SafeArea Üstü */}
                 <LinearGradient
                     colors={isDark ? ["#D97706", "#9A3412"] : [colors.primary, "#E65100"]}
@@ -211,11 +217,7 @@ export default function GuruScreen() {
             </View>
 
             {/* --- CONTENT & INPUT --- */}
-            <KeyboardAvoidingView
-                style={{ flex: 1 }}
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-                keyboardVerticalOffset={Platform.OS === "ios" ? (headerH || insets.top + 56) : 0}
-            >
+            <Animated.View style={[{ flex: 1 }, inputAreaStyle]}>
                 <View style={styles.contentWrapper}>
                     {activeProduct ? (
                         <ProductContextCard
@@ -248,7 +250,7 @@ export default function GuruScreen() {
                 </View>
 
                 {/* --- BOTTOM AREA (Warning + Input) --- */}
-                <View style={[styles.bottomArea, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+                <View style={styles.bottomArea}>
                     <View style={styles.warningBox}>
                         <Ionicons name="shield-checkmark-outline" size={12} color={colors.gray[500]} />
                         <Text style={styles.warningText} numberOfLines={2}>
@@ -263,7 +265,7 @@ export default function GuruScreen() {
                         isLoading={isLoading}
                     />
                 </View>
-            </KeyboardAvoidingView>
+            </Animated.View>
 
             <GuruOnboarding
                 visible={showOnboarding}
