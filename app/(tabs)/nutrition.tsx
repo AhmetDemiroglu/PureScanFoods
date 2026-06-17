@@ -1,23 +1,6 @@
 ﻿import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Modal,
-  Switch,
-  FlatList,
-  TextInput,
-  StatusBar,
-  Pressable,
-  LayoutAnimation,
-  Platform,
-  UIManager,
-  PanResponder,
-  Animated,
-  Dimensions,
-} from "react-native";
+import { View, StyleSheet, ScrollView, TouchableOpacity, Modal, Switch, FlatList, TextInput, StatusBar, Pressable, LayoutAnimation, Platform, UIManager, PanResponder, Animated, Dimensions } from "react-native";
+import { Text } from "../../components/ui/AppText";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -52,7 +35,8 @@ import {
 import * as Haptics from "expo-haptics";
 import { useAuth } from "../../context/AuthContext";
 import LimitWarningModal from "../../components/ui/LimitWarningModal";
-import HistorySidebar from "../history";
+import { useShell } from "../../context/ShellContext";
+import * as haptics from "../../lib/haptics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { OnboardingModal } from "../../components/ui/OnboardingModal";
 import PaywallModal from "../../components/ui/PaywallModal";
@@ -171,7 +155,7 @@ export default function NutritionScreen() {
   // Limit Warning Modal State
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
-  const [isHistoryOpen, setHistoryOpen] = useState(false);
+  const { openSidebar } = useShell();
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   React.useEffect(() => {
@@ -474,7 +458,7 @@ export default function NutritionScreen() {
             <TouchableOpacity style={styles.infoButton} onPress={() => setShowOnboarding(true)}>
               <Ionicons name="information-circle-outline" size={18} color="rgba(255,255,255,0.7)" />
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.backButton, { marginRight: 0 }]} onPress={() => setHistoryOpen(true)}>
+            <TouchableOpacity style={[styles.backButton, { marginRight: 0 }]} onPress={() => { haptics.impactLight(); openSidebar(); }}>
               <MaterialCommunityIcons name="history" size={22} color="#FFF" />
             </TouchableOpacity>
           </View>
@@ -1077,7 +1061,7 @@ export default function NutritionScreen() {
           </Animated.View>
         </View>
       </Modal >
-      <HistorySidebar visible={isHistoryOpen} onClose={() => setHistoryOpen(false)} />
+      
       <OnboardingModal
         visible={showOnboarding}
         onFinish={handleOnboardingFinish}

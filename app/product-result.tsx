@@ -1,9 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import {
-    View, Text, StyleSheet, Image, ScrollView, TouchableOpacity,
-    Dimensions, StatusBar, Modal, Pressable, PanResponder, Animated,
-    GestureResponderEvent
-} from "react-native";
+import { View, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions, StatusBar, Modal, Pressable, PanResponder, Animated, GestureResponderEvent } from "react-native";
+import { Text } from "../components/ui/AppText";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { AppColors } from "../constants/colors";
@@ -355,19 +352,19 @@ export default function ProductResultScreen() {
                         <View style={styles.macroRow}>
                             <View style={styles.macroItem}>
                                 <Text style={styles.macroValue}>{nutritionData?.carbohydrates}g</Text>
-                                <Text style={styles.macroLabel}>{t("results.diet_card.carb")}</Text>
+                                <Text upper style={styles.macroLabel}>{t("results.diet_card.carb")}</Text>
                             </View>
                             <Text style={styles.macroOp}>−</Text>
                             <View style={styles.macroItem}>
                                 <Text style={styles.macroValue}>{nutritionData?.fiber || 0}g</Text>
-                                <Text style={styles.macroLabel}>{t("results.diet_card.fiber")}</Text>
+                                <Text upper style={styles.macroLabel}>{t("results.diet_card.fiber")}</Text>
                             </View>
                             <Text style={styles.macroOp}>=</Text>
                             <View style={[styles.macroItemResult, { backgroundColor: accentColor + '12' }]}>
                                 <Text style={[styles.macroResultValue, { color: accentColor }]}>
                                     {netCarb.toFixed(1)}g
                                 </Text>
-                                <Text style={[styles.macroLabel, { color: accentColor }]}>{t("results.diet_card.net")}</Text>
+                                <Text upper style={[styles.macroLabel, { color: accentColor }]}>{t("results.diet_card.net")}</Text>
                             </View>
                         </View>
                     ) : (
@@ -431,7 +428,7 @@ export default function ProductResultScreen() {
 
                     {/* Product Identity */}
                     <View style={styles.productIdentity}>
-                        <Text style={styles.brandLabel}>{product.brand || t("results.unknownBrand")}</Text>
+                        <Text upper style={styles.brandLabel}>{product.brand || t("results.unknownBrand")}</Text>
                         <Text style={styles.productTitle}>{product.name || t("results.unknownProduct")}</Text>
                     </View>
 
@@ -509,7 +506,7 @@ export default function ProductResultScreen() {
                                 <View style={styles.alertIconWrap}>
                                     <Ionicons name="shield" size={14} color="#FFF" />
                                 </View>
-                                <Text style={styles.alertTitle}>{t("results.critical_warnings")}</Text>
+                                <Text upper style={styles.alertTitle}>{t("results.critical_warnings")}</Text>
                             </View>
                             {criticalBadges.map((badge: string, idx: number) => (
                                 <View key={idx} style={styles.alertItem}>
@@ -528,7 +525,7 @@ export default function ProductResultScreen() {
                 <View style={styles.familyZone}>
                     <View style={styles.sectionHeader}>
                         <View style={styles.sectionLine} />
-                        <Text style={styles.sectionLabel}>{t("results.family.title")}</Text>
+                        <Text upper style={styles.sectionLabel}>{t("results.family.title")}</Text>
                         <View style={styles.sectionLine} />
                     </View>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.familyList}>
@@ -559,7 +556,7 @@ export default function ProductResultScreen() {
                 <View style={styles.detailZone}>
                     <View style={styles.sectionHeader}>
                         <View style={styles.sectionLine} />
-                        <Text style={styles.sectionLabel}>{t("results.detailedAnalysis")}</Text>
+                        <Text upper style={styles.sectionLabel}>{t("results.detailedAnalysis")}</Text>
                         <View style={styles.sectionLine} />
                     </View>
                     <DetailCards data={data} />
@@ -618,7 +615,7 @@ export default function ProductResultScreen() {
                                     </View>
                                 </View>
                                 <View style={styles.divider} />
-                                <Text style={styles.reasonsTitle}>{t("results.family.reasons")}</Text>
+                                <Text upper style={styles.reasonsTitle}>{t("results.family.reasons")}</Text>
                                 <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 20 }} showsVerticalScrollIndicator={true}>
                                     {(() => {
                                         const memberId = selectedMemberReport.member.id;
@@ -760,7 +757,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     productIdentity: { alignItems: 'center', marginBottom: 16 },
     brandLabel: {
         fontSize: 12, fontWeight: '600', color: colors.gray[400],
-        textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6,
+        letterSpacing: 1.5, marginBottom: 6,
     },
     productTitle: {
         fontSize: 24, fontWeight: '800', color: colors.text,
@@ -820,7 +817,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     },
     alertTitle: {
         fontSize: 13, fontWeight: '800', color: isDark ? '#FCA5A5' : '#B91C1C',
-        textTransform: 'uppercase', letterSpacing: 0.5,
+        letterSpacing: 0.5,
     },
     alertItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 8 },
     alertBullet: {
@@ -849,7 +846,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     macroRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
     macroItem: { alignItems: 'center' },
     macroValue: { fontSize: 18, fontWeight: '800', color: colors.text, letterSpacing: -0.5 },
-    macroLabel: { fontSize: 10, fontWeight: '600', color: colors.gray[400], marginTop: 2, textTransform: 'uppercase' },
+    macroLabel: { fontSize: 10, fontWeight: '600', color: colors.gray[400], marginTop: 2 },
     macroOp: { fontSize: 18, fontWeight: '300', color: colors.gray[400] },
     macroItemResult: { alignItems: 'center', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10 },
     macroResultValue: { fontSize: 20, fontWeight: '900', letterSpacing: -0.5 },
@@ -864,7 +861,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     sectionLine: { flex: 1, height: 1, backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' },
     sectionLabel: {
         fontSize: 13, fontWeight: '700', color: colors.gray[400],
-        textTransform: 'uppercase', letterSpacing: 1.2,
+        letterSpacing: 1.2,
     },
 
     // ── Family ──
@@ -932,7 +929,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     divider: { height: 1, backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)', marginVertical: 12 },
     reasonsTitle: {
         fontSize: 12, fontWeight: '700', color: colors.gray[400],
-        textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 12,
+        letterSpacing: 0.8, marginBottom: 12,
     },
     profileSummaryBox: {
         backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : colors.gray[50],

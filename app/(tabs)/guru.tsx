@@ -1,16 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from "react";
-import {
-    View,
-    Text,
-    Pressable,
-    StyleSheet,
-    FlatList,
-    KeyboardAvoidingView,
-    Platform,
-    ActivityIndicator,
-    Keyboard,
-    Dimensions
-} from "react-native";
+import { View, Pressable, StyleSheet, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Keyboard, Dimensions } from "react-native";
+import { Text } from "../../components/ui/AppText";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getScanHistoryFromDB } from '../../lib/firestore';
 import { useAuth } from '../../context/AuthContext';
@@ -30,7 +20,8 @@ import { TypingIndicator } from "../../components/guru/TypingIndicator";
 import { ChatInput } from "../../components/guru/ChatInput";
 import { ScanSelector } from "../../components/guru/ScanSelector";
 import LimitWarningModal from "../../components/ui/LimitWarningModal";
-import HistorySidebar from "../history";
+import { useShell } from "../../context/ShellContext";
+import * as haptics from "../../lib/haptics";
 import PaywallModal from "../../components/ui/PaywallModal";
 import { useTheme } from "../../context/ThemeContext";
 
@@ -44,6 +35,7 @@ export default function GuruScreen() {
     const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const router = useRouter();
     const insets = useSafeAreaInsets();
+    const [headerH, setHeaderH] = useState(0);
     const { user } = useAuth();
     const [recentScans, setRecentScans] = useState<any[]>([]);
     const [loadingScans, setLoadingScans] = useState(false);
@@ -67,7 +59,7 @@ export default function GuruScreen() {
     const [showLimitModal, setShowLimitModal] = useState(false);
     const [showPaywall, setShowPaywall] = useState(false);
     const [showOnboarding, setShowOnboarding] = useState(false);
-    const [isHistoryOpen, setHistoryOpen] = useState(false);
+    const { openSidebar } = useShell();
 
     const flatListRef = useRef<FlatList>(null);
     const showTyping = isLoading;
@@ -180,7 +172,10 @@ export default function GuruScreen() {
     return (
         <View style={{ flex: 1, backgroundColor: colors.surface }}>
             {/* --- HEADER --- */}
-            <View style={{ backgroundColor: colors.surface }}>
+            <View
+                style={{ backgroundColor: colors.surface }}
+                onLayout={(e) => setHeaderH(e.nativeEvent.layout.height)}
+            >
                 {/* SafeArea Üstü */}
                 <LinearGradient
                     colors={isDark ? ["#D97706", "#9A3412"] : [colors.primary, "#E65100"]}
@@ -205,7 +200,7 @@ export default function GuruScreen() {
                         <Pressable onPress={() => setShowOnboarding(true)} style={styles.infoButton}>
                             <Ionicons name="information-circle-outline" size={18} color="rgba(255,255,255,0.7)" />
                         </Pressable>
-                        <Pressable onPress={() => setHistoryOpen(true)} style={styles.backButton}>
+                        <Pressable onPress={() => { haptics.impactLight(); openSidebar(); }} style={styles.backButton}>
                             <MaterialCommunityIcons name="history" size={22} color={colors.white} />
                         </Pressable>
                         <Pressable onPress={handleClearHistory} style={[styles.backButton, { marginRight: 0 }]}>
@@ -219,7 +214,7 @@ export default function GuruScreen() {
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
-                keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+                keyboardVerticalOffset={Platform.OS === "ios" ? (headerH || insets.top + 56) : 0}
             >
                 <View style={styles.contentWrapper}>
                     {activeProduct ? (
@@ -274,7 +269,7 @@ export default function GuruScreen() {
                 visible={showOnboarding}
                 onFinish={handleOnboardingFinish}
             />
-            <HistorySidebar visible={isHistoryOpen} onClose={() => setHistoryOpen(false)} />
+            
             <LimitWarningModal
                 visible={showLimitModal}
                 onClose={() => setShowLimitModal(false)}

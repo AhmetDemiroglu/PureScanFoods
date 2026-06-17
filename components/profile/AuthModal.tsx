@@ -1,8 +1,6 @@
 ﻿import React, { useMemo, useState, useEffect } from "react";
-import {
-    Modal, View, Text, TextInput, Pressable, StyleSheet,
-    KeyboardAvoidingView, Platform, ActivityIndicator, Animated
-} from "react-native";
+import { Modal, View, TextInput, Pressable, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Animated } from "react-native";
+import { Text } from "../ui/AppText";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { AppColors } from "../../constants/colors";
 import { useAuth, AppleSignInCancelledError } from "../../context/AuthContext";
@@ -109,14 +107,11 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
         }
     };
 
-    // Premium modal kontrolü - giriş yapan kullanıcı premium değilse göster
-    useEffect(() => {
-        if (visible && isLoggedIn && userProfile && isPremium === false && !profileUnlocked) {
-            setShowPremiumModal(true);
-        } else if (isPremium) {
-            setShowPremiumModal(false);
-        }
-    }, [visible, isLoggedIn, isPremium, profileUnlocked, userProfile]);
+    // NOT: Eskiden burada, modal açılınca premium pitch'i OTOMATİK gösteren bir effect vardı.
+    // Bu effect ana AuthModal ile PremiumCompareModal arasında senkron Modal-swap yapıyordu;
+    // iOS'ta iki Modal aynı anda present/dismiss olunca görünmez bir katman kalıp tüm dokunmaları
+    // (topbar dil/tema/profil dahil) kilitliyordu. Kaldırıldı — premium artık renderProfile'daki
+    // açık "Premium'a Geç" butonuyla, tek seferde tek modal gösterilecek şekilde açılıyor.
 
     useEffect(() => {
         if (!visible) {
@@ -201,7 +196,6 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
 
     const handlePremiumModalClose = () => {
         setShowPremiumModal(false);
-        setProfileUnlocked(true);
     };
 
     // Usage calculations
@@ -356,6 +350,20 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
                     </View>
                 )}
 
+                {/* Premium'a Geç (sadece free kullanıcı) — auth modal'ı kapatıp tek modal olarak premium aç (iOS swap yok) */}
+                {!isPremium && (
+                    <Pressable
+                        style={({ pressed }) => [styles.upgradeBtn, pressed && styles.btnPressed]}
+                        onPress={() => {
+                            onClose();
+                            setTimeout(() => setShowPremiumModal(true), 350);
+                        }}
+                    >
+                        <MaterialCommunityIcons name="crown" size={18} color="#FFF" />
+                        <Text style={styles.upgradeText}>{t("premium.upgrade_now")}</Text>
+                    </Pressable>
+                )}
+
                 {/* Logout */}
                 <Pressable style={({ pressed }) => [styles.logoutBtn, pressed && styles.btnPressed]} onPress={handleLogout}>
                     <Ionicons name="log-out-outline" size={18} color={isDark ? "#FCA5A5" : "#EF4444"} />
@@ -481,7 +489,7 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
     // RENDER
     return (
         <>
-            <Modal transparent visible={visible && !showPremiumModal} animationType="fade" onRequestClose={onClose} statusBarTranslucent>
+            <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose} statusBarTranslucent>
                 <View style={styles.container}>
                     {/* Backdrop */}
                     <Pressable style={styles.backdrop} onPress={onClose} />
@@ -589,6 +597,17 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
         backgroundColor: isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2"
     },
     logoutText: { fontSize: 15, fontWeight: "600", color: isDark ? "#FCA5A5" : "#EF4444" },
+    upgradeBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        paddingVertical: 14,
+        borderRadius: 14,
+        marginBottom: 10,
+        backgroundColor: "#F59E0B",
+    },
+    upgradeText: { fontSize: 15, fontWeight: "700", color: "#FFF" },
 
     // Auth
     authHeader: { alignItems: "center", marginBottom: 24 },

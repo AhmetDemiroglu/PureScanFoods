@@ -1,5 +1,6 @@
 ﻿import React, { useMemo, useState, useRef, useEffect } from "react";
-import { View, Text, Pressable, StyleSheet, Modal, Dimensions, Animated, Easing, ScrollView } from "react-native";
+import { View, Pressable, StyleSheet, Modal, Dimensions, Animated, Easing, ScrollView } from "react-native";
+import { Text } from "../ui/AppText";
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Circle, Rect, Path, G, Line } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../context/ThemeContext";

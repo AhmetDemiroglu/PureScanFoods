@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, StyleSheet, Dimensions, Animated, Easing, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Dimensions, Animated, Easing, ActivityIndicator } from "react-native";
+import { Text } from "./AppText";
 import LottieView from "lottie-react-native";
 import { AppColors } from "../../constants/colors";
 import { Ionicons } from "@expo/vector-icons";
@@ -220,7 +221,7 @@ export default function ProcessingView({ mode = "camera" }: ProcessingViewProps)
         <LogoSpinner colors={colors} styles={styles} />
 
         <View style={styles.factContainer}>
-          <Text style={styles.factTitle}>{t("processing.didYouKnow", { defaultValue: "DID YOU KNOW?" })}</Text>
+          <Text upper style={styles.factTitle}>{t("processing.didYouKnow", { defaultValue: "DID YOU KNOW?" })}</Text>
           <Animated.View style={{ opacity: factFadeAnim }}>
             <Text style={styles.factText}>{facts[factIndex]}</Text>
           </Animated.View>
@@ -387,7 +388,6 @@ const createStyles = (colors: AppColors, isDark: boolean) =>
       color: colors.primary,
       letterSpacing: 0.4,
       marginBottom: 8,
-      textTransform: "uppercase",
     },
     factText: {
       fontSize: 14,

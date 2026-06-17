@@ -1,5 +1,6 @@
 ﻿import React, { useMemo, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, LayoutAnimation, Platform, UIManager } from "react-native";
+import { View, StyleSheet, TouchableOpacity, LayoutAnimation, Platform, UIManager } from "react-native";
+import { Text } from "../ui/AppText";
 import { Ionicons } from "@expo/vector-icons";
 import { AppColors } from "../../constants/colors";
 import { useTranslation } from "react-i18next";
@@ -119,7 +120,7 @@ export default function DetailCards({ data }: DetailCardsProps) {
                 {expandedSection === "nutrition" && (
                     <View style={styles.cardBody}>
                         <View style={styles.infoBox}>
-                            <Text style={styles.infoLabel}>{t("results.processingLevel")}</Text>
+                            <Text upper style={styles.infoLabel}>{t("results.processingLevel")}</Text>
                             <Text style={styles.infoValue}>{data.details?.processing?.classification || t("common.unknown")}</Text>
                             <Text style={styles.infoDesc}>{data.details?.processing?.description}</Text>
                         </View>
@@ -128,7 +129,7 @@ export default function DetailCards({ data }: DetailCardsProps) {
 
                         {data.details?.nutritional_highlights?.pros?.length > 0 && (
                             <>
-                                <Text style={[styles.subTitle, { color: colors.success }]}>{t("results.pros")}</Text>
+                                <Text upper style={[styles.subTitle, { color: colors.success }]}>{t("results.pros")}</Text>
                                 {data.details.nutritional_highlights.pros.map((pro: string, i: number) => (
                                     <View key={i} style={styles.bulletRow}>
                                         <Ionicons name="checkmark-circle" size={16} color={colors.success} />
@@ -142,7 +143,7 @@ export default function DetailCards({ data }: DetailCardsProps) {
                         {/* DÜZELTME: Optional chaining (?.) */}
                         {data.details?.nutritional_highlights?.cons?.length > 0 && (
                             <>
-                                <Text style={[styles.subTitle, { color: colors.error }]}>{t("results.cons")}</Text>
+                                <Text upper style={[styles.subTitle, { color: colors.error }]}>{t("results.cons")}</Text>
                                 {data.details.nutritional_highlights.cons.map((con: string, i: number) => (
                                     <View key={i} style={styles.bulletRow}>
                                         <Ionicons name="warning" size={16} color={colors.error} />
@@ -284,7 +285,6 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     infoLabel: {
         fontSize: 10,
         color: colors.gray[400],
-        textTransform: 'uppercase',
         fontWeight: '700',
     },
     infoValue: {
@@ -305,7 +305,6 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     subTitle: {
         fontSize: 12,
         fontWeight: '800',
-        textTransform: 'uppercase',
         marginBottom: 8,
     },
     bulletRow: {

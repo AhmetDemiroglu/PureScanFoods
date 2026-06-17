@@ -1,5 +1,6 @@
 ﻿import React, { useEffect, useMemo, useState } from 'react';
-import { Modal, View, Text, Pressable, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
+import { Modal, View, Pressable, StyleSheet, Dimensions, ActivityIndicator } from "react-native";
+import { Text } from "./AppText";
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { AppColors } from '../../constants/colors';
 import { LinearGradient } from 'expo-linear-gradient';

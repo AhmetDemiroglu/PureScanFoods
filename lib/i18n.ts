@@ -44,7 +44,7 @@ const SPANISH_REGIONS = new Set([
 ]);
 
 const defaultLang =
-    regionCode === "TR"
+    (languageCode === "tr" || regionCode === "TR")
         ? "tr"
         : (languageCode === "es" || (regionCode ? SPANISH_REGIONS.has(regionCode) : false))
             ? "es"

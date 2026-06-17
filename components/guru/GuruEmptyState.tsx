@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
+import { Text } from "../ui/AppText";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { AppColors } from "../../constants/colors";

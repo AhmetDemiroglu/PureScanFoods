@@ -2,7 +2,8 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { View, Text, Pressable, StyleSheet, Dimensions, TextInput, ActivityIndicator, Modal, TouchableOpacity, Animated, useWindowDimensions } from "react-native";
+import { View, Pressable, StyleSheet, Dimensions, TextInput, ActivityIndicator, Modal, TouchableOpacity, Animated, ScrollView, useWindowDimensions } from "react-native";
+import { Text } from "../../components/ui/AppText";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,7 +19,8 @@ import * as ImagePicker from "expo-image-picker";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { useUser } from "../../context/UserContext";
 import { useLocalSearchParams } from "expo-router";
-import HistorySidebar from '../history';
+import { useShell } from '../../context/ShellContext';
+import * as haptics from '../../lib/haptics';
 import LimitWarningModal from "../../components/ui/LimitWarningModal";
 import { ScanFailGraphic } from "../../components/ui/ScanFailGraphic";
 import PaywallModal from "../../components/ui/PaywallModal";
@@ -53,7 +55,7 @@ export default function ScanScreen() {
 
   const [barcodeInput, setBarcodeInput] = useState("");
   const [textInput, setTextInput] = useState("");
-  const [isHistoryOpen, setHistoryOpen] = useState(false);
+  const { openSidebar } = useShell();
   const [showNotFoundModal, setShowNotFoundModal] = useState(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
@@ -370,10 +372,16 @@ export default function ScanScreen() {
       <View style={styles.content}>
 
         {/* 1. Header: Sabit Üstte */}
-        <Header onHistoryPress={() => setHistoryOpen(true)} />
+        <Header onHistoryPress={() => { haptics.impactLight(); openSidebar(); }} />
 
-        {/* 2. Orta Alan: Hero ve Kart'ı kapsar ve ortalar */}
-        <View style={styles.centerContainer}>
+        {/* 2. Orta Alan: Hero ve Kart'ı kapsar ve ortalar — klavye açılınca input'lar görünür kalsın diye ScrollView */}
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.centerContainer}
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets
+          showsVerticalScrollIndicator={false}
+        >
           <Hero />
 
           {/* Scan Card */}
@@ -556,7 +564,7 @@ export default function ScanScreen() {
               )}
             </View>
           </View>
-        </View>
+        </ScrollView>
         {/* 2. Kamera Modalı */}
         <Modal
           visible={showCamera}
@@ -794,10 +802,6 @@ export default function ScanScreen() {
           </View>
         </Modal>
       </View >
-      <HistorySidebar
-        visible={isHistoryOpen}
-        onClose={() => setHistoryOpen(false)}
-      />
       <LimitWarningModal
         visible={showLimitModal}
         onClose={() => setShowLimitModal(false)}
@@ -904,7 +908,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     paddingHorizontal: 20,
   },
   centerContainer: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: "center",
     gap: 40,
     paddingBottom: 20,

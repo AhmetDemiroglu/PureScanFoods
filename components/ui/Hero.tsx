@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
-import { View, Text, StyleSheet, Animated, Easing } from "react-native";
+import { View, StyleSheet, Animated, Easing } from "react-native";
+import { Text } from "./AppText";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import MaskedView from "@react-native-masked-view/masked-view";
@@ -111,11 +112,11 @@ export default function Hero() {
 
       <View style={styles.sloganContainer}>
         <GradientText colors={colors} style={styles.sloganMain}>
-          {t("home.headline", { defaultValue: "G�dalar�n�zda Neler Var?" })}
+          {t("home.headline", { defaultValue: "Gıdalarınızda Neler Var?" })}
         </GradientText>
 
         <Text style={styles.sloganSub}>
-          {t("home.subheadline", { defaultValue: "AI destekli analiz ile an�nda ��ren" })}
+          {t("home.subheadline", { defaultValue: "AI destekli analiz ile anında öğren" })}
         </Text>
       </View>
     </View>
@@ -172,8 +173,7 @@ const createStyles = (colors: AppColors, isDark: boolean) =>
     },
     subtitleFoods: {
       fontSize: 28,
-      fontFamily: "serif",
-      fontStyle: "italic",
+      fontFamily: "Caveat-Bold",
       color: isDark ? "#F87171" : "#EF4444",
       marginTop: -10,
       marginLeft: 120,

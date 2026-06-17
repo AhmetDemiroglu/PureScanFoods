@@ -1,16 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import {
-  Modal,
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  Dimensions,
-  ScrollView,
-  Linking,
-  ActivityIndicator,
-  Platform,
-} from "react-native";
+import { Modal, View, Pressable, StyleSheet, Dimensions, ScrollView, Linking, ActivityIndicator, Platform } from "react-native";
+import { Text } from "./AppText";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { AppColors } from "../../constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
@@ -433,7 +423,7 @@ export default function PaywallModal({ visible, onClose, onAuthRequired }: Paywa
               </Animated.View>
 
               <View style={styles.featuresSection}>
-                <Text style={styles.featuresTitle}>{t("paywall.includes")}</Text>
+                <Text upper style={styles.featuresTitle}>{t("paywall.includes")}</Text>
                 <ScrollView
                   style={styles.featuresScroll}
                   contentContainerStyle={styles.featuresScrollContent}
@@ -853,7 +843,6 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     color: colors.gray[400],
     letterSpacing: 0.5,
     marginBottom: 8,
-    textTransform: "uppercase",
   },
   featuresScroll: {
     maxHeight: SCREEN_HEIGHT * 0.27,

@@ -1,4 +1,5 @@
-import { View, Text, Pressable, StyleSheet, Image } from "react-native";
+import { View, Pressable, StyleSheet, Image } from "react-native";
+import { Text } from "./AppText";
 import { useMemo, useState } from "react";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";

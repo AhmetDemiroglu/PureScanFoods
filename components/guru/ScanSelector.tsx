@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
-import { View, Text, ScrollView, Pressable, Image, StyleSheet } from "react-native";
+import { View, ScrollView, Pressable, Image, StyleSheet } from "react-native";
+import { Text } from "../ui/AppText";
 import { useTranslation } from "react-i18next";
 import { AppColors } from "../../constants/colors";
 import { ScanResult } from "../../lib/firestore";
@@ -24,11 +25,11 @@ export const ScanSelector = ({ scans, onSelect, isLoading }: ScanSelectorProps) 
     return colors.error;
   };
 
-  const getDisplayName = (scan: ScanResult) => scan.productName?.trim() || scan.brand?.trim() || "Bilinmeyen ‹r¸n";
+  const getDisplayName = (scan: ScanResult) => scan.productName?.trim() || scan.brand?.trim() || "Bilinmeyen √úr√ºn";
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{t("guru.recentScans", { defaultValue: "Son Taramalar" })}</Text>
+      <Text upper style={styles.title}>{t("guru.recentScans", { defaultValue: "Son Taramalar" })}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {scans.map((scan) => {
           const scoreColor = getScoreColor(scan.score);
@@ -60,7 +61,6 @@ const createStyles = (colors: AppColors, isDark: boolean) =>
       color: colors.textMuted,
       marginBottom: 8,
       fontWeight: "700",
-      textTransform: "uppercase",
     },
     scrollContent: {
       gap: 10,

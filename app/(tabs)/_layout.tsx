@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { AppColors } from "../../constants/colors";
 import { useTheme } from "../../context/ThemeContext";
+import * as haptics from "../../lib/haptics";
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
@@ -16,6 +17,7 @@ export default function TabsLayout() {
 
   return (
     <Tabs
+      screenListeners={{ tabPress: () => haptics.selection() }}
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: true,

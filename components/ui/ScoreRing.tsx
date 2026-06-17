@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
-import { View, Text, StyleSheet, Animated, Easing } from "react-native";
+import { View, StyleSheet, Animated, Easing } from "react-native";
+import { Text } from "./AppText";
 import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from "react-native-svg";
 import { useTheme } from "../../context/ThemeContext";
 
@@ -151,7 +152,7 @@ export default function ScoreRing({
       </View>
 
       {label ? (
-        <Text style={[styles.label, { color: colors.gray[500] }]}>{label}</Text>
+        <Text upper style={[styles.label, { color: colors.gray[500] }]}>{label}</Text>
       ) : null}
     </Animated.View>
   );
@@ -188,7 +189,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 10,
     fontWeight: "700",
-    textTransform: "uppercase",
     letterSpacing: 1,
     marginTop: 4,
     textAlign: "center",

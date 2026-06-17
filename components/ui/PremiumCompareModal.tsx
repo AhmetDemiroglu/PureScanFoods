@@ -1,12 +1,6 @@
 ﻿import React, { useEffect, useMemo } from "react";
-import {
-    Modal,
-    View,
-    Text,
-    Pressable,
-    StyleSheet,
-    Dimensions,
-} from "react-native";
+import { Modal, View, Pressable, StyleSheet, Dimensions } from "react-native";
+import { Text } from "./AppText";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { AppColors } from "../../constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
@@ -148,7 +142,7 @@ export default function PremiumCompareModal({ visible, onClose, onSubscribe }: P
                             iconColor={colors.primary}
                             iconBg="#FFF7ED"
                             label={t("premium.feat_scan")}
-                            freeValue="5"
+                            freeValue="3"
                             premiumValue={UNLIMITED}
                             premiumHighlight
                             index={0}

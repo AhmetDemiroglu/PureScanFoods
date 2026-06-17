@@ -21,7 +21,7 @@ import { Platform } from "react-native";
 import * as Crypto from "expo-crypto";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { doc, onSnapshot, updateDoc, serverTimestamp, deleteDoc, collection, getDocs, writeBatch } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, setDoc, serverTimestamp, deleteDoc, collection, getDocs, writeBatch } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { deleteUser } from "firebase/auth";
 
@@ -394,12 +394,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
             if (displayName && userCred.user?.uid) {
                 try {
-                    await updateDoc(doc(db, "users", userCred.user.uid), {
-                        displayName,
-                    });
+                    // setDoc with merge: works whether or not the user doc exists yet,
+                    // so it never hangs/rejects waiting on a missing document (Apple login freeze fix).
+                    await setDoc(
+                        doc(db, "users", userCred.user.uid),
+                        { displayName },
+                        { merge: true }
+                    );
                 } catch (e) {
-                    // user doc may not exist yet (will be created by initializeUser);
-                    // ignore here, displayName will be re-applied on profile creation.
+                    // non-fatal; displayName will be re-applied on profile creation.
                     if (__DEV__) console.warn("Apple displayName update deferred:", e);
                 }
             }

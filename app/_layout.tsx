@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { I18nextProvider } from "react-i18next";
@@ -16,9 +17,32 @@ import { GuruProvider } from "../context/GuruContext";
 import { preloadAds } from "../lib/admob";
 import { AppOnboardingModal } from "../components/ui/AppOnboardingModal";
 import { ThemeProvider, useTheme } from "../context/ThemeContext";
+import { useFonts } from "expo-font";
+import { ShellProvider } from "../context/ShellContext";
+import AppShellSidebar from "../components/shell/AppShellSidebar";
 
 const APP_ONBOARDING_ACCEPTED_KEY = "@app_onboarding_disclaimer_accepted_v1";
 export const ATT_STATUS_KEY = "@purescan_att_status";
+
+// ATT sistem dialogu YALNIZCA uygulama "active" durumdayken ve ekranda başka bir
+// modal geçiş halinde değilken gösterilir. Onboarding modal'ı kapanırken ATT
+// istenirse iOS dialogu sessizce düşürür (Apple 2.1 reddinin sebebi buydu).
+// Bu helper: app active olana kadar bekler + modal'ın tam kapanması için kısa gecikme verir.
+function waitForActiveAndSettle(delayMs = 700): Promise<void> {
+  return new Promise((resolve) => {
+    const settle = () => setTimeout(resolve, delayMs);
+    if (AppState.currentState === "active") {
+      settle();
+      return;
+    }
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        sub.remove();
+        settle();
+      }
+    });
+  });
+}
 
 // iOS App Tracking Transparency: izin durumunu sor ve AsyncStorage'a yansıt.
 // AdMob bu değeri okur ve personalized ad isteğini buna göre ayarlar.
@@ -30,6 +54,8 @@ async function ensureTrackingDecision(): Promise<void> {
     let status = current.status;
 
     if (current.canAskAgain && status === PermissionStatus.UNDETERMINED) {
+      // App active + modal tam kapandıktan sonra iste, yoksa dialog hiç görünmez.
+      await waitForActiveAndSettle();
       const result = await requestTrackingPermissionsAsync();
       status = result.status;
     }
@@ -44,6 +70,15 @@ async function ensureTrackingDecision(): Promise<void> {
 function AppShell() {
   const [hasAcceptedDisclaimer, setHasAcceptedDisclaimer] = useState<boolean | null>(null);
   const { isDark, isReady } = useTheme();
+
+  // Custom fontlar runtime'da yüklenir (prebuild gerekmez). Türkçe tam destekli.
+  const [fontsLoaded] = useFonts({
+    "Inter-Regular": require("../assets/fonts/Inter-Regular.ttf"),
+    "Inter-Medium": require("../assets/fonts/Inter-Medium.ttf"),
+    "Inter-SemiBold": require("../assets/fonts/Inter-SemiBold.ttf"),
+    "Inter-Bold": require("../assets/fonts/Inter-Bold.ttf"),
+    "Caveat-Bold": require("../assets/fonts/Caveat-Bold.ttf"),
+  });
 
   useEffect(() => {
     preloadAds();
@@ -80,15 +115,25 @@ function AppShell() {
     await ensureTrackingDecision();
   };
 
-  if (!isReady) {
+  if (!isReady || !fontsLoaded) {
     return null;
   }
 
   return (
     <>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
-      </Stack>
+      <AppShellSidebar>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
+          <Stack.Screen
+            name="product-result"
+            options={{
+              gestureEnabled: true,
+              gestureDirection: "horizontal",
+              animation: "slide_from_right",
+            }}
+          />
+        </Stack>
+      </AppShellSidebar>
       <AppOnboardingModal
         visible={hasAcceptedDisclaimer === false}
         onAccept={handleOnboardingAccept}
@@ -98,18 +143,24 @@ function AppShell() {
   );
 }
 
+// AppShell artık AppShellSidebar (X-style history slide-over) ile sarılıdır.
+
 export default function RootLayout() {
   return (
-    <I18nextProvider i18n={i18n}>
-      <ThemeProvider>
-        <AuthProvider>
-          <UserProvider>
-            <GuruProvider>
-              <AppShell />
-            </GuruProvider>
-          </UserProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </I18nextProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <I18nextProvider i18n={i18n}>
+        <ThemeProvider>
+          <AuthProvider>
+            <UserProvider>
+              <GuruProvider>
+                <ShellProvider>
+                  <AppShell />
+                </ShellProvider>
+              </GuruProvider>
+            </UserProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </I18nextProvider>
+    </GestureHandlerRootView>
   );
 }

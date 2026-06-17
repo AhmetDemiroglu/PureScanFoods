@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
+import { View, StyleSheet, Pressable } from "react-native";
+import { Text } from "../ui/AppText";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { AppColors } from "../../constants/colors";
@@ -23,7 +24,7 @@ export const ProductContextCard = ({ product, onClose }: ProductContextCardProps
   };
 
   const scoreColor = getScoreColor(product.score);
-  const displayName = product.name?.trim() || product.brand?.trim() || "Bilinmeyen �r�n";
+  const displayName = product.name?.trim() || product.brand?.trim() || "Bilinmeyen Ürün";
 
   return (
     <View style={styles.container}>
@@ -35,7 +36,7 @@ export const ProductContextCard = ({ product, onClose }: ProductContextCardProps
         <Ionicons name="close" size={18} color={colors.gray[500]} />
       </Pressable>
 
-      <Text style={styles.label}>{t("guru.activeProduct", { defaultValue: "Aktif �r�n" })}</Text>
+      <Text upper style={styles.label}>{t("guru.activeProduct", { defaultValue: "Aktif Ürün" })}</Text>
 
       <View style={styles.contentRow}>
         <View style={[styles.scoreBadge, { backgroundColor: scoreColor }]}>
@@ -84,7 +85,6 @@ const createStyles = (colors: AppColors, isDark: boolean) =>
       color: colors.textMuted,
       marginBottom: 8,
       letterSpacing: 0.3,
-      textTransform: "uppercase",
     },
     contentRow: {
       flexDirection: "row",

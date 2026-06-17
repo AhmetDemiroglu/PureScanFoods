@@ -1,6 +1,6 @@
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { InterstitialAd, RewardedAd, AdEventType, RewardedAdEventType, TestIds } from "react-native-google-mobile-ads";
+import mobileAds, { InterstitialAd, RewardedAd, AdEventType, RewardedAdEventType, TestIds } from "react-native-google-mobile-ads";
 
 // --- AD UNIT IDs (platform & env aware) ---
 // iOS production unit ID'leri AdMob panelinden alınıp env'e konacak.
@@ -21,6 +21,28 @@ const AD_UNITS = {
 };
 
 const ATT_STATUS_KEY = "@purescan_att_status";
+
+// --- SDK INIT ---
+// Google Mobile Ads SDK, reklam istenmeden ÖNCE initialize edilmiş olmalı.
+// iOS'ta auto-init zamanlaması Android'den farklı; explicit initialize çağrılmazsa
+// erken reklam istekleri sessizce başarısız olur (iOS'ta reklamların hiç görünmeme sebebi).
+let initPromise: Promise<unknown> | null = null;
+export const initializeAds = (): Promise<unknown> => {
+    if (!initPromise) {
+        initPromise = mobileAds()
+            .initialize()
+            .then((statuses) => {
+                if (__DEV__) console.log("✅ Mobile Ads SDK initialized", statuses);
+                return statuses;
+            })
+            .catch((err) => {
+                if (__DEV__) console.warn("⚠️ Mobile Ads init failed:", err);
+                initPromise = null; // sonraki denemede tekrar başlatılabilsin
+                throw err;
+            });
+    }
+    return initPromise;
+};
 
 // ATT durumuna göre personalized ad isteğini ayarla.
 const getNonPersonalizedFlag = async (): Promise<boolean> => {
@@ -43,6 +65,7 @@ export const loadInterstitialAd = async (): Promise<void> => {
         return;
     }
 
+    await initializeAds().catch(() => {}); // SDK hazır olmadan istek atma
     const nonPersonalized = await getNonPersonalizedFlag();
 
     return new Promise((resolve, reject) => {
@@ -123,6 +146,7 @@ export const loadRewardedAd = async (): Promise<void> => {
     }
 
     isRewardedLoading = true;
+    await initializeAds().catch(() => {}); // SDK hazır olmadan istek atma
     const nonPersonalized = await getNonPersonalizedFlag();
 
     return new Promise((resolve, reject) => {
@@ -207,6 +231,7 @@ export const preloadAds = async (): Promise<void> => {
     if (__DEV__) console.log("📺 Preloading Ads...");
 
     try {
+        await initializeAds().catch(() => {});
         await Promise.allSettled([loadInterstitialAd(), loadRewardedAd()]);
         if (__DEV__) console.log("✅ Ads Preloaded");
     } catch (error) {

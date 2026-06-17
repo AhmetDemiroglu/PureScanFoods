@@ -1,14 +1,6 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from "react";
-import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  Modal,
-  Animated,
-  Easing,
-  ScrollView,
-} from "react-native";
+import { View, Pressable, StyleSheet, Modal, Animated, Easing, ScrollView } from "react-native";
+import { Text } from "./AppText";
 import Svg, {
   Defs,
   LinearGradient as SvgLinearGradient,

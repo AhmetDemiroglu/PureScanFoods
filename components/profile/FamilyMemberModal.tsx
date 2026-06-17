@@ -1,5 +1,6 @@
 ﻿import React, { useMemo, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Modal, TextInput, TouchableOpacity, ScrollView, Pressable } from 'react-native';
+import { View, StyleSheet, Modal, TextInput, TouchableOpacity, ScrollView, Pressable } from "react-native";
+import { Text } from "../ui/AppText";
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { AppColors } from '../../constants/colors';
 import { AVATAR_ICONS, AVATAR_COLORS } from '../../context/UserContext';

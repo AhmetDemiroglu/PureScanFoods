@@ -1,18 +1,8 @@
-﻿import React, { useState, useMemo, useEffect } from "react";
-import {
-    View,
-    Text,
-    StyleSheet,
-    ScrollView,
-    TextInput,
-    TouchableOpacity,
-    FlatList,
-    Dimensions,
-    StatusBar,
-    LayoutAnimation,
-    Platform,
-    UIManager,
-} from "react-native";
+﻿import React, { useState, useMemo, useEffect, useRef } from "react";
+import { View, StyleSheet, ScrollView, TextInput, TouchableOpacity, FlatList, Dimensions, StatusBar, LayoutAnimation, Platform, UIManager } from "react-native";
+import { GestureDetector, Gesture } from "react-native-gesture-handler";
+import { runOnJS } from "react-native-reanimated";
+import { Text } from "../../components/ui/AppText";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -20,7 +10,8 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { AppColors } from "../../constants/colors";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import HistorySidebar from "../history";
+import { useShell } from "../../context/ShellContext";
+import * as haptics from "../../lib/haptics";
 import { OnboardingModal } from "../../components/ui/OnboardingModal";
 
 import {
@@ -44,6 +35,7 @@ if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental
 const { width } = Dimensions.get("window");
 
 type TabType = "additives" | "nova" | "nutriscore";
+const TAB_ORDER: TabType[] = ["additives", "nova", "nutriscore"];
 type RiskFilter = "ALL" | AdditiveRisk;
 
 const getRiskConfig = (isDark: boolean): Record<AdditiveRisk, { color: string; bg: string; icon: keyof typeof Ionicons.glyphMap }> => ({
@@ -81,11 +73,37 @@ export default function AdditivesLibraryScreen() {
     const isEs = i18n.language?.startsWith("es");
 
     const [activeTab, setActiveTab] = useState<TabType>("additives");
+    const activeTabRef = useRef(activeTab);
+    activeTabRef.current = activeTab;
+
+    // Yatay swipe ile tablar arası geçiş. failOffsetY dikey FlatList/ScrollView
+    // scroll'unu korur; sadece belirgin yatay harekette tab değişir.
+    const goToTab = (dir: number) => {
+      const i = TAB_ORDER.indexOf(activeTabRef.current);
+      const ni = Math.min(TAB_ORDER.length - 1, Math.max(0, i + dir));
+      if (ni !== i) {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        haptics.selection();
+        setActiveTab(TAB_ORDER[ni]);
+      }
+    };
+    const tabSwipe = useMemo(
+      () =>
+        Gesture.Pan()
+          .activeOffsetX([-24, 24])
+          .failOffsetY([-16, 16])
+          .onEnd((e) => {
+            "worklet";
+            if (e.translationX <= -50 || e.velocityX <= -500) runOnJS(goToTab)(1);
+            else if (e.translationX >= 50 || e.velocityX >= 500) runOnJS(goToTab)(-1);
+          }),
+      []
+    );
     const [searchQuery, setSearchQuery] = useState("");
     const [riskFilter, setRiskFilter] = useState<RiskFilter>("ALL");
     const [expandedAdditive, setExpandedAdditive] = useState<string | null>(null);
     const [expandedNova, setExpandedNova] = useState<NovaGroup | null>(null);
-    const [isHistoryOpen, setHistoryOpen] = useState(false);
+    const { openSidebar } = useShell();
     const [showOnboarding, setShowOnboarding] = useState(false);
 
     useEffect(() => {
@@ -185,21 +203,21 @@ export default function AdditivesLibraryScreen() {
                 {/* Status Row */}
                 <View style={styles.statusRow}>
                     <View style={styles.statusItem}>
-                        <Text style={styles.statusLabel}>EU</Text>
+                        <Text upper style={styles.statusLabel}>EU</Text>
                         <Text style={[styles.statusValue, { color: STATUS_CONFIG[additive.euStatus].color }]}>
                             {isTr ? STATUS_CONFIG[additive.euStatus].labelTr : isEs ? STATUS_CONFIG[additive.euStatus].labelEs : STATUS_CONFIG[additive.euStatus].label}
                         </Text>
                     </View>
                     <View style={styles.statusDivider} />
                     <View style={styles.statusItem}>
-                        <Text style={styles.statusLabel}>FDA</Text>
+                        <Text upper style={styles.statusLabel}>FDA</Text>
                         <Text style={[styles.statusValue, { color: STATUS_CONFIG[additive.fdaStatus].color }]}>
                             {isTr ? STATUS_CONFIG[additive.fdaStatus].labelTr : isEs ? STATUS_CONFIG[additive.fdaStatus].labelEs : STATUS_CONFIG[additive.fdaStatus].label}
                         </Text>
                     </View>
                     <View style={styles.statusDivider} />
                     <View style={styles.statusItem}>
-                        <Text style={styles.statusLabel}>{isTr ? "Kategori" : isEs ? "Categoría" : "Category"}</Text>
+                        <Text upper style={styles.statusLabel}>{isTr ? "Kategori" : isEs ? "Categoría" : "Category"}</Text>
                         <Text style={styles.statusValueSmall} numberOfLines={1}>
                             {isTr ? additive.categoryTr : isEs ? additive.categoryEs : additive.category}
                         </Text>
@@ -367,7 +385,7 @@ export default function AdditivesLibraryScreen() {
                         <TouchableOpacity style={styles.infoButton} onPress={() => setShowOnboarding(true)}>
                             <Ionicons name="information-circle-outline" size={18} color="rgba(255,255,255,0.7)" />
                         </TouchableOpacity>
-                        <TouchableOpacity style={[styles.backButton, { marginRight: 0 }]} onPress={() => setHistoryOpen(true)}>
+                        <TouchableOpacity style={[styles.backButton, { marginRight: 0 }]} onPress={() => { haptics.impactLight(); openSidebar(); }}>
                             <MaterialCommunityIcons name="history" size={22} color="#FFF" />
                         </TouchableOpacity>
                     </View>
@@ -432,7 +450,9 @@ export default function AdditivesLibraryScreen() {
                 </SafeAreaView>
             </LinearGradient>
 
-            {/* Content */}
+            {/* Content — yatay swipe ile tab değişimi */}
+            <GestureDetector gesture={tabSwipe}>
+              <View style={{ flex: 1 }}>
             {activeTab === "additives" ? (
                 <FlatList
                     style={styles.content}
@@ -576,7 +596,9 @@ export default function AdditivesLibraryScreen() {
                     <View style={{ height: 40 }} />
                 </ScrollView>
             )}
-            <HistorySidebar visible={isHistoryOpen} onClose={() => setHistoryOpen(false)} />
+              </View>
+            </GestureDetector>
+
             <OnboardingModal
                 visible={showOnboarding}
                 onFinish={handleOnboardingFinish}
@@ -795,7 +817,6 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
         fontSize: 10,
         fontWeight: "600",
         color: colors.gray[400],
-        textTransform: "uppercase",
     },
     statusValue: {
         fontSize: 12,

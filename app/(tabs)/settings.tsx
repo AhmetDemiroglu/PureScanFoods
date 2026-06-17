@@ -1,21 +1,6 @@
 ﻿import React, { useState, useMemo } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Pressable,
-  StatusBar,
-  Linking,
-  Image,
-  LayoutAnimation,
-  Platform,
-  UIManager,
-  TextInput,
-  ActivityIndicator,
-  TouchableOpacity,
-  Alert,
-} from "react-native";
+import { View, StyleSheet, ScrollView, Pressable, StatusBar, Linking, Image, LayoutAnimation, Platform, UIManager, TextInput, ActivityIndicator, TouchableOpacity, Alert } from "react-native";
+import { Text } from "../../components/ui/AppText";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -32,7 +17,8 @@ import {
 import { auth } from "../../lib/firebase"
 import * as Application from "expo-application";
 import PremiumCompareModal from "../../components/ui/PremiumCompareModal";
-import HistorySidebar from "../history";
+import { useShell } from "../../context/ShellContext";
+import * as haptics from "../../lib/haptics";
 import PaywallModal from "../../components/ui/PaywallModal";
 import ConfirmDeleteModal from "../../components/ui/ConfirmDeleteModal";
 import AuthModal from "../../components/profile/AuthModal";
@@ -64,7 +50,7 @@ export default function SettingsScreen() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [premiumModalVisible, setPremiumModalVisible] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
-  const [isHistoryOpen, setHistoryOpen] = useState(false);
+  const { openSidebar } = useShell();
   const [dataManagementOpen, setDataManagementOpen] = useState(false);
   const [deleteDataModalVisible, setDeleteDataModalVisible] = useState(false);
   const [deleteAccountModalVisible, setDeleteAccountModalVisible] = useState(false);
@@ -183,7 +169,7 @@ export default function SettingsScreen() {
               <Text style={styles.headerTitle}>{t("settings.title")}</Text>
               <Text style={styles.headerSubtitle}>{t("settings.subtitle")}</Text>
             </View>
-            <TouchableOpacity style={[styles.backButton, { marginRight: 0 }]} onPress={() => setHistoryOpen(true)}>
+            <TouchableOpacity style={[styles.backButton, { marginRight: 0 }]} onPress={() => { haptics.impactLight(); openSidebar(); }}>
               <MaterialCommunityIcons name="history" size={22} color="#FFF" />
             </TouchableOpacity>
           </View>
@@ -568,7 +554,7 @@ export default function SettingsScreen() {
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      <HistorySidebar visible={isHistoryOpen} onClose={() => setHistoryOpen(false)} />
+      
       <PremiumCompareModal
         visible={premiumModalVisible}
         onClose={() => setPremiumModalVisible(false)}

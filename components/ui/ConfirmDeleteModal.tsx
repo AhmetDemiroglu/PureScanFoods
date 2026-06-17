@@ -1,15 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  Modal,
-  Pressable,
-  TextInput,
-  StyleSheet,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
+import { View, Modal, Pressable, TextInput, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
+import { Text } from "./AppText";
 import { Ionicons } from "@expo/vector-icons";
 import { AppColors } from "../../constants/colors";
 import { useTranslation } from "react-i18next";
