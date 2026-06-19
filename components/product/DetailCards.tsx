@@ -5,6 +5,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { AppColors } from "../../constants/colors";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../context/ThemeContext";
+import { useRouter } from "expo-router";
+import { getAdditiveInfo } from "../../constants/additives";
+import FullIngredientsSheet from "./FullIngredientsSheet";
 
 if (Platform.OS === 'android') {
     if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -14,17 +17,21 @@ if (Platform.OS === 'android') {
 
 interface DetailCardsProps {
     data: any;
+    additives?: any[]; // zenginleştirilmiş katkılar (verilmezse data.details.additives)
 }
 
-export default function DetailCards({ data }: DetailCardsProps) {
+export default function DetailCards({ data, additives }: DetailCardsProps) {
     const { t } = useTranslation();
+    const router = useRouter();
     const { colors, isDark } = useTheme();
     const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     if (!data || !data.details) return null;
 
     const [expandedSection, setExpandedSection] = useState<string | null>("ingredients");
+    const [showFullIngredients, setShowFullIngredients] = useState(false);
+    const fullIngredientsText = data.details?.ingredients_full_text || "";
 
-    const rawAdditives = data.details?.additives || [];
+    const rawAdditives = additives ?? data.details?.additives ?? [];
 
     const validAdditives = rawAdditives.filter((item: any) => {
         const name = item.name ? item.name.toLowerCase() : "";
@@ -86,6 +93,12 @@ export default function DetailCards({ data }: DetailCardsProps) {
                                 </View>
                             ))}
                         </View>
+                        {!!fullIngredientsText && (
+                            <TouchableOpacity style={styles.fullIngBtn} onPress={() => setShowFullIngredients(true)} activeOpacity={0.7}>
+                                <Ionicons name="information-circle-outline" size={15} color={colors.primary} />
+                                <Text style={styles.fullIngBtnText}>{t("results.ingredients_full.cta")}</Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                 )}
             </View>
@@ -96,19 +109,27 @@ export default function DetailCards({ data }: DetailCardsProps) {
                     {renderHeader(t("results.additives"), "flask", "additives", validAdditives.length)}
                     {expandedSection === "additives" && (
                         <View style={styles.cardBody}>
-                            {validAdditives.map((add: any, i: number) => (
-                                <View key={i} style={styles.additiveRow}>
-                                    <View style={[styles.additiveCode, add.risk === 'Hazardous'
-                                        ? { backgroundColor: isDark ? "rgba(220,38,38,0.20)" : '#FEF2F2' }
-                                        : { backgroundColor: isDark ? "rgba(217,119,6,0.20)" : '#FFFBEB' }]}>
-                                        <Text style={[styles.additiveCodeText, add.risk === 'Hazardous' ? { color: colors.error } : { color: colors.warning }]}>{add.code}</Text>
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={styles.additiveName}>{add.name}</Text>
-                                        <Text style={styles.additiveDesc}>{add.description}</Text>
-                                    </View>
-                                </View>
-                            ))}
+                            {validAdditives.map((add: any, i: number) => {
+                                const inDict = !!add.code && !!getAdditiveInfo(add.code);
+                                const RowComp: any = inDict ? TouchableOpacity : View;
+                                const rowProps = inDict
+                                    ? { onPress: () => router.push({ pathname: "/(tabs)/encyclopedia", params: { additiveCode: String(add.code) } }), activeOpacity: 0.7 }
+                                    : {};
+                                return (
+                                    <RowComp key={i} style={styles.additiveRow} {...rowProps}>
+                                        <View style={[styles.additiveCode, add.risk === 'Hazardous'
+                                            ? { backgroundColor: isDark ? "rgba(220,38,38,0.20)" : '#FEF2F2' }
+                                            : { backgroundColor: isDark ? "rgba(217,119,6,0.20)" : '#FFFBEB' }]}>
+                                            <Text style={[styles.additiveCodeText, add.risk === 'Hazardous' ? { color: colors.error } : { color: colors.warning }]}>{add.code}</Text>
+                                        </View>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={styles.additiveName}>{add.name}</Text>
+                                            <Text style={styles.additiveDesc}>{add.description}</Text>
+                                        </View>
+                                        {inDict && <Ionicons name="chevron-forward" size={16} color={colors.gray[400]} />}
+                                    </RowComp>
+                                );
+                            })}
                         </View>
                     )}
                 </View>
@@ -156,11 +177,29 @@ export default function DetailCards({ data }: DetailCardsProps) {
                 )}
             </View>
 
+            <FullIngredientsSheet
+                visible={showFullIngredients}
+                onClose={() => setShowFullIngredients(false)}
+                fullText={fullIngredientsText}
+                source={data.details?.ingredients_source}
+            />
         </View>
     );
 }
 
 const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
+    fullIngBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+        marginTop: 12,
+        alignSelf: "flex-start",
+    },
+    fullIngBtnText: {
+        fontSize: 13,
+        fontWeight: "600",
+        color: colors.primary,
+    },
     container: {
         paddingHorizontal: 20,
         gap: 16,

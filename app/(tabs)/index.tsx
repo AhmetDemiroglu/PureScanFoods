@@ -5,7 +5,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import { View, Pressable, StyleSheet, Dimensions, TextInput, ActivityIndicator, Modal, TouchableOpacity, Animated, ScrollView, Keyboard, useWindowDimensions } from "react-native";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Text } from "../../components/ui/AppText";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -58,6 +58,10 @@ export default function ScanScreen() {
   const [textInput, setTextInput] = useState("");
   const { openSidebar } = useShell();
   const tabBarHeight = useBottomTabBarHeight();
+  // insets'i ana ağaçta (provider altında) hesapla; kamera Modal'ı ayrı native
+  // pencereye portal olduğu için içindeki SafeAreaView güvenilmez (aralıklı 0).
+  // Bu değeri Modal'a dışarıdan geçiririz → kapatma butonu hep notch'un altında kalmaz.
+  const insets = useSafeAreaInsets();
   // Klavye açılınca input görünür olsun: alt boşluk aç + focus'ta scrollToEnd.
   // Kapalıyken EKSTRA boşluk YOK → ana sayfa dengesi birebir korunur.
   // İçerik tab bar'da bittiği, keyboard yüksekliği ekran altından ölçüldüğü için
@@ -271,6 +275,17 @@ export default function ScanScreen() {
         }
       }
 
+      // Tam (verbatim) içindekiler metnini sakla: barkodda OFF metni öncelikli,
+      // kamera/metinde AI'ın verbatim transkripsiyonu. ~4KB ile sınırla (miniData boyutu).
+      if (parsedData.details) {
+        const offText = offData?.ingredients ? String(offData.ingredients).trim() : "";
+        const aiText = parsedData.details.ingredients_full_text
+          ? String(parsedData.details.ingredients_full_text).trim() : "";
+        parsedData.details.ingredients_full_text = (offText || aiText).slice(0, 4000);
+        parsedData.details.ingredients_source = offText
+          ? "openfoodfacts" : (activeTab === "text" ? "text" : "pack");
+      }
+
       TempStore.setResult(parsedData, imageUri || "", {
         source: offData ? "barcode" : (activeTab === "text" ? "text" : "camera")
       });
@@ -399,7 +414,11 @@ export default function ScanScreen() {
         {/* 2. Orta Alan: Hero ve Kart'ı kapsar ve ortalar — klavye açılınca input'lar görünür kalsın diye ScrollView */}
         <ScrollView
           ref={scrollRef}
-          style={{ flex: 1 }}
+          // marginHorizontal:-20, content'in paddingHorizontal:20'sini iptal eder →
+          // ScrollView tam ekran genişliği olur. Kart, contentContainer'ın
+          // paddingHorizontal:20'siyle 20px içeride kalır; böylece kartın gölgesi
+          // ScrollView'un İÇİNDE render olur ve yanlardan kırpılmaz (bıçak-gölge fix).
+          style={{ flex: 1, marginHorizontal: -20 }}
           contentContainerStyle={[styles.centerContainer, { paddingBottom: kbPad }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
@@ -629,7 +648,7 @@ export default function ScanScreen() {
             />
 
             {/* Header */}
-            <SafeAreaView style={styles.cameraHeaderNew} edges={["top"]}>
+            <View style={[styles.cameraHeaderNew, { paddingTop: insets.top + 8 }]}>
               <TouchableOpacity
                 style={styles.closeButtonNew}
                 onPress={() => setShowCamera(false)}
@@ -642,7 +661,7 @@ export default function ScanScreen() {
                 <Text style={styles.headerTitleText}>PureScan Foods</Text>
               </View>
               <View style={{ width: 40 }} />
-            </SafeAreaView>
+            </View>
 
             {/* Tarama Çerçevesi */}
             <View
@@ -936,6 +955,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     justifyContent: "center",
     gap: 40,
     paddingBottom: 20,
+    paddingHorizontal: 20,
   },
   scanCard: {
     backgroundColor: colors.card,
@@ -1107,7 +1127,6 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 8,
     zIndex: 20,
     elevation: 6,
   },

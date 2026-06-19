@@ -22,6 +22,8 @@ export interface ActiveProduct {
     verdict: string;
     ingredients?: string[];
     imageUrl?: string;
+    analysisSummary?: string;
+    additives?: { code: string; name: string; risk: string }[];
 }
 
 interface GuruContextType {

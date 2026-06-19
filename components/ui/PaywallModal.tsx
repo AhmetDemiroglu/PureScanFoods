@@ -346,7 +346,7 @@ export default function PaywallModal({ visible, onClose, onAuthRequired }: Paywa
                 {Platform.OS === "ios"
                   ? t(
                       "paywall.iosUnavailable",
-                      "Premium subscriptions are not yet available on iOS. We are finalizing setup — please check back soon."
+                      "Premium subscriptions are not yet available on iOS. We are finalizing setup. Please check back soon."
                     )
                   : t("paywall.comingSoon")}
               </Text>

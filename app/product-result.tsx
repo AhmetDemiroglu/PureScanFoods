@@ -10,6 +10,9 @@ import { getAllergenDefinition, AllergenType } from "../lib/allergens";
 import ScoreRing from "../components/ui/ScoreRing";
 import { TempStore } from "../lib/tempStore";
 import DetailCards from "../components/product/DetailCards";
+import { enrichAdditives } from "../lib/additiveEnrichment";
+import { useGuru } from "../context/GuruContext";
+import ComparePickerSheet from "../components/product/ComparePickerSheet";
 import { useTheme } from "../context/ThemeContext";
 import { useUser } from "../context/UserContext";
 import { analyzeEngine, CompatibilityReport, SeverityLevel, IngredientInput } from "../lib/analysisEngine";
@@ -88,6 +91,8 @@ export default function ProductResultScreen() {
 
     const router = useRouter();
     const { familyMembers, profilesData } = useUser();
+    const { setActiveProduct } = useGuru();
+    const [showComparePicker, setShowComparePicker] = useState(false);
     const { user, deviceId, userProfile, isPremium } = useAuth();
     const [showNutriInfo, setShowNutriInfo] = useState(false);
 
@@ -380,9 +385,24 @@ export default function ProductResultScreen() {
 
     const { product, scores } = data;
     const analysisIngredients = data.details?.ingredients || [];
+    // AI katkılarını yerel DB ile zenginleştir (kaçan E-kodlarını ham metinden yakala).
+    const langKey: 'tr' | 'en' | 'es' = isTr ? 'tr' : isEs ? 'es' : 'en';
+    const enrichedAdditives = enrichAdditives(
+        data.details?.additives || [],
+        data.details?.ingredients_full_text || "",
+        langKey
+    );
     const criticalBadges = data.badges?.filter((b: string) =>
         ['EU_BANNED', 'FDA_WARN', 'HAZARDOUS_ADDITIVE', 'CONTAINS_ALLERGENS'].includes(b)
     ) || [];
+
+    // Profil var mı? (analysisEngine'in no-profile koşulunu yansıtır)
+    const hasProfile = (p: any) => !!p && (
+        !!p.diet ||
+        (p.allergens?.length ?? 0) > 0 ||
+        (!!p.lifeStage && p.lifeStage !== 'ADULT')
+    );
+    const mainHasProfile = hasProfile(profilesData['main_user']);
 
     const familyAnalysis = familyMembers.map(member => {
         const profile = profilesData[member.id];
@@ -402,6 +422,32 @@ export default function ProductResultScreen() {
         setShowDetailModal(true);
     };
 
+    const handleAskGuru = () => {
+        const ingredientNames = (data.details?.ingredients || [])
+            .map((i: any) => i.display_name || i.name).filter(Boolean);
+        const topCons = (data.details?.nutritional_highlights?.cons || []).slice(0, 3);
+        const flagged = enrichedAdditives
+            .filter(a => a.risk === 'Hazardous' || a.risk === 'Caution')
+            .map(a => `${a.code || ''} ${a.name}`.trim()).slice(0, 6);
+        const summary = [
+            displaySummary,
+            topCons.join("; "),
+            flagged.length ? `${isTr ? 'Dikkat çeken katkılar' : isEs ? 'Aditivos a destacar' : 'Flagged additives'}: ${flagged.join(", ")}` : "",
+        ].filter(Boolean).join(" | ");
+        setActiveProduct({
+            id: `scan_${Date.now()}`,
+            name: product.name || t("results.unknownProduct"),
+            brand: product.brand || t("results.unknownBrand"),
+            score: scores.safety?.value || 0,
+            verdict: displayVerdict,
+            ingredients: ingredientNames,
+            imageUrl: imageUri,
+            analysisSummary: summary,
+            additives: enrichedAdditives.map(a => ({ code: a.code, name: a.name, risk: a.risk })),
+        });
+        router.push("/(tabs)/guru");
+    };
+
     if (isAdLoading && !isPremium) {
         return <View style={{ flex: 1, backgroundColor: colors.surface }} />;
     }
@@ -419,6 +465,9 @@ export default function ProductResultScreen() {
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.headerBtn, styles.headerBtnRight]} onPress={handleRescan}>
                         <Ionicons name="scan-outline" size={20} color="#FFF" />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.headerBtn, styles.headerBtnRight2]} onPress={() => setShowComparePicker(true)}>
+                        <Ionicons name="git-compare-outline" size={20} color="#FFF" />
                     </TouchableOpacity>
                 </View>
 
@@ -458,8 +507,8 @@ export default function ProductResultScreen() {
                         })}
                     </ScrollView>
 
-                    {/* Score Display — two gauge rings */}
-                    <View style={styles.scoreZone}>
+                    {/* Score Display: profil varsa iki ring, yoksa tek güvenlik skoru + sade not */}
+                    <View style={[styles.scoreZone, !mainHasProfile && styles.scoreZoneSingle]}>
                         <ScoreRing
                             score={scores.safety?.value || 0}
                             label={isTr ? 'Güvenlik Skoru' : isEs ? 'Seguridad' : 'Safety Score'}
@@ -469,16 +518,21 @@ export default function ProductResultScreen() {
                             arcDegrees={240}
                             showOutOf
                         />
-                        <ScoreRing
-                            score={displayScore}
-                            label={isTr ? 'Uyum Skoru' : isEs ? 'Compatibilidad' : 'Compatibility'}
-                            size={130}
-                            strokeWidth={10}
-                            type="compatibility"
-                            arcDegrees={240}
-                            showOutOf
-                        />
+                        {mainHasProfile && (
+                            <ScoreRing
+                                score={displayScore}
+                                label={isTr ? 'Uyum Skoru' : isEs ? 'Compatibilidad' : 'Compatibility'}
+                                size={130}
+                                strokeWidth={10}
+                                type="compatibility"
+                                arcDegrees={240}
+                                showOutOf
+                            />
+                        )}
                     </View>
+                    {!mainHasProfile && (
+                        <Text style={styles.compatHiddenNote}>{t("results.compat_hidden_note")}</Text>
+                    )}
 
                     {/* Verdict + Summary */}
                     <View style={[styles.summaryCard, { borderLeftColor: scoreColor }]}>
@@ -530,8 +584,9 @@ export default function ProductResultScreen() {
                     </View>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.familyList}>
                         {familyAnalysis.map((item) => {
+                            const memberHasProfile = hasProfile(profilesData[item.member.id]);
                             const mScore = item.report.score;
-                            const mColor = getScoreColor(mScore);
+                            const mColor = memberHasProfile ? getScoreColor(mScore) : colors.gray[400];
                             return (
                                 <Pressable
                                     key={item.member.id}
@@ -542,7 +597,7 @@ export default function ProductResultScreen() {
                                         <MaterialCommunityIcons name={item.member.avatarIcon as any} size={18} color="#FFF" />
                                     </View>
                                     <View style={styles.familyMeta}>
-                                        <Text style={[styles.familyNum, { color: mColor }]}>{mScore}</Text>
+                                        <Text style={[styles.familyNum, { color: mColor }]}>{memberHasProfile ? mScore : '-'}</Text>
                                         <Text style={styles.familyLabel} numberOfLines={1}>{item.member.name}</Text>
                                     </View>
                                     <Ionicons name="chevron-forward" size={14} color={colors.gray[400]} />
@@ -559,8 +614,14 @@ export default function ProductResultScreen() {
                         <Text upper style={styles.sectionLabel}>{t("results.detailedAnalysis")}</Text>
                         <View style={styles.sectionLine} />
                     </View>
-                    <DetailCards data={data} />
+                    <DetailCards data={data} additives={enrichedAdditives} />
                 </View>
+
+                {/* Guru'ya Sor */}
+                <TouchableOpacity style={styles.askGuruBtn} onPress={handleAskGuru} activeOpacity={0.85}>
+                    <Ionicons name="sparkles" size={18} color="#FFF" />
+                    <Text style={styles.askGuruText}>{t("results.ask_guru")}</Text>
+                </TouchableOpacity>
 
                 {/* Disclaimer */}
                 <View style={styles.footerNote}>
@@ -610,8 +671,8 @@ export default function ProductResultScreen() {
                                             </Text>
                                         </View>
                                     </View>
-                                    <View style={[styles.modalScoreBadge, { backgroundColor: selectedMemberReport.report.color }]}>
-                                        <Text style={styles.modalScoreText}>{selectedMemberReport.report.score}</Text>
+                                    <View style={[styles.modalScoreBadge, { backgroundColor: hasProfile(profilesData[selectedMemberReport.member.id]) ? selectedMemberReport.report.color : colors.gray[400] }]}>
+                                        <Text style={styles.modalScoreText}>{hasProfile(profilesData[selectedMemberReport.member.id]) ? selectedMemberReport.report.score : '-'}</Text>
                                     </View>
                                 </View>
                                 <View style={styles.divider} />
@@ -713,6 +774,12 @@ export default function ProductResultScreen() {
                     </Animated.View>
                 </View>
             </Modal>
+
+            <ComparePickerSheet
+                visible={showComparePicker}
+                onClose={() => setShowComparePicker(false)}
+                current={{ data, image: imageUri || "" }}
+            />
         </View>
     );
 }
@@ -736,6 +803,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     },
     headerBtnLeft: { left: 20 },
     headerBtnRight: { right: 20 },
+    headerBtnRight2: { right: 66 },
 
     // ── Pull-up Sheet ──
     sheetCard: {
@@ -784,6 +852,34 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
         marginBottom: 16,
         borderTopWidth: 1, borderBottomWidth: 1,
         borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
+    },
+    scoreZoneSingle: {
+        justifyContent: 'center' as const,
+    },
+    compatHiddenNote: {
+        fontSize: 12,
+        color: colors.gray[400],
+        textAlign: 'center' as const,
+        marginTop: -4,
+        marginBottom: 16,
+        paddingHorizontal: 24,
+    },
+    askGuruBtn: {
+        flexDirection: 'row' as const,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+        gap: 8,
+        backgroundColor: colors.primary,
+        marginHorizontal: 20,
+        marginTop: 16,
+        paddingVertical: 14,
+        borderRadius: 14,
+    },
+    askGuruText: {
+        color: '#FFF',
+        fontSize: 14,
+        fontWeight: '700' as const,
+        letterSpacing: 0.3,
     },
 
     // ── Verdict + Summary Card ──

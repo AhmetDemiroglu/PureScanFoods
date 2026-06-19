@@ -4,7 +4,7 @@ import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
 import { Text } from "../../components/ui/AppText";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -69,6 +69,7 @@ export default function AdditivesLibraryScreen() {
     const { colors, isDark } = useTheme();
     const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const router = useRouter();
+    const params = useLocalSearchParams<{ additiveCode?: string }>();
     const isTr = i18n.language === "tr";
     const isEs = i18n.language?.startsWith("es");
 
@@ -111,6 +112,19 @@ export default function AdditivesLibraryScreen() {
             if (shown !== "true") setShowOnboarding(true);
         });
     }, []);
+
+    // Sonuç ekranındaki E-koduna tıklanınca: additives sekmesine geç, ilgili katkıyı
+    // ara ile en üste getir + aç (scrollToIndex kırılganlığından kaçınılır).
+    useEffect(() => {
+        const code = typeof params.additiveCode === "string" ? params.additiveCode : "";
+        if (!code) return;
+        const norm = code.toUpperCase().replace(/\s/g, "");
+        setActiveTab("additives");
+        setRiskFilter("ALL");
+        setSearchQuery(norm);
+        setExpandedAdditive(norm);
+        router.setParams({ additiveCode: undefined } as any);
+    }, [params.additiveCode]);
 
     const handleOnboardingFinish = async () => {
         await AsyncStorage.setItem("@encyclopedia_onboarding_shown_v1", "true");

@@ -473,7 +473,15 @@
             "title": "OpenFoodFacts Veri Notu",
             "body": "Bazı ürün alanları OpenFoodFacts veritabanından gelir. Veri eksik veya hatalı görünüyorsa, tam AI analizi için içerik etiketini kamerayla tarayın.",
             "cta": "Kamerayla Tara"
-        }
+        },
+        "compat_hidden_note": "Uyum skoru gizli - görmek için bir profil oluşturun.",
+        "ingredients_full": {
+            "cta": "Tüm içindekiler",
+            "title": "Tüm İçindekiler",
+            "source_off": "Kaynak: OpenFoodFacts",
+            "source_pack": "Etiketten okundu"
+        },
+        "ask_guru": "Guru'ya Sor"
     },
     "common": {
         "suitable": "UYGUN",
@@ -807,6 +815,21 @@
         "restoring": "Yükleniyor...",
         "noRestore": "Geri yüklenecek satın alma bulunamadı.",
         "successTitle": "Harika!",
-        "successSubtitle": "Premium Özellikler Aktif"
+        "successSubtitle": "Premium Özellikler Aktif",
+        "iosUnavailable": "Premium abonelikler iOS'ta henüz aktif değil. Kurulumu tamamlıyoruz, yakında tekrar kontrol edin."
+    },
+    "compare": {
+        "title": "Karşılaştırma",
+        "pickTitle": "Karşılaştırılacak ürünü seç",
+        "empty": "Karşılaştırmak için önce ürün taramalısın.",
+        "vs": "VS",
+        "safety": "Güvenlik",
+        "processing": "İşlenme",
+        "additives": "Katkı sayısı",
+        "flagged": "Riskli katkı",
+        "sugar": "Şeker",
+        "sodium": "Sodyum",
+        "satfat": "Doymuş yağ",
+        "note": "Değerler etiket/veritabanı verisine dayanır; bazı ürünlerde eksik olabilir."
     }
 }

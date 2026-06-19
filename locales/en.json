@@ -473,7 +473,15 @@
             "title": "OpenFoodFacts Data Note",
             "body": "Some product fields are provided by OpenFoodFacts. If data looks missing or incorrect, scan the ingredient label with your camera for a full AI analysis.",
             "cta": "Scan with Camera"
-        }
+        },
+        "compat_hidden_note": "Compatibility score hidden - set a profile to see it.",
+        "ingredients_full": {
+            "cta": "Full ingredients",
+            "title": "Full Ingredients",
+            "source_off": "Source: OpenFoodFacts",
+            "source_pack": "Read from the label"
+        },
+        "ask_guru": "Ask Guru"
     },
     "common": {
         "suitable": "SUITABLE",
@@ -807,6 +815,21 @@
         "restoring": "Loading...",
         "noRestore": "No purchases found to restore.",
         "successTitle": "Awesome!",
-        "successSubtitle": "Premium Features Active"
+        "successSubtitle": "Premium Features Active",
+        "iosUnavailable": "Premium subscriptions are not yet available on iOS. We are finalizing setup. Please check back soon."
+    },
+    "compare": {
+        "title": "Comparison",
+        "pickTitle": "Pick a product to compare",
+        "empty": "Scan a product first to compare.",
+        "vs": "VS",
+        "safety": "Safety",
+        "processing": "Processing",
+        "additives": "Additives",
+        "flagged": "Flagged",
+        "sugar": "Sugar",
+        "sodium": "Sodium",
+        "satfat": "Saturated fat",
+        "note": "Values are based on label/database data and may be missing for some products."
     }
 }

@@ -13,6 +13,8 @@ export interface ActiveProduct {
     score: number;
     verdict: string;
     ingredients?: string[];
+    analysisSummary?: string;
+    additives?: { code: string; name: string; risk: string }[];
 }
 
 export interface GuruContext {
@@ -116,6 +118,8 @@ User is discussing this product:
 - Brand: ${context.activeProduct.brand}
 - Safety Score: ${context.activeProduct.score}/100 (${context.activeProduct.verdict})
 - Ingredients: ${context.activeProduct.ingredients?.slice(0, 10).join(", ") || "N/A"}
+${context.activeProduct.additives && context.activeProduct.additives.length ? `- Additives detected (with risk): ${context.activeProduct.additives.map((a: any) => `${a.code || ""} ${a.name} [${a.risk}]`.trim()).join("; ")}` : ""}
+${context.activeProduct.analysisSummary ? `- Analysis summary: ${context.activeProduct.analysisSummary}` : ""}
 `
         : ""
 }

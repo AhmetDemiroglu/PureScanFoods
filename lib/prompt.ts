@@ -89,6 +89,7 @@ OUTPUT FORMAT (Raw JSON only, no markdown):
     }
   },
   "details": {
+    "ingredients_full_text": "string (ORIGINAL package language) - the COMPLETE verbatim ingredient list EXACTLY as printed on the package: no summarizing, no reordering, no translation, keep all sub-ingredients and percentages. Empty string only if truly not legible.",
     "ingredients": [
       { 
         "display_name": "string (${targetLang} - common name for UI)", 
@@ -117,7 +118,10 @@ OUTPUT FORMAT (Raw JSON only, no markdown):
       "carbohydrates": number, // null if data_available is false
       "fiber": number,         // null if data_available is false
       "sugar": number,         // null if data_available is false
-      "protein": number        // null if data_available is false
+      "protein": number,       // null if data_available is false
+      "sodium": number,        // sodium in mg if readable on the label, else null
+      "saturated_fat": number, // saturated fat in grams if readable, else null
+      "trans_fat": number      // trans fat in grams if readable, else null
   },
   "keto_analysis": {
       "is_keto_friendly": boolean,
@@ -131,6 +135,9 @@ CRITICAL DATA INSTRUCTION:
 - "display_name": Must be in ${targetLang} (e.g., "Buğday Unu").
 - "technical_name": Must be in ENGLISH (e.g., "Wheat Flour"). This is vital for the analysis engine.
 - If ingredient is "Maltodextrin", technical_name MUST be "Maltodextrin".
+- ADDITIVES (EXHAUSTIVE): List EVERY additive, preservative, antioxidant, colorant, emulsifier, acidity regulator, sweetener, flavor enhancer and raising agent you can identify, each with its E-number (when known) AND plain name. Do NOT stop at the first few. If an additive is written in words (e.g. "sodium metabisulfite", "potassium sorbate", "polyglycerol polyricinoleate"), still add it to "additives" with its E-number when known (e.g. E223, E202, E476).
+- CONS (be specific): If the product is NOVA 4 (ultra-processed) OR has any HIGH_SUGAR / HIGH_SODIUM / HIGH_FAT badge, "nutritional_highlights.cons" MUST contain at least 3 concrete concerns, explicitly mentioning things like preservatives/additives present, ultra-processing, trans or saturated fat, and high sugar/sodium. Never leave a clearly unhealthy product with only one con.
+- "ingredients_full_text": transcribe the FULL ingredient line verbatim in its original language; never summarize or omit sub-ingredients or percentages.
 - If ingredient is "Aroma/Flavor", technical_name MUST be "Flavoring".
 
 

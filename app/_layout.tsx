@@ -132,6 +132,14 @@ function AppShell() {
               animation: "slide_from_right",
             }}
           />
+          <Stack.Screen
+            name="compare"
+            options={{
+              gestureEnabled: true,
+              gestureDirection: "horizontal",
+              animation: "slide_from_right",
+            }}
+          />
         </Stack>
       </AppShellSidebar>
       <AppOnboardingModal

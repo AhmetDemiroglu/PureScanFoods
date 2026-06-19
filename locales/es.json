@@ -473,7 +473,15 @@
             "title": "Nota de Datos de OpenFoodFacts",
             "body": "Algunos campos del producto provienen de OpenFoodFacts. Si ves datos incompletos o incorrectos, escanea la etiqueta con tu cámara para un análisis completo de IA.",
             "cta": "Escanear con Cámara"
-        }
+        },
+        "compat_hidden_note": "Puntuación de compatibilidad oculta - crea un perfil para verla.",
+        "ingredients_full": {
+            "cta": "Ingredientes completos",
+            "title": "Ingredientes Completos",
+            "source_off": "Fuente: OpenFoodFacts",
+            "source_pack": "Leído de la etiqueta"
+        },
+        "ask_guru": "Pregúntale al Gurú"
     },
     "common": {
         "suitable": "ADECUADO",
@@ -807,6 +815,21 @@
         "restoring": "Cargando...",
         "noRestore": "No se encontraron compras para restaurar.",
         "successTitle": "¡Excelente!",
-        "successSubtitle": "Funciones Premium Activas"
+        "successSubtitle": "Funciones Premium Activas",
+        "iosUnavailable": "Las suscripciones premium aún no están disponibles en iOS. Estamos finalizando la configuración. Vuelve pronto."
+    },
+    "compare": {
+        "title": "Comparación",
+        "pickTitle": "Elige un producto para comparar",
+        "empty": "Escanea un producto primero para comparar.",
+        "vs": "VS",
+        "safety": "Seguridad",
+        "processing": "Procesamiento",
+        "additives": "Aditivos",
+        "flagged": "De riesgo",
+        "sugar": "Azúcar",
+        "sodium": "Sodio",
+        "satfat": "Grasa saturada",
+        "note": "Los valores se basan en datos de la etiqueta o base de datos y pueden faltar en algunos productos."
     }
 }
