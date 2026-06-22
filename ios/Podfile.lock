@@ -126,6 +126,8 @@ PODS:
     - Yoga
   - ExpoSecureStore (15.0.8):
     - ExpoModulesCore
+  - ExpoStoreReview (9.0.9):
+    - ExpoModulesCore
   - ExpoSystemUI (6.0.9):
     - ExpoModulesCore
   - ExpoTrackingTransparency (6.0.8):
@@ -2280,6 +2282,7 @@ DEPENDENCIES:
   - ExpoModulesCore (from `../node_modules/expo-modules-core`)
   - ExpoScreenOrientation (from `../node_modules/expo-screen-orientation/ios`)
   - ExpoSecureStore (from `../node_modules/expo-secure-store/ios`)
+  - ExpoStoreReview (from `../node_modules/expo-store-review/ios`)
   - ExpoSystemUI (from `../node_modules/expo-system-ui/ios`)
   - ExpoTrackingTransparency (from `../node_modules/expo-tracking-transparency/ios`)
   - FBLazyVector (from `../node_modules/react-native/Libraries/FBLazyVector`)
@@ -2427,6 +2430,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-screen-orientation/ios"
   ExpoSecureStore:
     :path: "../node_modules/expo-secure-store/ios"
+  ExpoStoreReview:
+    :path: "../node_modules/expo-store-review/ios"
   ExpoSystemUI:
     :path: "../node_modules/expo-system-ui/ios"
   ExpoTrackingTransparency:
@@ -2616,6 +2621,7 @@ SPEC CHECKSUMS:
   ExpoModulesCore: f3da4f1ab5a8375d0beafab763739dbee8446583
   ExpoScreenOrientation: c68bd20f210d0616960638c787889e07787e5adb
   ExpoSecureStore: d32f751874a2ceb5aaeebeb3578e165c1ba2b24a
+  ExpoStoreReview: 32bb43b6fae9c8db3e33cad69996dff3785eef5f
   ExpoSystemUI: 2ad325f361a2fcd96a464e8574e19935c461c9cc
   ExpoTrackingTransparency: 4f823a38ff7c0efea4cac722ecbc0589278ff548
   FBLazyVector: e95a291ad2dadb88e42b06e0c5fb8262de53ec12

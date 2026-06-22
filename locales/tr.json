@@ -3,6 +3,18 @@
         "name": "PureScan",
         "tagline": "Foods"
     },
+    "appReview": {
+        "title": "PureScan işine yarıyor mu?",
+        "subtitle": "Senin yorumun, daha çok kişinin markette ne yediğini görmesine yardımcı oluyor. 10 saniyeni alır.",
+        "positive": "Evet, bayıldım",
+        "negative": "Pek sayılmaz",
+        "later": "Daha sonra",
+        "never": "Bir daha sorma",
+        "neg_title": "Üzgünüz 😔 Neyi düzeltebiliriz?",
+        "neg_subtitle": "Birkaç satır yaz, doğrudan bize ulaşsın.",
+        "neg_feedback_btn": "Geri bildirim gönder",
+        "neg_close": "Vazgeç"
+    },
     "navigation": {
         "nutrition": "Beslenme",
         "guru": "Guru",

@@ -3,6 +3,18 @@
         "name": "PureScan",
         "tagline": "Foods"
     },
+    "appReview": {
+        "title": "Enjoying PureScan?",
+        "subtitle": "Your review helps more people see what's really in the food on their shelves. It takes 10 seconds.",
+        "positive": "Yes, I love it",
+        "negative": "Not really",
+        "later": "Maybe later",
+        "never": "Don't ask again",
+        "neg_title": "We're sorry 😔 What can we fix?",
+        "neg_subtitle": "Drop us a few lines — it comes straight to us.",
+        "neg_feedback_btn": "Send feedback",
+        "neg_close": "Cancel"
+    },
     "navigation": {
         "nutrition": "Nutrition",
         "guru": "Guru",

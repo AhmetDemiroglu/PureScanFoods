@@ -15,7 +15,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.purescan.foods"
+      "bundleIdentifier": "com.purescan.foods",
+      "appStoreUrl": "https://apps.apple.com/app/id6778348937"
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +24,8 @@
         "backgroundColor": "#FFFFFF"
       },
       "package": "com.purescan.foods",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.purescan.foods"
     },
     "plugins": [
       "expo-font",

@@ -3,6 +3,18 @@
         "name": "PureScan",
         "tagline": "Alimentos"
     },
+    "appReview": {
+        "title": "¿Te gusta PureScan?",
+        "subtitle": "Tu reseña ayuda a que más personas vean qué contienen realmente los alimentos. Solo toma 10 segundos.",
+        "positive": "Sí, me encanta",
+        "negative": "La verdad que no",
+        "later": "Quizás luego",
+        "never": "No volver a preguntar",
+        "neg_title": "Lo sentimos 😔 ¿Qué podemos mejorar?",
+        "neg_subtitle": "Escríbenos unas líneas, nos llega directo.",
+        "neg_feedback_btn": "Enviar comentarios",
+        "neg_close": "Cancelar"
+    },
     "navigation": {
         "nutrition": "Nutrición",
         "guru": "Guru",

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { View, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions, StatusBar, Modal, Pressable, PanResponder, Animated, GestureResponderEvent } from "react-native";
+import { View, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions, StatusBar, Modal, Pressable, PanResponder, Animated, GestureResponderEvent, Linking } from "react-native";
 import { Text } from "../components/ui/AppText";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -26,9 +26,14 @@ import { useLocalSearchParams } from "expo-router";
 import { NutriScoreGraphic } from "../components/ui/NutriScoreAssets";
 import { getLifeStageDefinition, LifeStageType } from "../lib/lifestages";
 import { showInterstitialAd, isInterstitialReady, loadInterstitialAd } from "../lib/admob";
+import ReviewPromptModal from "../components/ui/ReviewPromptModal";
+import { recordSuccessfulScan, shouldShowSoftPrompt, markSoftPromptShown, markRated, markSnoozed, markDismissedForever, requestNativeReview } from "../lib/reviewManager";
 
 const { width } = Dimensions.get("window");
 const IMAGE_HEIGHT = 280;
+
+// Negatif review akışında geri bildirim için (settings.tsx ile aynı kanal)
+const SUPPORT_EMAIL = "info@septimuslab.com";
 
 interface NutritionFacts {
     data_available: boolean;
@@ -108,6 +113,13 @@ export default function ProductResultScreen() {
 
     const [currentData, setCurrentData] = useState<any>(data);
     const [isAdLoading, setIsAdLoading] = useState(true);
+
+    // --- Review (yorum) prompt state ---
+    const [showReviewPrompt, setShowReviewPrompt] = useState(false);
+    const [reviewDecided, setReviewDecided] = useState(false);
+    const reviewWantsRef = useRef(false);
+    const reviewProcessedRef = useRef(false);
+    const reviewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const [selectedMemberReport, setSelectedMemberReport] = useState<{ member: any, report: CompatibilityReport } | null>(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
@@ -193,8 +205,44 @@ export default function ProductResultScreen() {
         );
     }
 
+    // Değer anı: başarılı tarama sayılır + eligibility kontrol edilir (mount'ta bir kez,
+    // premium-agnostik). Eligible ise bu taramada interstitial ATLANIR, prompt planlanır.
     useEffect(() => {
         if (isHistoryView) {
+            setReviewDecided(true);
+            return;
+        }
+        if (reviewProcessedRef.current) return;
+        reviewProcessedRef.current = true;
+
+        (async () => {
+            let wants = false;
+            try {
+                await recordSuccessfulScan();
+                wants = await shouldShowSoftPrompt();
+            } catch {}
+            reviewWantsRef.current = wants;
+            if (wants) {
+                await markSoftPromptShown().catch(() => {});
+                reviewTimerRef.current = setTimeout(() => setShowReviewPrompt(true), 1500);
+            }
+            setReviewDecided(true);
+        })();
+
+        return () => {
+            if (reviewTimerRef.current) clearTimeout(reviewTimerRef.current);
+        };
+    }, [isHistoryView]);
+
+    // Interstitial reklam: review kararı verildikten sonra çalışır. Review-uygun taramada
+    // (reviewWantsRef) reklam gösterilmez — reklam + prompt üst üste binmesin.
+    useEffect(() => {
+        if (isHistoryView) {
+            setIsAdLoading(false);
+            return;
+        }
+        if (!reviewDecided) return;
+        if (reviewWantsRef.current) {
             setIsAdLoading(false);
             return;
         }
@@ -215,7 +263,7 @@ export default function ProductResultScreen() {
             setIsAdLoading(false);
         };
         handleAd();
-    }, [isPremium]);
+    }, [isPremium, reviewDecided, isHistoryView]);
 
     useEffect(() => {
         if (params.viewMode !== 'history') return;
@@ -295,6 +343,33 @@ export default function ProductResultScreen() {
     const handleRescan = () => {
         TempStore.clear();
         router.replace({ pathname: "/", params: { autoStart: "true" } });
+    };
+
+    // --- Review prompt handler'ları ---
+    const handleReviewRate = async () => {
+        setShowReviewPrompt(false);
+        await markRated().catch(() => {});
+        // Modal fade'i bittikten sonra native prompt'u tetikle (çakışmasın).
+        setTimeout(() => { requestNativeReview(); }, 400);
+    };
+
+    const handleReviewFeedback = async () => {
+        setShowReviewPrompt(false);
+        await markSnoozed().catch(() => {});
+        const subject = encodeURIComponent(t("settings.support_subject"));
+        setTimeout(() => {
+            Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=${subject}`).catch(() => {});
+        }, 350);
+    };
+
+    const handleReviewSnooze = async () => {
+        setShowReviewPrompt(false);
+        await markSnoozed().catch(() => {});
+    };
+
+    const handleReviewNever = async () => {
+        setShowReviewPrompt(false);
+        await markDismissedForever().catch(() => {});
     };
 
     const renderDietScoreCard = () => {
@@ -779,6 +854,14 @@ export default function ProductResultScreen() {
                 visible={showComparePicker}
                 onClose={() => setShowComparePicker(false)}
                 current={{ data, image: imageUri || "" }}
+            />
+
+            <ReviewPromptModal
+                visible={showReviewPrompt}
+                onRate={handleReviewRate}
+                onFeedback={handleReviewFeedback}
+                onSnooze={handleReviewSnooze}
+                onNever={handleReviewNever}
             />
         </View>
     );
