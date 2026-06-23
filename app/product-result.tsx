@@ -28,6 +28,8 @@ import { getLifeStageDefinition, LifeStageType } from "../lib/lifestages";
 import { showInterstitialAd, isInterstitialReady, loadInterstitialAd } from "../lib/admob";
 import ReviewPromptModal from "../components/ui/ReviewPromptModal";
 import { recordSuccessfulScan, shouldShowSoftPrompt, markSoftPromptShown, markRated, markSnoozed, markDismissedForever, requestNativeReview } from "../lib/reviewManager";
+import ConsumptionReveal from "../components/product/ConsumptionReveal";
+import PaywallModal from "../components/ui/PaywallModal";
 
 const { width } = Dimensions.get("window");
 const IMAGE_HEIGHT = 280;
@@ -113,6 +115,8 @@ export default function ProductResultScreen() {
 
     const [currentData, setCurrentData] = useState<any>(data);
     const [isAdLoading, setIsAdLoading] = useState(true);
+    const [savedScanId, setSavedScanId] = useState<string | null>(null);
+    const [showResultPaywall, setShowResultPaywall] = useState(false);
 
     // --- Review (yorum) prompt state ---
     const [showReviewPrompt, setShowReviewPrompt] = useState(false);
@@ -317,7 +321,7 @@ export default function ProductResultScreen() {
                         console.error("Image upload failed:", imgError);
                     }
                 }
-                await saveScanResultToDB(user.uid, {
+                const newScanId = await saveScanResultToDB(user.uid, {
                     productName: data.product?.product_name || data.product?.name || t("results.unknownProduct"),
                     brand: data.product?.brands || data.product?.brand || t("results.unknownBrand"),
                     imageUrl: imageUrl,
@@ -329,9 +333,12 @@ export default function ProductResultScreen() {
                         details: data.details,
                         scores: data.scores,
                         nutrition_facts: data.nutrition_facts,
-                        keto_analysis: data.keto_analysis
+                        keto_analysis: data.keto_analysis,
+                        composition: data.composition,
+                        sugar_per_100g: data.sugar_per_100g
                     })
                 });
+                if (newScanId) setSavedScanId(newScanId);
                 TempStore.markSaved();
             } catch (error) {
                 console.error("CRITICAL SCAN ERROR:", error);
@@ -628,6 +635,14 @@ export default function ProductResultScreen() {
                         </View>
                     ) : null}
 
+                    {/* Gerçekte ne tüketiyorsun? — kompozisyon görseli */}
+                    <ConsumptionReveal
+                        data={data}
+                        scanId={savedScanId}
+                        isHistoryView={isHistoryView}
+                        onRequirePaywall={() => setShowResultPaywall(true)}
+                    />
+
                     {/* Critical Alerts */}
                     {criticalBadges.length > 0 && (
                         <View style={styles.alertBox}>
@@ -862,6 +877,11 @@ export default function ProductResultScreen() {
                 onFeedback={handleReviewFeedback}
                 onSnooze={handleReviewSnooze}
                 onNever={handleReviewNever}
+            />
+
+            <PaywallModal
+                visible={showResultPaywall}
+                onClose={() => setShowResultPaywall(false)}
             />
         </View>
     );

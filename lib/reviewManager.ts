@@ -57,6 +57,9 @@ export async function shouldShowSoftPrompt(): Promise<boolean> {
     const scanCount = await getNumber(SCAN_COUNT_KEY);
     if (scanCount < MIN_SCANS) return false;
 
+    // Dev'de cooldown + gösterim limitini baypas et (kolay test için). Production'da tam kural işler.
+    if (__DEV__) return true;
+
     const promptCount = await getNumber(PROMPT_COUNT_KEY);
     if (promptCount >= MAX_PROMPTS) return false;
 

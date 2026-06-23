@@ -1,5 +1,5 @@
 import { storage, auth } from "./firebase";
-import { ref, getDownloadURL, uploadBytes, listAll, deleteObject } from "firebase/storage";
+import { ref, getDownloadURL, uploadBytes, uploadString, listAll, deleteObject } from "firebase/storage";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as FileSystem from "expo-file-system/legacy";
 
@@ -74,12 +74,31 @@ export const uploadImage = async (uri: string, path: string): Promise<string | n
     }
 };
 
-// Belirli bir kullanıcıya ait Firebase Storage scan görsellerini siler.
-// Hesap/veri silme akışından çağrılır. Tek tek silme hatalarını yutar.
-export const deleteUserScanImages = async (uid: string): Promise<void> => {
-    if (!uid) return;
+// Base64 (PNG/JPEG) görseli doğrudan Storage'a yükler. AI üretilen "gerçekte olan"
+// görseli için kullanılır (uploadImage yeniden sıkıştırır; AI çıktısını bozmamak için ayrı yol).
+export const uploadBase64Image = async (
+    base64: string,
+    path: string,
+    contentType: string = "image/png",
+): Promise<string | null> => {
+    if (!auth.currentUser) {
+        console.error("💥 HATA: Kullanıcı giriş yapmamış (uploadBase64Image)!");
+        return null;
+    }
     try {
-        const folderRef = ref(storage, `scans/${uid}`);
+        const storageRef = ref(storage, path);
+        await uploadString(storageRef, base64, "base64", { contentType });
+        return await getDownloadURL(storageRef);
+    } catch (error: any) {
+        console.error("💥 STORAGE (base64) HATASI:", error?.message);
+        return null;
+    }
+};
+
+// Bir Storage klasörünü (1 alt-klasör derinliğe kadar) temizler. Hataları yutar.
+const purgeStorageFolder = async (rootPath: string): Promise<void> => {
+    try {
+        const folderRef = ref(storage, rootPath);
         const listing = await listAll(folderRef);
 
         await Promise.all(
@@ -112,6 +131,14 @@ export const deleteUserScanImages = async (uid: string): Promise<void> => {
         );
     } catch (error) {
         // listAll, klasör yoksa veya rules engellerse hata atabilir; sessizce devam et.
-        if (__DEV__) console.warn(`[Storage] deleteUserScanImages(${uid}) error:`, error);
+        if (__DEV__) console.warn(`[Storage] purgeStorageFolder(${rootPath}) error:`, error);
     }
+};
+
+// Belirli bir kullanıcıya ait Firebase Storage görsellerini siler (scan + AI üretilen).
+// Hesap/veri silme akışından çağrılır.
+export const deleteUserScanImages = async (uid: string): Promise<void> => {
+    if (!uid) return;
+    await purgeStorageFolder(`scans/${uid}`);
+    await purgeStorageFolder(`generatedImages/${uid}`);
 };

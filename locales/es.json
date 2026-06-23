@@ -140,7 +140,8 @@
             "camera": "Analizando Imagen...",
             "text": "Analizando Texto...",
             "barcode": "Leyendo Código de Barras...",
-            "ad": "Preparando Resultado..."
+            "ad": "Preparando Resultado...",
+            "image": "Creando Visual..."
         },
         "steps": {
             "1": "Procesando Imagen...",
@@ -163,6 +164,12 @@
         "adSteps": {
             "1": "Cargando anuncio...",
             "2": "Finalizando resultado..."
+        },
+        "imageSteps": {
+            "1": "Calculando proporciones...",
+            "2": "Creando capas...",
+            "3": "Generando visual...",
+            "4": "Preparando..."
         },
         "facts": [
             "Una manzana puede ayudarte a despertarte mejor que el café.",
@@ -252,6 +259,29 @@
             "Casi listo, gracias por tu paciencia...",
             "Toques finales..."
         ]
+    },
+    "consumption": {
+        "cta_title": "¿Qué consumes en realidad?",
+        "cta_subtitle": "Mira los ingredientes en un frasco",
+        "cta_view": "Ver visual",
+        "spoon_short": "cda",
+        "modal_title": "¿Qué Consumes en Realidad?",
+        "sugar_spoons": "cucharadas de azúcar",
+        "estimated_tag": "(estimado)",
+        "per_100g": "por 100 g",
+        "additives_layer": "Aditivos",
+        "brand_tagline": "Mira qué hay dentro, elige conscientemente",
+        "preparing": "Preparando imagen…",
+        "make_photoreal": "Hacer fotorrealista",
+        "share": "Compartir",
+        "share_caption": "Lo que ves vs lo que realmente consumes 👀 #PureScanFoods",
+        "toggle_chart": "Gráfico",
+        "toggle_photo": "Foto",
+        "fully_estimated": "Visualización estimada (según el orden de ingredientes)",
+        "estimated_note": "Las proporciones son estimadas a partir de los datos disponibles",
+        "weekly_limit": "Has usado tus visuales con IA esta semana (5/5). Se renueva cada semana.",
+        "generate_failed": "No se pudo generar el visual, inténtalo de nuevo.",
+        "disclaimer": "Esta visualización se basa en proporciones ESTIMADAS a partir del orden legal de ingredientes y (si está disponible) datos nutricionales/de código de barras. Los valores exactos pueden variar según el producto."
     },
     "results": {
         "ingredients": "Ingredientes",
@@ -812,6 +842,7 @@
         "includes": "Todo incluido",
         "feat_unlimited_scan": "Escaneos de Productos Ilimitados",
         "feat_unlimited_ai": "Asistente IA Ilimitado",
+        "feat_weekly_visuals": "5 visuales de consumo IA / semana",
         "feat_unlimited_family": "Perfiles Familiares Ilimitados",
         "feat_no_ads": "Experiencia Sin Anuncios",
         "feat_priority": "Soporte Prioritario",

@@ -144,7 +144,11 @@ export default function HistoryDrawerBody() {
         scores: rawProduct.scores,
         badges: item.badges,
         nutrition_facts: rawProduct.nutrition_facts,
-        keto_analysis: rawProduct.keto_analysis
+        keto_analysis: rawProduct.keto_analysis,
+        // "Gerçekte ne tüketiyorsun?" verisi: reopen'da modelin oranları + AI cache'i korunsun.
+        composition: rawProduct.composition,
+        sugar_per_100g: rawProduct.sugar_per_100g,
+        generatedImageUrl: item.generatedImageUrl || null
       } : {
         product: rawProduct,
         details: null,

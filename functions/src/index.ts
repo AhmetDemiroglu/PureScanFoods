@@ -40,7 +40,11 @@ export const geminiProxy = onCall(
             if (!response.ok) {
                 const errorText = await response.text();
                 logger.error(`Gemini API error ${response.status}: ${errorText}`);
-                throw new HttpsError("invalid-argument", `Gemini API error (${response.status}).`);
+                // Gemini'nin gerçek sebebini de client'a taşı (404 model yok / 400 format / 403 yetki ayrımı için).
+                throw new HttpsError(
+                    "invalid-argument",
+                    `Gemini API error (${response.status}): ${errorText.slice(0, 300)}`,
+                );
             }
 
             return await response.json();

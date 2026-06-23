@@ -126,9 +126,20 @@ OUTPUT FORMAT (Raw JSON only, no markdown):
   "keto_analysis": {
       "is_keto_friendly": boolean,
       // STRICT ENUM: "LOW" | "MEDIUM" | "HIGH" | "UNKNOWN"
-      "net_carb_estimate": "LOW | MEDIUM | HIGH | UNKNOWN", 
+      "net_carb_estimate": "LOW | MEDIUM | HIGH | UNKNOWN",
       "reasoning": "string (${targetLang}) - If data_available is false, explain estimation based on ingredient list order."
-  }
+  },
+  "composition": [
+    // VISUAL LAYER BREAKDOWN for an honest "what's really inside" jar graphic. 5-8 layers, ordered MOST -> LEAST. See COMPOSITION RULES below.
+    {
+      "display_name": "string (${targetLang}) - short layer label, e.g. 'Şeker', 'Yulaf', 'Bitkisel yağ'",
+      "type": "base_grain | sugar | syrup_honey | fat_oil | flour | nuts_seeds | dried_fruit | fruit | dairy | water | cocoa | protein | fiber | salt | additives | other",
+      "percent_min": number, // 0-100
+      "percent_max": number, // 0-100, MUST be >= percent_min
+      "source": "label_percent | nutrition | openfoodfacts | order_estimate"
+    }
+  ],
+  "sugar_per_100g": number // grams of sugar per 100g from nutrition table / OpenFoodFacts (nutriments.sugars_100g). null if genuinely unknown - DO NOT guess.
 }
 
 CRITICAL DATA INSTRUCTION:
@@ -140,7 +151,16 @@ CRITICAL DATA INSTRUCTION:
 - "ingredients_full_text": transcribe the FULL ingredient line verbatim in its original language; never summarize or omit sub-ingredients or percentages.
 - If ingredient is "Aroma/Flavor", technical_name MUST be "Flavoring".
 
-
+COMPOSITION (VISUAL LAYERS) RULES — for the "composition" array:
+- GOAL: estimate the PROPORTIONS of the product as 5-8 stacked layers for an honest "what's really inside" jar graphic.
+- ORDER: layers MUST follow the legal descending weight order of the ingredient list (layer 1 >= layer 2 >= ...). Group related ingredients into ONE layer by "type": all sugars / glucose-fructose syrup -> a "sugar" or "syrup_honey" layer; all oils/fats -> "fat_oil"; flours -> "flour"; nuts & seeds -> "nuts_seeds"; ALL additives / E-numbers together -> ONE "additives" layer.
+- NUMBERS — never invent a single precise value; ALWAYS give a min–max RANGE and set "source" honestly:
+  * Exact % printed on the label (QUID, e.g. "%30 fındık") -> use it, narrow range, source "label_percent".
+  * OpenFoodFacts percent_estimate / percent_min / percent_max provided in context -> use those bounds, source "openfoodfacts".
+  * Nutrition table gives sugar/fat per 100g -> anchor that layer to it, source "nutrition".
+  * Otherwise estimate from descending order with a WIDE range (e.g. 20-35), source "order_estimate".
+- The midpoints of all layers should sum to roughly 100. The "additives" layer is usually < 2%.
+- "sugar_per_100g": grams of sugar per 100g from the nutrition table or OpenFoodFacts (nutriments.sugars_100g). If genuinely unknown, set null. DO NOT guess a precise number — null is better than a fabricated value.
 
 BADGE RULES (CRITICAL):
 - ONLY use badges from the allowed list above

@@ -92,6 +92,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         scanLimit: 3,
         aiChatCount: 0,
         aiChatLimit: 5,
+        imageGenCount: 0,
+        imageGenLimit: 0,
         weekStartDate: new Date().toISOString(),
     });
 
@@ -130,6 +132,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             await updateDoc(statsRef, {
                 scanCount: 0,
                 aiChatCount: 0,
+                imageGenCount: 0,
                 weekStartDate: serverTimestamp()
             });
             console.log("✅ User limitleri sıfırlandı (hafta doldu)");
@@ -237,6 +240,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 scanLimit: deviceScanLimit,
                 aiChatCount: deviceData.aiChatCount || 0,
                 aiChatLimit: deviceChatLimit,
+                imageGenCount: 0,
+                imageGenLimit: 0,
                 weekStartDate: getWeekStartDate(deviceData)
             });
             return;
@@ -251,6 +256,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 scanLimit: 9999,
                 aiChatCount: rawUserStats?.aiChatCount || 0,
                 aiChatLimit: 9999,
+                imageGenCount: rawUserStats?.imageGenCount || 0,
+                imageGenLimit: 5,
                 weekStartDate: new Date().toISOString()
             });
             return;
@@ -307,6 +314,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             scanLimit: finalScanLimit,
             aiChatCount: finalChatCount,
             aiChatLimit: finalChatLimit,
+            imageGenCount: rawUserStats?.imageGenCount || 0,
+            imageGenLimit: 0,
             weekStartDate: weekStart
         });
 

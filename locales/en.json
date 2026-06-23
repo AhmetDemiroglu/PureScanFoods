@@ -140,7 +140,8 @@
             "camera": "Analyzing Image...",
             "text": "Analyzing Text...",
             "barcode": "Reading Barcode...",
-            "ad": "Preparing Result..."
+            "ad": "Preparing Result...",
+            "image": "Creating Visual..."
         },
         "steps": {
             "1": "Processing Image...",
@@ -163,6 +164,12 @@
         "adSteps": {
             "1": "Loading ad...",
             "2": "Finalizing result..."
+        },
+        "imageSteps": {
+            "1": "Calculating ratios...",
+            "2": "Building layers...",
+            "3": "Generating visual...",
+            "4": "Preparing..."
         },
         "facts": [
             "An apple can help you wake up better than coffee.",
@@ -252,6 +259,29 @@
             "Almost there, thanks for your patience...",
             "Final touches..."
         ]
+    },
+    "consumption": {
+        "cta_title": "What are you really eating?",
+        "cta_subtitle": "See the ingredients in a jar",
+        "cta_view": "View visual",
+        "spoon_short": "tbsp",
+        "modal_title": "What Are You Really Eating?",
+        "sugar_spoons": "tbsp of sugar",
+        "estimated_tag": "(estimated)",
+        "per_100g": "per 100 g",
+        "additives_layer": "Additives",
+        "brand_tagline": "See what's inside, choose consciously",
+        "preparing": "Preparing image…",
+        "make_photoreal": "Make photorealistic",
+        "share": "Share",
+        "share_caption": "What you see vs what you really eat 👀 #PureScanFoods",
+        "toggle_chart": "Chart",
+        "toggle_photo": "Photo",
+        "fully_estimated": "Estimated visualization (from ingredient order)",
+        "estimated_note": "Ratios are estimated from available data",
+        "weekly_limit": "You've used your AI visuals this week (5/5). Resets weekly.",
+        "generate_failed": "Couldn't generate the visual, please try again.",
+        "disclaimer": "This visualization is based on ESTIMATED ratios from the legal ingredient order and (when available) nutrition/barcode data. Exact values may vary by product."
     },
     "results": {
         "ingredients": "Ingredients",
@@ -812,6 +842,7 @@
         "includes": "Everything included",
         "feat_unlimited_scan": "Unlimited Product Scans",
         "feat_unlimited_ai": "Unlimited AI Assistant",
+        "feat_weekly_visuals": "5 AI consumption visuals / week",
         "feat_unlimited_family": "Unlimited Family Profiles",
         "feat_no_ads": "Ad-Free Experience",
         "feat_priority": "Priority Support",

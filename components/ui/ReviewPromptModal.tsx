@@ -52,7 +52,9 @@ export default function ReviewPromptModal({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onSnooze}>
       <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={onSnooze} />
+        {/* Backdrop kazara dokunuşta kapatmasın — yalnızca açık buton seçimleri kapatır.
+            (Android donanım geri tuşu onRequestClose ile yine snooze yapar; bilinçli aksiyon.) */}
+        <View style={styles.backdrop} />
         <View style={styles.container}>
           {step === "ask" ? (
             <>

@@ -19,6 +19,9 @@ export interface UsageStats {
     scanLimit: number;
     aiChatCount: number;
     aiChatLimit: number;
+    // "Gerçekte ne tüketiyorsun?" AI görsel üretimi (premium: haftalık 2, free: 0 — sadece SVG).
+    imageGenCount: number;
+    imageGenLimit: number;
     weekStartDate: string;
 }
 
@@ -44,6 +47,9 @@ export interface ScanResult {
     badges: string[];
     createdAt: any;
     miniData: string;
+    // "Gerçekte ne tüketiyorsun?" için üretilmiş AI görseli (cache — tekrar üretmeyi önler).
+    generatedImageUrl?: string | null;
+    generatedImageCreatedAt?: any;
 }
 
 const formatDateSafe = (timestamp: any) => {
@@ -115,6 +121,8 @@ export const checkDeviceLimit = async (deviceId: string): Promise<UsageStats> =>
         scanLimit: 3,
         aiChatCount: 0,
         aiChatLimit: 5,
+        imageGenCount: 0,
+        imageGenLimit: 0,
         weekStartDate: new Date().toISOString(),
     };
 
@@ -153,6 +161,8 @@ export const checkDeviceLimit = async (deviceId: string): Promise<UsageStats> =>
         scanLimit: 3,
         aiChatCount: data.aiChatCount || 0,
         aiChatLimit: 5,
+        imageGenCount: 0,
+        imageGenLimit: 0,
         weekStartDate: formatDateSafe(weekStart),
     };
 };
@@ -444,16 +454,53 @@ export const updateFamilyMemberInDB = async (uid: string, memberId: string, upda
 
 // --- 7. TARAMA GEÇMİŞİ YÖNETİMİ  ---
 
-// Taramayı Kaydet
-export const saveScanResultToDB = async (uid: string, scanData: Omit<ScanResult, "id" | "createdAt">) => {
+// Taramayı Kaydet — kaydedilen dokümanın id'sini döner (AI görsel cache'i için gerekli).
+export const saveScanResultToDB = async (
+    uid: string,
+    scanData: Omit<ScanResult, "id" | "createdAt">,
+): Promise<string | null> => {
     try {
         const scansRef = collection(db, "users", uid, "scans");
-        await addDoc(scansRef, {
+        const docRef = await addDoc(scansRef, {
             ...scanData,
             createdAt: serverTimestamp(),
         });
+        return docRef.id;
     } catch (error) {
         console.error("Error saving scan:", error);
+        return null;
+    }
+};
+
+// --- 7b. "GERÇEKTE NE TÜKETİYORSUN?" AI GÖRSEL KREDİSİ & CACHE ---
+
+// AI görsel üretim hakkını düş (premium: haftalık 2). Sadece kullanıcı seviyesinde tutulur.
+export const incrementImageGenCount = async (uid: string) => {
+    if (!uid) return;
+    try {
+        const statsRef = doc(db, "users", uid, "stats", "weekly");
+        await setDoc(
+            statsRef,
+            { imageGenCount: increment(1), lastImageGenAt: serverTimestamp() },
+            { merge: true },
+        );
+        console.log("✅ imageGenCount artırıldı");
+    } catch (error) {
+        console.error("⚠️ Error incrementing imageGen (continuing):", error);
+    }
+};
+
+// Üretilen AI görselinin URL'ini scan dokümanına yaz (cache — tekrar üretmeyi önler).
+export const updateScanGeneratedImage = async (uid: string, scanId: string, url: string) => {
+    if (!uid || !scanId) return;
+    try {
+        const scanRef = doc(db, "users", uid, "scans", scanId);
+        await updateDoc(scanRef, {
+            generatedImageUrl: url,
+            generatedImageCreatedAt: serverTimestamp(),
+        });
+    } catch (error) {
+        console.error("⚠️ Error updating scan generated image (continuing):", error);
     }
 };
 

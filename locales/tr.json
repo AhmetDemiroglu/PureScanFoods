@@ -140,7 +140,8 @@
             "camera": "Görüntü Analiz Ediliyor...",
             "text": "Metin Analiz Ediliyor...",
             "barcode": "Barkod Okunuyor...",
-            "ad": "Sonuç Hazırlanıyor..."
+            "ad": "Sonuç Hazırlanıyor...",
+            "image": "Görsel Oluşturuluyor..."
         },
         "steps": {
             "1": "Görüntü İşleniyor...",
@@ -163,6 +164,12 @@
         "adSteps": {
             "1": "Reklam yükleniyor...",
             "2": "Sonuç tamamlanıyor..."
+        },
+        "imageSteps": {
+            "1": "Oranlar hesaplanıyor...",
+            "2": "Katmanlar çıkarılıyor...",
+            "3": "Görsel üretiliyor...",
+            "4": "Hazırlanıyor..."
         },
         "facts": [
             "Bir elma, sabahları uyanmanıza kahveden daha fazla yardımcı olabilir.",
@@ -252,6 +259,29 @@
             "Az kaldı, sabrınız için teşekkürler...",
             "Son rötuşlar yapılıyor..."
         ]
+    },
+    "consumption": {
+        "cta_title": "Gerçekte ne tüketiyorsun?",
+        "cta_subtitle": "İçindekileri kavanozda gör",
+        "cta_view": "Görseli gör",
+        "spoon_short": "kaşık",
+        "modal_title": "Gerçekte Ne Tüketiyorsun?",
+        "sugar_spoons": "yemek kaşığı şeker",
+        "estimated_tag": "(tahmini)",
+        "per_100g": "100 g ürün için",
+        "additives_layer": "Katkı maddeleri",
+        "brand_tagline": "İçindekileri gör, bilinçli seç",
+        "preparing": "Görsel hazırlanıyor…",
+        "make_photoreal": "Fotogerçekçi yap",
+        "share": "Paylaş",
+        "share_caption": "Gördüğün vs gerçekte tükettiğin 👀 #PureScanFoods",
+        "toggle_chart": "Grafik",
+        "toggle_photo": "Fotoğraf",
+        "fully_estimated": "Tahmini görselleştirme (içindekiler sırasından)",
+        "estimated_note": "Oranlar mevcut verilerden tahminidir",
+        "weekly_limit": "Bu haftaki AI görsel hakkını kullandın (5/5). Hafta başında yenilenir.",
+        "generate_failed": "Görsel üretilemedi, lütfen tekrar deneyin.",
+        "disclaimer": "Bu görselleştirme, içindekiler listesinin yasal sıralaması ve (varsa) besin/barkod verisinden hesaplanan TAHMİNİ oranlara dayanır. Kesin değerler ürüne göre değişebilir."
     },
     "results": {
         "ingredients": "İçindekiler",
@@ -812,6 +842,7 @@
         "includes": "Dahil olan özellikler",
         "feat_unlimited_scan": "Sınırsız Ürün Taraması",
         "feat_unlimited_ai": "Sınırsız AI Asistan",
+        "feat_weekly_visuals": "Haftada 5 AI tüketim görseli",
         "feat_unlimited_family": "Sınırsız Aile Profili",
         "feat_no_ads": "Reklamsız Deneyim",
         "feat_priority": "Öncelikli Destek",

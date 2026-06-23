@@ -292,6 +292,7 @@ export default function PaywallModal({ visible, onClose, onAuthRequired }: Paywa
   const features = [
     { icon: "barcode-scan", iconColor: colors.primary, iconBg: isDark ? "rgba(234,88,12,0.20)" : "#FFF7ED", label: t("paywall.feat_unlimited_scan") },
     { icon: "robot-outline", iconColor: "#7C3AED", iconBg: isDark ? "rgba(124,58,237,0.20)" : "#EDE9FE", label: t("paywall.feat_unlimited_ai") },
+    { icon: "image-multiple", iconColor: "#EA580C", iconBg: isDark ? "rgba(234,88,12,0.20)" : "#FFF7ED", label: t("paywall.feat_weekly_visuals") },
     { icon: "account-group-outline", iconColor: "#0284C7", iconBg: isDark ? "rgba(2,132,199,0.20)" : "#E0F2FE", label: t("paywall.feat_unlimited_family") },
     { icon: "advertisements-off", iconColor: "#DC2626", iconBg: isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2", label: t("paywall.feat_no_ads") },
     { icon: "lightning-bolt", iconColor: "#F59E0B", iconBg: isDark ? "rgba(245,158,11,0.20)" : "#FEF3C7", label: t("paywall.feat_priority") },

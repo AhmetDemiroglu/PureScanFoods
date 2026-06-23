@@ -1,11 +1,20 @@
 import { Platform } from "react-native";
 import * as Application from "expo-application";
 
+export interface OffIngredientBreakdown {
+    text: string;
+    percent_estimate?: number;
+    percent_min?: number;
+    percent_max?: number;
+}
+
 export interface FoodProduct {
     found: boolean;
     productName?: string;
     brand?: string;
     ingredients?: string;
+    // OFF'un içindekiler sırasından hesapladığı yüzde tahminleri (kompozisyon görseli için).
+    ingredientsBreakdown?: OffIngredientBreakdown[];
     image?: string;
     nutriments?: any;
     nutriscore_grade?: string;
@@ -40,12 +49,26 @@ export const getIngredientsByBarcode = async (barcode: string): Promise<FoodProd
 
             const nutriscoreScore = p.nutriscore_score !== undefined ? p.nutriscore_score : null;
 
+            // OFF parsed ingredients dizisi içindekiler sırasından yüzde tahmini taşır
+            // (percent_estimate/min/max). Kompozisyon görseli bunu çapa olarak kullanır.
+            const ingredientsBreakdown: OffIngredientBreakdown[] | undefined = Array.isArray(p.ingredients)
+                ? p.ingredients
+                    .filter((ing: any) => ing && ing.text)
+                    .map((ing: any) => ({
+                        text: String(ing.text),
+                        percent_estimate: ing.percent_estimate,
+                        percent_min: ing.percent_min,
+                        percent_max: ing.percent_max,
+                    }))
+                : undefined;
+
             if (ingredientsText) {
                 return {
                     found: true,
                     productName: p.product_name || "İsimsiz Ürün",
                     brand: p.brands || "",
                     ingredients: ingredientsText,
+                    ingredientsBreakdown,
                     image: p.image_url,
                     nutriments: p.nutriments,
                     nutriscore_grade: nutriscoreGrade,

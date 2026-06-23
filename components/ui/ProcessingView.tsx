@@ -12,7 +12,7 @@ const { width, height } = Dimensions.get("window");
 const STEP_ADVANCE_MS = 1800;
 const STEP_ANIMATION_MS = 350;
 
-export type ProcessingMode = "camera" | "text" | "barcode" | "ad";
+export type ProcessingMode = "camera" | "text" | "barcode" | "ad" | "image";
 
 interface ProcessingViewProps {
   mode?: ProcessingMode;
@@ -59,6 +59,7 @@ export default function ProcessingView({ mode = "camera" }: ProcessingViewProps)
     text: "processing.titles.text",
     barcode: "processing.titles.barcode",
     ad: "processing.titles.ad",
+    image: "processing.titles.image",
   };
 
   const titleDefaultByMode: Record<ProcessingMode, string> = {
@@ -66,6 +67,7 @@ export default function ProcessingView({ mode = "camera" }: ProcessingViewProps)
     text: "Analyzing Text...",
     barcode: "Reading Barcode...",
     ad: "Preparing Result...",
+    image: "Creating Visual...",
   };
 
   const steps = useMemo(() => {
@@ -91,6 +93,15 @@ export default function ProcessingView({ mode = "camera" }: ProcessingViewProps)
       return [
         { id: 1, label: t("processing.adSteps.1", { defaultValue: "Loading ad..." }), icon: "play-circle-outline" },
         { id: 2, label: t("processing.adSteps.2", { defaultValue: "Finalizing result..." }), icon: "hourglass-outline" },
+      ];
+    }
+
+    if (mode === "image") {
+      return [
+        { id: 1, label: t("processing.imageSteps.1", { defaultValue: "Calculating ratios..." }), icon: "calculator-outline" },
+        { id: 2, label: t("processing.imageSteps.2", { defaultValue: "Building layers..." }), icon: "layers-outline" },
+        { id: 3, label: t("processing.imageSteps.3", { defaultValue: "Generating visual..." }), icon: "color-palette-outline" },
+        { id: 4, label: t("processing.imageSteps.4", { defaultValue: "Preparing..." }), icon: "checkmark-done-outline" },
       ];
     }
 
