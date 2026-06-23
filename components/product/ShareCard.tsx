@@ -32,7 +32,7 @@ export default function ShareCard({ layers, spoons, sugarEstimated, aiUrl, produ
         <View style={[styles.root, { width }]}>
             {/* Marka başlığı */}
             <View style={styles.header}>
-                <Image source={require("../../assets/brand-logo.png")} style={styles.logo} resizeMode="contain" />
+                <Image source={require("../../assets/adaptive-icon.png")} style={styles.logo} resizeMode="contain" />
                 <Text style={styles.brand}>PureScan Foods</Text>
             </View>
 

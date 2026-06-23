@@ -158,6 +158,16 @@ export default function PremiumCompareModal({ visible, onClose, onSubscribe }: P
                             index={1}
                          styles={styles} />
                         <FeatureRow
+                            icon="camera-outline"
+                            iconColor="#059669"
+                            iconBg="#D1FAE5"
+                            label={t("premium.feat_visuals")}
+                            freeValue={CROSS}
+                            premiumValue={t("premium.feat_visuals_value", { defaultValue: "5/hafta" })}
+                            premiumHighlight
+                            index={2}
+                         styles={styles} />
+                        <FeatureRow
                             icon="account-group-outline"
                             iconColor="#0284C7"
                             iconBg="#E0F2FE"
@@ -165,7 +175,7 @@ export default function PremiumCompareModal({ visible, onClose, onSubscribe }: P
                             freeValue="1"
                             premiumValue={UNLIMITED}
                             premiumHighlight
-                            index={2}
+                            index={3}
                          styles={styles} />
                         <FeatureRow
                             icon="advertisements-off"
@@ -175,7 +185,7 @@ export default function PremiumCompareModal({ visible, onClose, onSubscribe }: P
                             freeValue={CROSS}
                             premiumValue={CHECK}
                             premiumHighlight
-                            index={3}
+                            index={4}
                          styles={styles} />
                         <FeatureRow
                             icon="lightning-bolt"
@@ -185,7 +195,7 @@ export default function PremiumCompareModal({ visible, onClose, onSubscribe }: P
                             freeValue={CROSS}
                             premiumValue={CHECK}
                             premiumHighlight
-                            index={4}
+                            index={5}
                          styles={styles} />
                     </View>
 

@@ -86,6 +86,8 @@ export default function SettingsScreen() {
   const isScanExhausted = !isPremium && scanRemaining === 0;
   const isChatExhausted = !isPremium && chatRemaining === 0;
   const isFamilyExhausted = !isPremium && familyCount >= familyLimitNum;
+  const imageRemaining = Math.max(0, usageStats.imageGenLimit - usageStats.imageGenCount);
+  const isImageExhausted = isPremium && imageRemaining === 0;
 
   // Password section toggle
   const togglePasswordSection = () => {
@@ -270,6 +272,28 @@ export default function SettingsScreen() {
                 </Text>
                 <Text style={[styles.usageLabel, isFamilyExhausted && styles.usageLabelExhausted]}>
                   {t("settings.family_slots")}
+                </Text>
+              </View>
+              <View style={[styles.usageCard, isImageExhausted && styles.usageCardExhausted]}>
+                <View style={[
+                  styles.usageIconBox,
+                  { backgroundColor: isImageExhausted ? (isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2") : (isDark ? "rgba(5,150,105,0.22)" : "#D1FAE5") }
+                ]}>
+                  <Ionicons
+                    name="camera-outline"
+                    size={18}
+                    color={isImageExhausted ? "#DC2626" : "#059669"}
+                  />
+                </View>
+                {isPremium ? (
+                  <Text style={[styles.usageValue, isImageExhausted && styles.usageValueExhausted]}>
+                    {imageRemaining}
+                  </Text>
+                ) : (
+                  <Text style={[styles.usageValue, { color: "#059669" }]}>PRO</Text>
+                )}
+                <Text style={[styles.usageLabel, isImageExhausted && styles.usageLabelExhausted]}>
+                  {t("settings.image_rights")}
                 </Text>
               </View>
             </View>
@@ -740,10 +764,13 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
   },
   usageGrid: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 10,
   },
   usageCard: {
-    flex: 1,
+    flexBasis: "47%",
+    flexGrow: 1,
+    minWidth: 0,
     backgroundColor: colors.card,
     borderRadius: 14,
     padding: 14,

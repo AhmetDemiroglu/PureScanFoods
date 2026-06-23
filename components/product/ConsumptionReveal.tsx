@@ -147,12 +147,13 @@ export default function ConsumptionReveal({ data, scanId, onRequirePaywall }: Pr
                 }
             }
 
+            const caption = t("consumption.share_caption", {
+                defaultValue: "PureScan Foods 👀 Gördüğünü değil, gerçekte ne tükettiğini gör! #PureScanFoods",
+            });
             if (fileToShare) {
-                await Share.share(Platform.OS === "ios" ? { url: fileToShare } : { url: fileToShare, message: "#PureScanFoods" });
+                await Share.share({ url: fileToShare, message: caption });
             } else {
-                await Share.share({
-                    message: t("consumption.share_caption", { defaultValue: "Gördüğün vs gerçekte tükettiğin 👀 #PureScanFoods" }),
-                });
+                await Share.share({ message: caption });
             }
         } catch {
             /* kullanıcı iptal etti */
@@ -201,12 +202,6 @@ export default function ConsumptionReveal({ data, scanId, onRequirePaywall }: Pr
                             : t("consumption.cta_subtitle", { defaultValue: "İçindekileri kavanozda gör" })}
                     </Text>
                 </View>
-                {spoons > 0 && (
-                    <View style={styles.cardSpoonHint}>
-                        <Text style={styles.cardSpoonNum}>≈{spoons % 1 === 0 ? spoons : spoons.toFixed(1)}</Text>
-                        <Text style={styles.cardSpoonLbl}>{t("consumption.spoon_short", { defaultValue: "kaşık" })}</Text>
-                    </View>
-                )}
                 <Ionicons name="chevron-forward" size={18} color={colors.gray[400]} />
             </Pressable>
 
@@ -420,10 +415,6 @@ const createStyles = (colors: any, isDark: boolean) =>
         },
         cardTitle: { fontSize: 14.5, fontWeight: "800", color: colors.text },
         cardSubtitle: { fontSize: 12, fontWeight: "500", color: colors.gray[500], marginTop: 2 },
-        cardSpoonHint: { alignItems: "center", paddingHorizontal: 6 },
-        cardSpoonNum: { fontSize: 16, fontWeight: "900", color: colors.primary, letterSpacing: -0.5 },
-        cardSpoonLbl: { fontSize: 9, fontWeight: "700", color: colors.gray[400] },
-
         modalRoot: { flex: 1, backgroundColor: colors.surface, paddingHorizontal: 4 },
         grabber: {
             width: 40,

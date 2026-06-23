@@ -209,6 +209,8 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
     const isScanExhausted = !isPremium && scanRemaining === 0;
     const isChatExhausted = !isPremium && chatRemaining === 0;
     const isFamilyExhausted = !isPremium && familyCount >= 1;
+    const imageRemaining = Math.max(0, usageStats.imageGenLimit - usageStats.imageGenCount);
+    const isImageExhausted = isPremium && imageRemaining === 0;
 
     // PROFILE VIEW
     const renderProfile = () => {
@@ -297,6 +299,28 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
                             </Text>
                             <Text style={[styles.usageLabel, isFamilyExhausted && styles.usageLabelExhausted]}>
                                 {t("profile.family_slots")}
+                            </Text>
+                        </View>
+                        <View style={[styles.usageCard, isImageExhausted && styles.usageCardExhausted]}>
+                            <View style={[
+                                styles.usageIconBox,
+                                { backgroundColor: isImageExhausted ? (isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2") : (isDark ? "rgba(5,150,105,0.22)" : "#D1FAE5") }
+                            ]}>
+                                <Ionicons
+                                    name="camera-outline"
+                                    size={18}
+                                    color={isImageExhausted ? "#DC2626" : "#059669"}
+                                />
+                            </View>
+                            {isPremium ? (
+                                <Text style={[styles.usageValue, isImageExhausted && styles.usageValueExhausted]}>
+                                    {imageRemaining}
+                                </Text>
+                            ) : (
+                                <Text style={[styles.usageValue, { color: "#059669" }]}>PRO</Text>
+                            )}
+                            <Text style={[styles.usageLabel, isImageExhausted && styles.usageLabelExhausted]}>
+                                {t("profile.image_rights")}
                             </Text>
                         </View>
                     </View>
@@ -557,8 +581,8 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     // Usage Section - 3 Column Grid
     usageSection: { marginBottom: 16 },
     usageSectionTitle: { fontSize: 11, fontWeight: "700", color: colors.gray[400], marginBottom: 10, letterSpacing: 0.5 },
-    usageGrid: { flexDirection: "row", gap: 10 },
-    usageCard: { flex: 1, backgroundColor: colors.card, borderRadius: 14, padding: 14, alignItems: "center", borderWidth: 1, borderColor: colors.gray[200], gap: 8 },
+    usageGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+    usageCard: { flexBasis: "47%", flexGrow: 1, minWidth: 0, backgroundColor: colors.card, borderRadius: 14, padding: 14, alignItems: "center", borderWidth: 1, borderColor: colors.gray[200], gap: 8 },
     usageCardExhausted: { borderColor: "#FECACA", backgroundColor: isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2" },
     usageIconBox: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
     usageValue: { fontSize: 20, fontWeight: "800", color: colors.secondary },
