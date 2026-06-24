@@ -1,10 +1,9 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
     View,
     Modal,
     Pressable,
     StyleSheet,
-    Image,
     ScrollView,
     Dimensions,
     Share,
@@ -12,6 +11,7 @@ import {
     ActivityIndicator,
     Platform,
 } from "react-native";
+import { Image } from "expo-image";
 import { Text } from "../ui/AppText";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../context/ThemeContext";
@@ -19,6 +19,8 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../../context/AuthContext";
 import ConsumptionJar from "./ConsumptionJar";
 import ShareCard from "./ShareCard";
+import JarReference from "./JarReference";
+import GenerationLoader from "./GenerationLoader";
 import {
     buildRenderLayers,
     resolveSugarGrams,
@@ -44,7 +46,7 @@ type ViewMode = "chart" | "photo";
 export default function ConsumptionReveal({ data, scanId, onRequirePaywall }: Props) {
     const { colors, isDark } = useTheme();
     const { t } = useTranslation();
-    const { isPremium, usageStats, user } = useAuth();
+    const { isPremium, usageStats, user, deviceId } = useAuth();
     const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
     const rawComposition = useMemo(() => {
@@ -65,13 +67,40 @@ export default function ConsumptionReveal({ data, scanId, onRequirePaywall }: Pr
     const spoons = useMemo(() => sugarToSpoons(sugar.grams), [sugar.grams]);
     const fullyEstimated = useMemo(() => isFullyEstimated(rawComposition), [rawComposition]);
 
+    // AI fotoğraf yalnızca görsel olarak "zengin" ürünlerde işe yarar. Tek bileşen aşırı baskınsa
+    // (örn. %95 su) model oranı veremez ve SVG zaten daha doğru/anlamlı → AI butonunu gizle.
+    const isAiSuitable = useMemo(() => {
+        if (!layers || layers.length < 2) return false;
+        const total = layers.reduce((s, l) => s + l.mid, 0) || 1;
+        const topShare = layers[0].mid / total;
+        if (topShare > 0.82) return false;
+        if (layers[0].type === "water" && topShare > 0.6) return false;
+        return true;
+    }, [layers]);
+
     const [showModal, setShowModal] = useState(false);
     const [aiUrl, setAiUrl] = useState<string | null>(data?.generatedImageUrl || null);
     const [viewMode, setViewMode] = useState<ViewMode>(data?.generatedImageUrl ? "photo" : "chart");
     const [generating, setGenerating] = useState(false);
     const [genError, setGenError] = useState<string | null>(null);
     const [sharing, setSharing] = useState(false);
+    const [cooldown, setCooldown] = useState(false); // üretim sonrası kısa kilit (sayaç güncellenene dek)
     const shareRef = useRef<View>(null);
+    const jarRefRef = useRef<View>(null);
+    const cooldownTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // AI görsel cache'i: scanId hazır olunca (fresh kayıt yarışı VEYA geçmişten açış) bir kez yaz.
+    const imagePersistedRef = useRef<boolean>(!!data?.generatedImageUrl);
+
+    useEffect(() => {
+        if (aiUrl && scanId && user?.uid && !imagePersistedRef.current) {
+            imagePersistedRef.current = true;
+            updateScanGeneratedImage(user.uid, scanId, aiUrl);
+        }
+    }, [aiUrl, scanId, user?.uid]);
+
+    useEffect(() => () => {
+        if (cooldownTimer.current) clearTimeout(cooldownTimer.current);
+    }, []);
 
     if (!layers || layers.length === 0) return null;
 
@@ -81,9 +110,11 @@ export default function ConsumptionReveal({ data, scanId, onRequirePaywall }: Pr
 
     const closeModal = () => setShowModal(false);
 
-    const handleGenerate = async () => {
-        if (generating || aiUrl) return;
+    const handleGenerate = async (regen = false) => {
+        if (generating || cooldown) return;
+        if (!regen && aiUrl) return;
         setGenError(null);
+        if (regen) imagePersistedRef.current = false; // yeni görsel tekrar kaydedilsin
 
         // Free kullanıcı: modalı KAPAT, sonra paywall'ı aç (yoksa paywall modalın arkasında kalıyor).
         if (!isPremium) {
@@ -98,7 +129,12 @@ export default function ConsumptionReveal({ data, scanId, onRequirePaywall }: Pr
 
         setGenerating(true);
         try {
-            const base64 = await requestJarImageBase64(rawComposition);
+            // Etiketsiz, doğru oranlı referans kavanozu yakala → modele yapı/oran kılavuzu (img2img).
+            let referenceBase64: string | null = null;
+            try {
+                referenceBase64 = await captureRef(jarRefRef, { format: "png", quality: 1, result: "base64" });
+            } catch {}
+            const base64 = await requestJarImageBase64(rawComposition, referenceBase64);
             const uid = user?.uid;
             const tmpUri = `${FileSystem.cacheDirectory}gen_${Date.now()}.png`;
             await FileSystem.writeAsStringAsync(tmpUri, base64, { encoding: FileSystem.EncodingType.Base64 });
@@ -109,9 +145,15 @@ export default function ConsumptionReveal({ data, scanId, onRequirePaywall }: Pr
             setAiUrl(url);
             setViewMode("photo");
             if (data) data.generatedImageUrl = url;
-            if (uid) {
-                incrementImageGenCount(uid);
-                if (scanId) updateScanGeneratedImage(uid, scanId, url);
+            if (uid) incrementImageGenCount(uid, deviceId);
+            // Sayaç (snapshot) güncellenene dek kısa kilit — spam-tıkla limit aşımı/çift üretim engellenir.
+            if (cooldownTimer.current) clearTimeout(cooldownTimer.current);
+            setCooldown(true);
+            cooldownTimer.current = setTimeout(() => setCooldown(false), 1500);
+            // Kalıcılaştır: scanId varsa hemen yaz; yoksa scanId gelince yukarıdaki effect yazar.
+            if (uid && scanId) {
+                imagePersistedRef.current = true;
+                updateScanGeneratedImage(uid, scanId, url);
             }
         } catch (e: any) {
             console.error("Consumption image generation failed:", e);
@@ -234,15 +276,7 @@ export default function ConsumptionReveal({ data, scanId, onRequirePaywall }: Pr
                     </View>
 
                     {generating ? (
-                        <View style={styles.loaderWrap}>
-                            <ActivityIndicator size="large" color={colors.primary} />
-                            <Text style={styles.loaderTitle}>
-                                {t("consumption.preparing", { defaultValue: "Görsel hazırlanıyor…" })}
-                            </Text>
-                            <Text style={styles.loaderSub}>
-                                {t("consumption.estimated_note", { defaultValue: "Oranlar mevcut verilerden tahminidir" })}
-                            </Text>
-                        </View>
+                        <GenerationLoader />
                     ) : (
                         <ScrollView
                             contentContainerStyle={{ paddingBottom: 28 }}
@@ -267,7 +301,9 @@ export default function ConsumptionReveal({ data, scanId, onRequirePaywall }: Pr
                                 <Image
                                     source={{ uri: aiUrl! }}
                                     style={[styles.aiImage, { width: jarWidth, height: jarWidth }]}
-                                    resizeMode="contain"
+                                    contentFit="contain"
+                                    cachePolicy="memory-disk"
+                                    transition={200}
                                 />
                             ) : (
                                 <View style={{ marginTop: 8 }}>
@@ -312,11 +348,33 @@ export default function ConsumptionReveal({ data, scanId, onRequirePaywall }: Pr
                             )}
 
                             {/* Aksiyonlar */}
-                            {!aiUrl ? (
+                            {aiUrl ? (
+                                <View style={styles.actionsCenter}>
+                                    <ShareButton wide />
+                                    {isPremium && isAiSuitable && (
+                                        <TouchableOpacity
+                                            style={styles.regenBtn}
+                                            onPress={() => handleGenerate(true)}
+                                            disabled={generating || cooldown}
+                                            hitSlop={8}
+                                            activeOpacity={0.7}
+                                        >
+                                            <Ionicons
+                                                name={limitReached ? "lock-closed" : "refresh"}
+                                                size={14}
+                                                color={limitReached || cooldown ? colors.gray[400] : colors.gray[500]}
+                                            />
+                                            <Text style={[styles.regenText, (limitReached || cooldown) && { color: colors.gray[400] }]}>
+                                                {t("consumption.regenerate", { defaultValue: "Yeniden üret" })}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+                            ) : isAiSuitable ? (
                                 <View style={styles.actionsRow}>
                                     <TouchableOpacity
                                         style={[styles.genBtn, limitReached && styles.genBtnLocked]}
-                                        onPress={handleGenerate}
+                                        onPress={() => handleGenerate(false)}
                                         activeOpacity={0.85}
                                     >
                                         <Ionicons
@@ -343,6 +401,11 @@ export default function ConsumptionReveal({ data, scanId, onRequirePaywall }: Pr
                             ) : (
                                 <View style={styles.actionsCenter}>
                                     <ShareButton wide />
+                                    <Text style={styles.suitabilityNote}>
+                                        {t("consumption.svg_best", {
+                                            defaultValue: "Bu ürün için en doğru gösterim bu grafiktir.",
+                                        })}
+                                    </Text>
                                 </View>
                             )}
 
@@ -369,6 +432,15 @@ export default function ConsumptionReveal({ data, scanId, onRequirePaywall }: Pr
                             productName={data?.product?.name}
                             width={360}
                         />
+                    </View>
+                </View>
+            )}
+
+            {/* Off-screen etiketsiz referans kavanoz (AI img2img için oran/yapı kılavuzu) */}
+            {showModal && isAiSuitable && (
+                <View style={styles.offscreenSolid} pointerEvents="none">
+                    <View ref={jarRefRef} collapsable={false}>
+                        <JarReference layers={layers} size={512} />
                     </View>
                 </View>
             )}
@@ -437,9 +509,6 @@ const createStyles = (colors: any, isDark: boolean) =>
             backgroundColor: isDark ? "rgba(255,255,255,0.06)" : colors.gray[100],
         },
 
-        loaderWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, paddingBottom: 60 },
-        loaderTitle: { fontSize: 16, fontWeight: "800", color: colors.text },
-        loaderSub: { fontSize: 13, color: colors.gray[500], textAlign: "center", paddingHorizontal: 40 },
 
         estimateBadge: {
             flexDirection: "row",
@@ -474,6 +543,9 @@ const createStyles = (colors: any, isDark: boolean) =>
 
         actionsRow: { flexDirection: "row", gap: 12, marginHorizontal: 16, marginTop: 18, alignItems: "stretch" },
         actionsCenter: { alignItems: "center", marginTop: 18, paddingHorizontal: 16 },
+        regenBtn: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 12, paddingVertical: 6, paddingHorizontal: 10 },
+        regenText: { fontSize: 12.5, fontWeight: "700", color: colors.gray[500] },
+        suitabilityNote: { fontSize: 12, fontWeight: "500", color: colors.gray[400], textAlign: "center", marginTop: 12, paddingHorizontal: 20 },
         genBtn: {
             flex: 1,
             flexDirection: "row",
@@ -534,4 +606,5 @@ const createStyles = (colors: any, isDark: boolean) =>
             marginTop: 18,
         },
         offscreen: { position: "absolute", left: -10000, top: 0, opacity: 0 },
+        offscreenSolid: { position: "absolute", left: -10000, top: 0 },
     });

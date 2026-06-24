@@ -54,7 +54,7 @@ export default function ShareCard({ layers, spoons, sugarEstimated, aiUrl, produ
                     />
                     <View style={styles.legend}>
                         {layers.map((l, i) => (
-                            <View key={i} style={[styles.legendRow, { width: inner / 2 - 6 }]}>
+                            <View key={i} style={styles.legendRow}>
                                 <View style={[styles.dot, { backgroundColor: l.color }]} />
                                 <Text style={styles.legendName} numberOfLines={1}>
                                     {l.display_name}
@@ -120,13 +120,16 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         flexWrap: "wrap",
         justifyContent: "center",
-        gap: 4,
-        marginTop: 12,
+        alignSelf: "stretch",
+        columnGap: 18,
+        rowGap: 9,
+        marginTop: 14,
+        paddingHorizontal: 6,
     },
-    legendRow: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 2 },
+    legendRow: { flexDirection: "row", alignItems: "center", gap: 6 },
     dot: { width: 10, height: 10, borderRadius: 3 },
-    legendName: { flex: 1, fontSize: 11.5, fontWeight: "700", color: C.text },
-    legendRange: { fontSize: 11.5, fontWeight: "700", color: C.muted },
+    legendName: { fontSize: 12, fontWeight: "700", color: C.text },
+    legendRange: { fontSize: 12, fontWeight: "700", color: C.muted },
     spoon: { fontSize: 14, fontWeight: "800", color: C.text, textAlign: "center", marginTop: 12 },
     footer: {
         marginTop: 14,

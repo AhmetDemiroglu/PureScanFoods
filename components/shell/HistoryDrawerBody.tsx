@@ -1,5 +1,6 @@
 ﻿import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { View, StyleSheet, FlatList, Image, TouchableOpacity, Dimensions, Modal, ActivityIndicator, Pressable, Animated, PanResponder } from "react-native";
+import { View, StyleSheet, FlatList, TouchableOpacity, Dimensions, Modal, ActivityIndicator, Pressable, Animated, PanResponder } from "react-native";
+import { Image } from "expo-image";
 import { Text } from "../ui/AppText";
 import { Ionicons } from '@expo/vector-icons';
 import { AppColors } from '../../constants/colors';
@@ -15,10 +16,16 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../context/ThemeContext';
 import { useShell } from '../../context/ShellContext';
 import * as haptics from '../../lib/haptics';
+import { getScoreColor, getScoreBg } from '../../lib/scoreLevel';
 
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SIDEBAR_WIDTH = SCREEN_WIDTH * 0.80;
+
+// Drawer kapanıp tekrar açıldığında / component remount olduğunda liste ve görseller
+// anında görünsün diye son yüklenen geçmişi modül seviyesinde tutuyoruz. Arka planda
+// taze veri gelince güncellenir (stale-while-revalidate).
+let cachedHistory: ScanResult[] = [];
 
 interface HistorySidebarProps {
   visible: boolean;
@@ -26,18 +33,6 @@ interface HistorySidebarProps {
 }
 
 // --- UTILS ---
-const getScoreColor = (score: number, isDark?: boolean): string => {
-  if (score >= 80) return "#10B981";
-  if (score >= 50) return "#F59E0B";
-  return "#EF4444";
-};
-
-const getScoreBg = (score: number, isDark?: boolean): string => {
-  if (score >= 80) return isDark ? "rgba(22,163,74,0.20)" : "#ECFDF5";
-  if (score >= 50) return isDark ? "rgba(245,158,11,0.20)" : "#FFFBEB";
-  return isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2";
-};
-
 const formatDate = (
   timestamp: any,
   t: (key: string, options?: Record<string, any>) => string,
@@ -69,7 +64,7 @@ export default function HistoryDrawerBody() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const [history, setHistory] = useState<ScanResult[]>([]);
+  const [history, setHistory] = useState<ScanResult[]>(cachedHistory);
   const [loading, setLoading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ScanResult | null>(null);
   const [showClearModal, setShowClearModal] = useState(false);
@@ -93,6 +88,10 @@ export default function HistoryDrawerBody() {
     try {
       const { data } = await getScanHistoryFromDB(user.uid, null, 50);
       setHistory(data);
+      cachedHistory = data;
+      // İlk görünür kartların görsellerini cache'e ısıt (expo-image disk cache).
+      const warmUrls = data.slice(0, 8).map((s) => s.imageUrl).filter(Boolean) as string[];
+      if (warmUrls.length) Image.prefetch(warmUrls).catch(() => {});
     } catch (e) {
       console.error(e);
     } finally {
@@ -104,6 +103,7 @@ export default function HistoryDrawerBody() {
   const confirmDelete = async () => {
     if (!deleteTarget || !user) return;
     setHistory(prev => prev.filter(item => item.id !== deleteTarget.id));
+    cachedHistory = cachedHistory.filter(item => item.id !== deleteTarget.id);
     setDeleteTarget(null);
     try {
       await firestoreDelete(doc(db, "users", user.uid, "scans", deleteTarget.id));
@@ -122,6 +122,7 @@ export default function HistoryDrawerBody() {
       snapshot.docs.forEach(doc => batch.delete(doc.ref));
       await batch.commit();
       setHistory([]);
+      cachedHistory = [];
     } catch (e) {
       console.error(e);
     } finally {
@@ -148,7 +149,8 @@ export default function HistoryDrawerBody() {
         // "Gerçekte ne tüketiyorsun?" verisi: reopen'da modelin oranları + AI cache'i korunsun.
         composition: rawProduct.composition,
         sugar_per_100g: rawProduct.sugar_per_100g,
-        generatedImageUrl: item.generatedImageUrl || null
+        generatedImageUrl: item.generatedImageUrl || null,
+        scanId: item.id
       } : {
         product: rawProduct,
         details: null,
@@ -158,7 +160,9 @@ export default function HistoryDrawerBody() {
         },
         badges: item.badges,
         nutrition_facts: null,
-        keto_analysis: null
+        keto_analysis: null,
+        generatedImageUrl: item.generatedImageUrl || null,
+        scanId: item.id
       };
 
       TempStore.setResult(resultData, item.imageUrl || "");
@@ -216,7 +220,10 @@ export default function HistoryDrawerBody() {
           <Image
             source={item.imageUrl ? { uri: item.imageUrl } : require('../../assets/placeholder.png')}
             style={styles.cardImage}
-            resizeMode="cover"
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={200}
+            recyclingKey={item.id}
           />
 
           {/* Score Badge - Overlay */}
@@ -369,6 +376,10 @@ export default function HistoryDrawerBody() {
                 showsVerticalScrollIndicator={false}
                 refreshing={loading}
                 onRefresh={loadHistory}
+                initialNumToRender={8}
+                maxToRenderPerBatch={8}
+                windowSize={5}
+                removeClippedSubviews
               />
             )}
           </View>

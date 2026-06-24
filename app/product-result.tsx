@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { View, StyleSheet, Image, ScrollView, TouchableOpacity, Dimensions, StatusBar, Modal, Pressable, PanResponder, Animated, GestureResponderEvent, Linking } from "react-native";
+import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, StatusBar, Modal, Pressable, PanResponder, Animated, GestureResponderEvent, Linking } from "react-native";
+import { Image } from "expo-image";
 import { Text } from "../components/ui/AppText";
 import { useRouter } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -11,6 +12,7 @@ import ScoreRing from "../components/ui/ScoreRing";
 import { TempStore } from "../lib/tempStore";
 import DetailCards from "../components/product/DetailCards";
 import { enrichAdditives } from "../lib/additiveEnrichment";
+import { getScoreColor } from "../lib/scoreLevel";
 import { useGuru } from "../context/GuruContext";
 import ComparePickerSheet from "../components/product/ComparePickerSheet";
 import { useTheme } from "../context/ThemeContext";
@@ -80,13 +82,6 @@ const getBadgeConfig = (colors: AppColors, isDark: boolean): Record<string, {
     LACTOSE_FREE: { icon: "checkmark-circle", color: "#0891B2", bg: isDark ? "rgba(8,145,178,0.18)" : "#ECFEFF", labelKey: "results.badges.lactose_free" },
     DEFAULT: { icon: "information-circle", color: colors.gray[600], bg: colors.gray[100], labelKey: "results.badges.general" }
 });
-
-const getScoreColor = (score: number): string => {
-    if (score >= 80) return "#10B981";
-    if (score >= 50) return "#F59E0B";
-    return "#EF4444";
-};
-
 
 export default function ProductResultScreen() {
     const { t, i18n } = useTranslation();
@@ -540,7 +535,7 @@ export default function ProductResultScreen() {
             <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom + 20, 36) }]} showsVerticalScrollIndicator={false} bounces={false}>
                 {/* Image Header */}
                 <View style={styles.imageContainer}>
-                    <Image source={imageUri ? { uri: imageUri } : require('../assets/placeholder.png')} style={styles.productImage} resizeMode="cover" />
+                    <Image source={imageUri ? { uri: imageUri } : require('../assets/placeholder.png')} style={styles.productImage} contentFit="cover" cachePolicy="memory-disk" transition={200} />
                     <View style={styles.imageOverlay} />
                     <TouchableOpacity style={[styles.headerBtn, styles.headerBtnLeft]} onPress={() => router.back()}>
                         <Ionicons name="chevron-back" size={22} color="#FFF" />
@@ -638,7 +633,7 @@ export default function ProductResultScreen() {
                     {/* Gerçekte ne tüketiyorsun? — kompozisyon görseli */}
                     <ConsumptionReveal
                         data={data}
-                        scanId={savedScanId}
+                        scanId={savedScanId || (data as any)?.scanId || null}
                         isHistoryView={isHistoryView}
                         onRequirePaywall={() => setShowResultPaywall(true)}
                     />

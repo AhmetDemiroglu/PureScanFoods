@@ -24,10 +24,17 @@ export default function FullIngredientsSheet({ visible, onClose, fullText, sourc
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const screenHeight = Dimensions.get("window").height;
-  const panY = useRef(new Animated.Value(0)).current;
+  const panY = useRef(new Animated.Value(screenHeight)).current;
 
+  // Her açılışta sheet'i ekran dışından yukarı kaydır — GERÇEK animasyon şart.
+  // setValue(0) yetmiyordu: kapanış native-driver animasyonu sonrası Modal çocuklarını
+  // söküp tekrar bağlıyor; bare setValue yeni mount edilen native view'i repaint etmiyor,
+  // bu yüzden 2. açılışta sadece overlay görünüp sheet ekran dışında (screenHeight) kalıyordu.
   useEffect(() => {
-    if (visible) panY.setValue(0);
+    if (visible) {
+      panY.setValue(screenHeight);
+      Animated.timing(panY, { toValue: 0, duration: 260, useNativeDriver: true }).start();
+    }
   }, [visible]);
 
   const close = () => {

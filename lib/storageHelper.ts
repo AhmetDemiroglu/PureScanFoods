@@ -48,6 +48,9 @@ export const uploadImage = async (uri: string, path: string): Promise<string | n
         // 4. Yükle
         const metadata = {
             contentType: "image/jpeg",
+            // Görseller içeriğe göre değişmez (her yükleme yeni path/timestamp). Agresif
+            // önbellekleme: expo-image disk cache + HTTP katmanı tekrar indirmesin.
+            cacheControl: "public, max-age=31536000, immutable",
         };
 
         await uploadBytes(storageRef, blob, metadata);
@@ -87,7 +90,10 @@ export const uploadBase64Image = async (
     }
     try {
         const storageRef = ref(storage, path);
-        await uploadString(storageRef, base64, "base64", { contentType });
+        await uploadString(storageRef, base64, "base64", {
+            contentType,
+            cacheControl: "public, max-age=31536000, immutable",
+        });
         return await getDownloadURL(storageRef);
     } catch (error: any) {
         console.error("💥 STORAGE (base64) HATASI:", error?.message);

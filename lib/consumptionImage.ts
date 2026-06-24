@@ -5,50 +5,82 @@
 import { callGemini } from "./api";
 import { CompositionLayer } from "./composition";
 
-const TYPE_DESC: Record<string, string> = {
-    base_grain: "grain / oat / cereal flakes",
-    sugar: "white granulated sugar",
-    syrup_honey: "glucose syrup or honey (glossy amber liquid)",
-    fat_oil: "vegetable oil / fat (yellow oily layer)",
-    flour: "fine flour powder",
-    nuts_seeds: "mixed nuts and seeds",
-    dried_fruit: "dried fruit pieces",
-    fruit: "fresh fruit pulp",
-    dairy: "milk / dairy",
-    water: "water",
-    cocoa: "cocoa / chocolate powder",
-    protein: "protein powder",
-    fiber: "fiber",
-    salt: "salt crystals",
-    additives: "a very thin layer of fine powdered additives",
-    other: "mixed ingredients",
+// Katmanın FİZİKSEL formu (kimliği değil — kimlik display_name'den gelir).
+// Böylece model "fındık"ı kajuya çevirmez; sadece nasıl göründüğüne dair ipucu alır.
+const FORM_HINT: Record<string, string> = {
+    base_grain: "dry grains or flakes",
+    flour: "fine powder",
+    sugar: "fine white crystals",
+    syrup_honey: "thick glossy syrup",
+    fat_oil: "a clear oily liquid",
+    nuts_seeds: "whole or chopped pieces",
+    dried_fruit: "small dried pieces",
+    fruit: "fresh pulp",
+    dairy: "creamy powder",
+    water: "a clear liquid",
+    cocoa: "fine brown powder",
+    protein: "fine powder",
+    fiber: "fine powder",
+    salt: "coarse crystals",
+    additives: "a very thin fine powder",
+    other: "its natural form",
 };
 
-export const buildJarImagePrompt = (layers: CompositionLayer[]): string => {
+export const buildJarImagePrompt = (layers: CompositionLayer[], hasReference = false): string => {
     const ordered = [...layers]
         .map((l) => ({ ...l, mid: ((l.percent_min || 0) + (l.percent_max || 0)) / 2 }))
         .filter((l) => l.mid > 0)
         .sort((a, b) => b.mid - a.mid);
 
     const layerLines = ordered
-        .map((l, i) => `${i + 1}. ${TYPE_DESC[l.type] || "ingredient"} — about ${Math.round(l.mid)}% of the height`)
+        .map((l, i) => {
+            const pct = Math.max(1, Math.round(l.mid));
+            const form = FORM_HINT[l.type] || "its natural form";
+            return `${i + 1}. ${l.display_name} — shown as ${form} — fills about ${pct}% of the jar height`;
+        })
         .join("\n");
 
+    const topName = ordered[0]?.display_name || "the main ingredient";
+
+    // img2img: elimizdeki DOĞRU oranlı kavanoz diyagramı referans olarak verildiğinde,
+    // model oranı/sırayı uydurmaz; sadece her bandı gerçek malzemeyle fotogerçekçi yapar.
+    if (hasReference) {
+        return [
+            "The attached image is a DIAGRAM of a glass jar split into colored horizontal layers. These layers define the EXACT number of layers, their order, and their relative thickness. You MUST reproduce this structure precisely.",
+            "Recreate it as a PHOTOREALISTIC studio product photo of ONE tall clear glass jar on a clean neutral beige background, soft natural light, subtle shadow, square 1:1.",
+            "Replace each colored band, FROM TOP TO BOTTOM, with the real ingredient it represents (rendered with realistic texture):",
+            layerLines,
+            "Keep the SAME proportions and order as the diagram — do not merge, add, or drop layers. Ingredient names may be Turkish; show the EXACT ingredient, never a similar-looking substitute (e.g. hazelnut/fındık → hazelnuts, never cashews or almonds). Render liquids (water/oil/syrup) as translucent liquid.",
+            "Ignore the diagram's flat colors and white background — output a realistic photo on a beige background.",
+            "STRICT: NO text, NO numbers, NO labels, NO logos, NO packaging anywhere. Only the single photorealistic layered glass jar.",
+        ].join("\n");
+    }
+
     return [
-        "Create a photorealistic studio product photograph of ONE tall clear glass jar, centered on a clean neutral beige background with soft natural lighting and a subtle shadow.",
-        "The jar is filled from top to bottom with DISTINCT HORIZONTAL LAYERS of raw ingredients. Each layer's thickness must be proportional to the percentage below. From TOP (largest) to BOTTOM (smallest):",
+        "Photorealistic studio product photo of ONE tall clear glass jar, centered on a clean neutral beige background, soft natural light, subtle shadow. Square 1:1.",
+        "Inside the jar, the real raw ingredients are stacked as DISTINCT HORIZONTAL LAYERS. Each layer's thickness MUST be proportional to its percentage. From TOP (most) to BOTTOM (least):",
         layerLines,
-        "Each layer must look like the real, raw ingredient with realistic texture and color, clearly separated from the others.",
-        "STRICT: Absolutely NO text, NO labels, NO numbers, NO letters, NO logos anywhere in the image. Do NOT draw any product packaging or pouch. Only the layered glass jar. Square 1:1 composition.",
+        `The top layer (${topName}) must clearly dominate the jar when its percentage is large; a tiny percentage must be only a thin band.`,
+        "Ingredient names may be written in Turkish — interpret each correctly and show that EXACT ingredient. Do NOT replace an ingredient with a different but similar-looking one (e.g. if it says hazelnut/fındık, show hazelnuts, never cashews or almonds; if it says water/su, show clear liquid, never powder).",
+        "Render liquids (water, oil, syrup) as translucent liquid filling their portion; powders and solids settle as their own distinct bands.",
+        "STRICT: NO text, NO labels, NO numbers, NO letters, NO logos, NO packaging anywhere. Only the single layered glass jar.",
     ].join("\n");
 };
 
 // Üretilen görselin base64 (PNG) verisini döner. Görsel parçası yoksa hata fırlatır.
-export const requestJarImageBase64 = async (layers: CompositionLayer[]): Promise<string> => {
-    const prompt = buildJarImagePrompt(layers);
+export const requestJarImageBase64 = async (
+    layers: CompositionLayer[],
+    referenceBase64?: string | null,
+): Promise<string> => {
+    const prompt = buildJarImagePrompt(layers, !!referenceBase64);
+
+    // Referans (etiketsiz oranlı kavanoz) varsa görsel + metin; yoksa sadece metin.
+    const reqParts: any[] = [];
+    if (referenceBase64) reqParts.push({ inlineData: { mimeType: "image/png", data: referenceBase64 } });
+    reqParts.push({ text: prompt });
 
     const result: any = await callGemini("gemini-2.5-flash-image:generateContent", {
-        contents: [{ parts: [{ text: prompt }] }],
+        contents: [{ parts: reqParts }],
         generationConfig: { responseModalities: ["IMAGE"] },
     });
 

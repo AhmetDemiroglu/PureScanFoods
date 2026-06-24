@@ -256,7 +256,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 scanLimit: 9999,
                 aiChatCount: rawUserStats?.aiChatCount || 0,
                 aiChatLimit: 9999,
-                imageGenCount: rawUserStats?.imageGenCount || 0,
+                imageGenCount: Math.max(rawUserStats?.imageGenCount || 0, deviceData.imageGenCount || 0),
                 imageGenLimit: 5,
                 weekStartDate: new Date().toISOString()
             });

@@ -1,5 +1,14 @@
 import { LifeStageType } from "./lifestages";
 import { SeverityLevel } from "./analysisEngine";
+import {
+    ARTIFICIAL_SWEETENER_KEYWORDS,
+    PALM_HYDROGENATED_KEYWORDS,
+    ARTIFICIAL_FLAVOR_KEYWORDS,
+    ARTIFICIAL_COLOR_KEYWORDS,
+    HARMFUL_PRESERVATIVE_KEYWORDS,
+    INDUSTRIAL_EMULSIFIER_KEYWORDS,
+    ULTRA_PROCESSED_MARKER_KEYWORDS,
+} from "../constants/processingMarkers";
 
 interface LifeStageRule {
     keyword: string;
@@ -24,42 +33,12 @@ const RAW_FISH_KEYWORDS_EN = ["raw fish", "sushi", "sashimi", "ceviche", "raw sa
 const SHELLFISH_KEYWORDS_EN = ["shrimp", "prawn", "crab", "lobster", "oyster", "mussel", "clam", "scallop"];
 const CHOCOLATE_KEYWORDS_EN = ["chocolate", "cocoa", "cacao"];
 const PROCESSED_MEAT_KEYWORDS_EN = ["sausage", "hot dog", "bacon", "salami", "pepperoni", "ham", "bologna", "deli meat", "cured meat", "smoked meat"];
-const ARTIFICIAL_SWEETENER_KEYWORDS_EN = [
-    "aspartame", "sucralose", "saccharin", "acesulfame", "neotame", "advantame", "cyclamate",
-    "e950", "e951", "e952", "e954", "e955", "e961", "e962",
-];
 const UNPASTEURIZED_KEYWORDS_EN = ["unpasteurized", "raw milk", "raw cheese"];
 const SOFT_CHEESE_KEYWORDS_EN = ["brie", "camembert", "feta", "blue cheese", "gorgonzola", "roquefort"];
 const HIGH_MERCURY_FISH_EN = ["shark", "swordfish", "king mackerel", "tilefish", "bigeye tuna", "marlin"];
 const ALCOHOL_KEYWORDS_EN = ["alcohol", "wine", "beer", "vodka", "rum", "whiskey", "liqueur", "ethanol"];
 const CHOKING_HAZARD_KEYWORDS_EN = ["whole nut", "popcorn", "hard candy", "whole grape", "cherry tomato", "raw carrot"];
 const LIVER_KEYWORDS_EN = ["liver", "pate", "liverwurst"];
-const PALM_HYDROGENATED_KEYWORDS_EN = [
-    "palm oil", "palm fat", "palm kernel", "palm olein", "palm stearin",
-    "hydrogenated", "partially hydrogenated", "fully hydrogenated", "trans fat", "trans fatty",
-];
-const ARTIFICIAL_FLAVOR_KEYWORDS_EN = [
-    "artificial flavor", "artificial flavour", "artificial flavoring", "artificial flavouring",
-    "flavoring", "flavouring", "flavour enhancer", "flavor enhancer", "nature-identical",
-];
-const ARTIFICIAL_COLOR_KEYWORDS_EN = [
-    "tartrazine", "sunset yellow", "ponceau", "carmoisine", "azorubine", "quinoline yellow",
-    "allura red", "brilliant blue", "patent blue", "indigo carmine",
-    "e102", "e104", "e110", "e122", "e124", "e129", "e131", "e132", "e133", "e142", "e151",
-];
-const HARMFUL_PRESERVATIVE_KEYWORDS_EN = [
-    "sodium nitrite", "sodium nitrate", "potassium nitrite", "potassium nitrate",
-    "bha", "bht", "tbhq", "propyl gallate",
-    "e249", "e250", "e251", "e252", "e320", "e321", "e310",
-];
-const INDUSTRIAL_EMULSIFIER_KEYWORDS_EN = [
-    "polyglycerol polyricinoleate", "carboxymethylcellulose", "polysorbate",
-    "e471", "e472", "e433", "e466", "e476", "e477",
-];
-const ULTRA_PROCESSED_MARKER_KEYWORDS_EN = [
-    "maltodextrin", "modified starch", "high fructose corn syrup", "glucose-fructose syrup",
-    "glucose syrup", "invert sugar", "isolated soy protein", "hydrolyzed protein",
-];
 
 // Turkish keywords
 const HONEY_KEYWORDS_TR = ["bal"];
@@ -74,40 +53,12 @@ const RAW_FISH_KEYWORDS_TR = ["çiğ balık", "sushi", "sashimi"];
 const SHELLFISH_KEYWORDS_TR = ["karides", "yengeç", "ıstakoz", "istiridye", "midye", "deniz tarağı"];
 const CHOCOLATE_KEYWORDS_TR = ["çikolata", "kakao"];
 const PROCESSED_MEAT_KEYWORDS_TR = ["sosis", "salam", "pastırma", "jambon", "füme et", "sucuk"];
-const ARTIFICIAL_SWEETENER_KEYWORDS_TR = [
-    "aspartam", "sukraloz", "sakarin", "asesülfam", "neotam", "siklamat",
-];
 const UNPASTEURIZED_KEYWORDS_TR = ["pastörize edilmemiş", "çiğ süt", "çiğ peynir"];
 const SOFT_CHEESE_KEYWORDS_TR = ["brie", "camembert", "feta", "rokfur", "gorgonzola"];
 const HIGH_MERCURY_FISH_TR = ["köpek balığı", "kılıç balığı", "ton balığı", "marlin"];
 const ALCOHOL_KEYWORDS_TR = ["alkol", "şarap", "bira", "votka", "viski", "rakı"];
 const CHOKING_HAZARD_KEYWORDS_TR = ["bütün fındık", "patlamış mısır", "şekerleme", "çiğ havuç"];
 const LIVER_KEYWORDS_TR = ["karaciğer", "ciğer", "karaciğer sosisi"];
-const PALM_HYDROGENATED_KEYWORDS_TR = [
-    "palm yağı", "palm yagi", "palm çekirdek", "palm cekirdek",
-    "hidrojenize", "kısmen hidrojenize", "kismen hidrojenize", "tam hidrojenize",
-    "trans yağ", "trans yag",
-];
-const ARTIFICIAL_FLAVOR_KEYWORDS_TR = [
-    "aroma verici", "aroma vericiler", "yapay aroma", "yapay aromalar",
-    "doğaya özdeş aroma", "dogaya ozdes aroma", "tat arttırıcı",
-];
-const ARTIFICIAL_COLOR_KEYWORDS_TR = [
-    "tartrazin", "günbatımı sarısı", "ponso", "karmoisin", "kinolin sarısı", "allura kırmızısı",
-    "e102", "e104", "e110", "e122", "e124", "e129",
-];
-const HARMFUL_PRESERVATIVE_KEYWORDS_TR = [
-    "sodyum nitrit", "sodyum nitrat", "potasyum nitrit", "potasyum nitrat",
-    "bha", "bht", "e249", "e250", "e251", "e252", "e320", "e321",
-];
-const INDUSTRIAL_EMULSIFIER_KEYWORDS_TR = [
-    "poligliserol polirisinoleat", "polisorbat", "karboksimetil selüloz",
-    "e471", "e472", "e433", "e466", "e476", "e477",
-];
-const ULTRA_PROCESSED_MARKER_KEYWORDS_TR = [
-    "maltodekstrin", "modifiye nişasta", "yüksek fruktozlu mısır şurubu", "glukoz-fruktoz şurubu",
-    "glukoz şurubu", "invert şeker", "izole soya proteini", "hidrolize protein",
-];
 
 // Spanish keywords
 const HONEY_KEYWORDS_ES = ["miel"];
@@ -122,40 +73,12 @@ const RAW_FISH_KEYWORDS_ES = ["pescado crudo", "sushi", "sashimi", "ceviche", "s
 const SHELLFISH_KEYWORDS_ES = ["camarón", "gamba", "cangrejo", "langosta", "ostra", "mejillón", "vieira", "almeja", "berberecho"];
 const CHOCOLATE_KEYWORDS_ES = ["chocolate", "cacao"];
 const PROCESSED_MEAT_KEYWORDS_ES = ["salchicha", "salchicha hot dog", "tocino", "beicon", "salami", "pepperoni", "jamón", "jamon", "mortadela", "fiambre", "carne curada", "carne ahumada"];
-const ARTIFICIAL_SWEETENER_KEYWORDS_ES = [
-    "aspartamo", "sucralosa", "sacarina", "acesulfamo", "neotamo", "ciclamato",
-];
 const UNPASTEURIZED_KEYWORDS_ES = ["no pasteurizado", "sin pasteurizar", "leche cruda", "queso crudo"];
 const SOFT_CHEESE_KEYWORDS_ES = ["brie", "camembert", "feta", "queso azul", "gorgonzola", "roquefort"];
 const HIGH_MERCURY_FISH_ES = ["tiburón", "pez espada", "caballa", "atún rojo", "marlin", "merlín"];
 const ALCOHOL_KEYWORDS_ES = ["alcohol", "vino", "cerveza", "vodka", "ron", "whisky", "licor", "etanol"];
 const CHOKING_HAZARD_KEYWORDS_ES = ["nuez entera", "palomitas", "caramelo duro", "uva entera", "tomate cherry", "zanahoria cruda"];
 const LIVER_KEYWORDS_ES = ["hígado", "higado", "paté", "pate", "embutido de hígado"];
-const PALM_HYDROGENATED_KEYWORDS_ES = [
-    "aceite de palma", "grasa de palma", "palmiste",
-    "hidrogenado", "parcialmente hidrogenado", "totalmente hidrogenado",
-    "grasa trans", "ácidos grasos trans",
-];
-const ARTIFICIAL_FLAVOR_KEYWORDS_ES = [
-    "aroma artificial", "aromas artificiales", "saborizante artificial", "saborizantes artificiales",
-    "aromatizante", "aromatizantes", "potenciador del sabor",
-];
-const ARTIFICIAL_COLOR_KEYWORDS_ES = [
-    "tartrazina", "amarillo ocaso", "ponceau", "carmoisina", "amarillo quinolina", "rojo allura",
-    "e102", "e104", "e110", "e122", "e124", "e129",
-];
-const HARMFUL_PRESERVATIVE_KEYWORDS_ES = [
-    "nitrito de sodio", "nitrato de sodio", "nitrito de potasio", "nitrato de potasio",
-    "bha", "bht", "e249", "e250", "e251", "e252", "e320", "e321",
-];
-const INDUSTRIAL_EMULSIFIER_KEYWORDS_ES = [
-    "polirricinoleato de poliglicerol", "polisorbato", "carboximetilcelulosa",
-    "e471", "e472", "e433", "e466", "e476", "e477",
-];
-const ULTRA_PROCESSED_MARKER_KEYWORDS_ES = [
-    "maltodextrina", "almidón modificado", "jarabe de maíz alto en fructosa", "jarabe de glucosa-fructosa",
-    "jarabe de glucosa", "azúcar invertido", "proteína de soja aislada", "proteína hidrolizada",
-];
 
 // Combined keyword lists
 const HONEY_KEYWORDS = [...HONEY_KEYWORDS_EN, ...HONEY_KEYWORDS_TR, ...HONEY_KEYWORDS_ES];
@@ -170,19 +93,12 @@ const RAW_FISH_KEYWORDS = [...RAW_FISH_KEYWORDS_EN, ...RAW_FISH_KEYWORDS_TR, ...
 const SHELLFISH_KEYWORDS = [...SHELLFISH_KEYWORDS_EN, ...SHELLFISH_KEYWORDS_TR, ...SHELLFISH_KEYWORDS_ES];
 const CHOCOLATE_KEYWORDS = [...CHOCOLATE_KEYWORDS_EN, ...CHOCOLATE_KEYWORDS_TR, ...CHOCOLATE_KEYWORDS_ES];
 const PROCESSED_MEAT_KEYWORDS = [...PROCESSED_MEAT_KEYWORDS_EN, ...PROCESSED_MEAT_KEYWORDS_TR, ...PROCESSED_MEAT_KEYWORDS_ES];
-const ARTIFICIAL_SWEETENER_KEYWORDS = [...ARTIFICIAL_SWEETENER_KEYWORDS_EN, ...ARTIFICIAL_SWEETENER_KEYWORDS_TR, ...ARTIFICIAL_SWEETENER_KEYWORDS_ES];
 const UNPASTEURIZED_KEYWORDS = [...UNPASTEURIZED_KEYWORDS_EN, ...UNPASTEURIZED_KEYWORDS_TR, ...UNPASTEURIZED_KEYWORDS_ES];
 const SOFT_CHEESE_KEYWORDS = [...SOFT_CHEESE_KEYWORDS_EN, ...SOFT_CHEESE_KEYWORDS_TR, ...SOFT_CHEESE_KEYWORDS_ES];
 const HIGH_MERCURY_FISH = [...HIGH_MERCURY_FISH_EN, ...HIGH_MERCURY_FISH_TR, ...HIGH_MERCURY_FISH_ES];
 const ALCOHOL_KEYWORDS = [...ALCOHOL_KEYWORDS_EN, ...ALCOHOL_KEYWORDS_TR, ...ALCOHOL_KEYWORDS_ES];
 const CHOKING_HAZARD_KEYWORDS = [...CHOKING_HAZARD_KEYWORDS_EN, ...CHOKING_HAZARD_KEYWORDS_TR, ...CHOKING_HAZARD_KEYWORDS_ES];
 const LIVER_KEYWORDS = [...LIVER_KEYWORDS_EN, ...LIVER_KEYWORDS_TR, ...LIVER_KEYWORDS_ES];
-const PALM_HYDROGENATED_KEYWORDS = [...PALM_HYDROGENATED_KEYWORDS_EN, ...PALM_HYDROGENATED_KEYWORDS_TR, ...PALM_HYDROGENATED_KEYWORDS_ES];
-const ARTIFICIAL_FLAVOR_KEYWORDS = [...ARTIFICIAL_FLAVOR_KEYWORDS_EN, ...ARTIFICIAL_FLAVOR_KEYWORDS_TR, ...ARTIFICIAL_FLAVOR_KEYWORDS_ES];
-const ARTIFICIAL_COLOR_KEYWORDS = [...ARTIFICIAL_COLOR_KEYWORDS_EN, ...ARTIFICIAL_COLOR_KEYWORDS_TR, ...ARTIFICIAL_COLOR_KEYWORDS_ES];
-const HARMFUL_PRESERVATIVE_KEYWORDS = [...HARMFUL_PRESERVATIVE_KEYWORDS_EN, ...HARMFUL_PRESERVATIVE_KEYWORDS_TR, ...HARMFUL_PRESERVATIVE_KEYWORDS_ES];
-const INDUSTRIAL_EMULSIFIER_KEYWORDS = [...INDUSTRIAL_EMULSIFIER_KEYWORDS_EN, ...INDUSTRIAL_EMULSIFIER_KEYWORDS_TR, ...INDUSTRIAL_EMULSIFIER_KEYWORDS_ES];
-const ULTRA_PROCESSED_MARKER_KEYWORDS = [...ULTRA_PROCESSED_MARKER_KEYWORDS_EN, ...ULTRA_PROCESSED_MARKER_KEYWORDS_TR, ...ULTRA_PROCESSED_MARKER_KEYWORDS_ES];
 
 export const LIFESTAGE_RULES: Record<LifeStageType, LifeStageRule[]> = {
     // 0-6 AY: Sadece anne sütü/mama

@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { AppColors } from "../../constants/colors";
 import { ActiveProduct } from "../../context/GuruContext";
 import { useTheme } from "../../context/ThemeContext";
+import { getScoreColor } from "../../lib/scoreLevel";
 
 interface ProductContextCardProps {
   product: ActiveProduct;
@@ -16,12 +17,6 @@ export const ProductContextCard = ({ product, onClose }: ProductContextCardProps
   const { t } = useTranslation();
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
-
-  const getScoreColor = (score: number) => {
-    if (score >= 70) return colors.success;
-    if (score >= 40) return colors.warning;
-    return colors.error;
-  };
 
   const scoreColor = getScoreColor(product.score);
   const displayName = product.name?.trim() || product.brand?.trim() || "Bilinmeyen Ürün";

@@ -15,6 +15,7 @@ import Hero from "../../components/ui/Hero";
 import { callGemini } from "../../lib/api";
 import { TempStore } from "../../lib/tempStore";
 import { generateAnalysisPrompt, generateBarcodeDataPrompt } from "../../lib/prompt";
+import { auditAnalysis } from "../../lib/auditAnalysis";
 import { getIngredientsByBarcode } from "../../lib/openFoodFacts";
 import * as ImagePicker from "expo-image-picker";
 import * as ScreenOrientation from "expo-screen-orientation";
@@ -286,7 +287,12 @@ export default function ScanScreen() {
           ? "openfoodfacts" : (activeTab === "text" ? "text" : "pack");
       }
 
-      TempStore.setResult(parsedData, imageUri || "", {
+      // Denetçi (son kontrol): AI çıktısını NOVA floor + güvenlik puanı bandı ile
+      // tutarlılık açısından denetle. AI karar verir, kod yalnızca net hataları düzeltir.
+      const auditLang = i18n.language?.startsWith("tr") ? "tr" : i18n.language?.startsWith("es") ? "es" : "en";
+      const audited = auditAnalysis(parsedData, auditLang);
+
+      TempStore.setResult(audited, imageUri || "", {
         source: offData ? "barcode" : (activeTab === "text" ? "text" : "camera")
       });
       router.push("/product-result");

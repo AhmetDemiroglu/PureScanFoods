@@ -1,5 +1,6 @@
 import React from "react";
-import { View, StyleSheet, ScrollView, Image, TouchableOpacity, StatusBar } from "react-native";
+import { View, StyleSheet, ScrollView, TouchableOpacity, StatusBar } from "react-native";
+import { Image } from "expo-image";
 import { Text } from "../components/ui/AppText";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -9,8 +10,9 @@ import { AppColors } from "../constants/colors";
 import { useTheme } from "../context/ThemeContext";
 import { TempStore } from "../lib/tempStore";
 import { enrichAdditives } from "../lib/additiveEnrichment";
-
-const scoreColor = (s: number) => (s >= 80 ? "#10B981" : s >= 50 ? "#F59E0B" : "#EF4444");
+import { getScoreColor } from "../lib/scoreLevel";
+import { readNovaGroup } from "../lib/auditAnalysis";
+import { getNovaInfo } from "../constants/additives";
 
 const num = (v: any): number | null =>
   typeof v === "number" && !Number.isNaN(v) ? v : null;
@@ -35,6 +37,7 @@ export default function CompareScreen() {
       image: side?.image || "",
       safety: num(d.scores?.safety?.value),
       nova: d.details?.processing?.classification || "-",
+      novaGroup: readNovaGroup(d),
       additives: enrichAdditives(d.details?.additives || [], d.details?.ingredients_full_text || "", lang),
       sugar: num(d.nutrition_facts?.sugar),
       sodium: num(d.nutrition_facts?.sodium),
@@ -82,7 +85,7 @@ export default function CompareScreen() {
     const fmt = (v: number | null) => (v === null ? "-" : `${v}${unit}`);
     const cellColor = (v: number | null, better: boolean) => {
       if (v === null) return colors.gray[400];
-      if (colorByScore) return scoreColor(v);
+      if (colorByScore) return getScoreColor(v);
       return better ? "#10B981" : colors.text;
     };
     return (
@@ -94,24 +97,45 @@ export default function CompareScreen() {
     );
   };
 
-  const renderTextRow = (label: string, a: string, b: string) => (
-    <View style={styles.metricRow}>
-      <Text style={[styles.metricValText]} numberOfLines={2}>{a}</Text>
-      <Text style={styles.metricLabel}>{label}</Text>
-      <Text style={[styles.metricValText]} numberOfLines={2}>{b}</Text>
-    </View>
-  );
+  // NOVA satırı: düşük NOVA = daha iyi (kazanan vurgulanır), her hücre NOVA rengiyle.
+  // nova_group yoksa (eski kayıt) ham sınıflandırma metnine düşer.
+  const renderNovaRow = (label: string, aG: 1 | 2 | 3 | 4 | null, bG: 1 | 2 | 3 | 4 | null, aText: string, bText: string) => {
+    let aBetter = false, bBetter = false;
+    if (aG !== null && bG !== null && aG !== bG) {
+      const aWins = aG < bG;
+      aBetter = aWins; bBetter = !aWins;
+    }
+    const cell = (g: 1 | 2 | 3 | 4 | null, text: string, better: boolean) => {
+      if (g === null) return <Text style={styles.metricValText} numberOfLines={2}>{text || "-"}</Text>;
+      const info = getNovaInfo(g);
+      const lbl = lang === "tr" ? info.labelTr : lang === "es" ? info.labelEs : info.label;
+      return (
+        <Text style={[styles.metricValText, { color: info.color, fontWeight: better ? "800" : "600" }]} numberOfLines={2}>
+          {`${lbl} (NOVA ${g})`}
+        </Text>
+      );
+    };
+    return (
+      <View style={styles.metricRow}>
+        {cell(aG, aText, aBetter)}
+        <Text style={styles.metricLabel}>{label}</Text>
+        {cell(bG, bText, bBetter)}
+      </View>
+    );
+  };
 
   const renderHead = (P: typeof A) => (
     <View style={styles.headCol}>
       <Image
         source={P.image ? { uri: P.image } : require("../assets/placeholder.png")}
         style={styles.headImg}
-        resizeMode="cover"
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        transition={200}
       />
       <Text style={styles.headBrand} numberOfLines={1}>{P.brand}</Text>
       <Text style={styles.headName} numberOfLines={2}>{P.name}</Text>
-      <View style={[styles.headScore, { backgroundColor: P.safety !== null ? scoreColor(P.safety) : colors.gray[400] }]}>
+      <View style={[styles.headScore, { backgroundColor: P.safety !== null ? getScoreColor(P.safety) : colors.gray[400] }]}>
         <Text style={styles.headScoreText}>{P.safety !== null ? P.safety : "-"}</Text>
       </View>
     </View>
@@ -137,7 +161,7 @@ export default function CompareScreen() {
 
         <View style={styles.table}>
           {renderNumRow(t("compare.safety"), A.safety, B.safety, "", true, true)}
-          {renderTextRow(t("compare.processing"), A.nova, B.nova)}
+          {renderNovaRow(t("compare.processing"), A.novaGroup, B.novaGroup, A.nova, B.nova)}
           {renderNumRow(t("compare.additives"), A.additives.length, B.additives.length, "", false)}
           {renderNumRow(t("compare.flagged"), flagged(A.additives), flagged(B.additives), "", false)}
           {renderNumRow(t("compare.sugar"), A.sugar, B.sugar, " g", false)}

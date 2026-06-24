@@ -59,6 +59,13 @@ BONUSES (max +10 total):
 
 FLOOR: Minimum score is 5 (never 0 for edible food)
 
+NOVA CLASSIFICATION RULES (set processing.nova_group as an integer 1-4):
+- nova_group = 4 (ULTRA-PROCESSED) if the product contains ANY of: a sweetener (INCLUDING natural steviol glycosides / stevia), a flavoring (INCLUDING natural aroma / "aroma verici"), a colorant, an emulsifier, OR an ultra-processing marker (maltodextrin, glucose-fructose / high-fructose corn syrup, protein isolate, modified starch).
+- nova_group = 3 (PROCESSED): a recognizable whole food with added salt/sugar/oil (canned vegetables, cheese, cured meat, fresh bread), few ingredients, and NONE of the NOVA 4 markers above.
+- nova_group = 2: processed culinary ingredients (oils, butter, sugar, salt, flour).
+- nova_group = 1: unprocessed / minimally processed whole foods.
+- Benign acidity regulators / antioxidants ALONE (citric acid E330, ascorbic acid E300, sodium citrate E331) do NOT make a product NOVA 4.
+
 COMPATIBILITY SCORE:
 - Start with SAFETY score
 - If contains ANY user allergen → Score = 0
@@ -102,7 +109,8 @@ OUTPUT FORMAT (Raw JSON only, no markdown):
       { "code": "E-number", "name": "string (${targetLang})", "risk": "Hazardous|Caution|Safe", "description": "string (${targetLang})" }
     ],
     "processing": {
-      "classification": "string (${targetLang})",
+      "classification": "string (${targetLang}) - MUST match nova_group and include '(NOVA <n>)'",
+      "nova_group": number (1-4) - REQUIRED integer NOVA group,
       "description": "string (${targetLang}) - detailed explanation why this classification"
     },
     "nutritional_highlights": {
@@ -186,7 +194,7 @@ EXAMPLE CALCULATION (for a chocolate wafer with palm oil, sugar, additives):
 - No nutritional value: -10 → 22
 - Final: max(5, 22) = 22 (Poor)
 
-BE STRICT. Unhealthy ultra-processed foods should score 5-30, not 50+.
+PROCESSING vs HARM ARE SEPARATE AXES: nova_group measures PROCESSING degree; the safety score measures HARM (hazardous additives, sugar, sodium, saturated/trans fat). A NOVA 4 product that is otherwise clean (e.g. a stevia-sweetened diet drink with no hazardous additives and no high sugar) may legitimately score ~65-72. Reserve 5-30 for NOVA 4 products that ALSO carry hazardous additives and/or high sugar/sodium/saturated or trans fat. Do NOT slam every ultra-processed product to a low score by default.
 `.trim();
 }
 

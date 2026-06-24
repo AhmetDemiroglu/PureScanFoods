@@ -1,10 +1,12 @@
 import React, { useMemo } from "react";
-import { View, ScrollView, Pressable, Image, StyleSheet } from "react-native";
+import { View, ScrollView, Pressable, StyleSheet } from "react-native";
+import { Image } from "expo-image";
 import { Text } from "../ui/AppText";
 import { useTranslation } from "react-i18next";
 import { AppColors } from "../../constants/colors";
 import { ScanResult } from "../../lib/firestore";
 import { useTheme } from "../../context/ThemeContext";
+import { getScoreColor } from "../../lib/scoreLevel";
 
 interface ScanSelectorProps {
   scans: ScanResult[];
@@ -19,12 +21,6 @@ export const ScanSelector = ({ scans, onSelect, isLoading }: ScanSelectorProps) 
 
   if (isLoading || scans.length === 0) return null;
 
-  const getScoreColor = (score: number) => {
-    if (score >= 70) return colors.success;
-    if (score >= 40) return colors.warning;
-    return colors.error;
-  };
-
   const getDisplayName = (scan: ScanResult) => scan.productName?.trim() || scan.brand?.trim() || "Bilinmeyen Ürün";
 
   return (
@@ -37,7 +33,7 @@ export const ScanSelector = ({ scans, onSelect, isLoading }: ScanSelectorProps) 
 
           return (
             <Pressable key={scan.id} style={styles.card} onPress={() => onSelect(scan)}>
-              <Image source={scan.imageUrl ? { uri: scan.imageUrl } : require("../../assets/placeholder.png")} style={styles.image} />
+              <Image source={scan.imageUrl ? { uri: scan.imageUrl } : require("../../assets/placeholder.png")} style={styles.image} contentFit="cover" cachePolicy="memory-disk" transition={200} recyclingKey={scan.id} />
               <View style={[styles.scoreChip, { backgroundColor: scoreColor }]}>
                 <Text style={styles.scoreText}>{scan.score}</Text>
               </View>

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, StyleSheet, Modal, Pressable, Animated, PanResponder, Dimensions, FlatList, Image, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Modal, Pressable, Animated, PanResponder, Dimensions, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
+import { Image } from "expo-image";
 import { Text } from "../ui/AppText";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -10,14 +11,13 @@ import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
 import { getScanHistoryFromDB, ScanResult } from "../../lib/firestore";
 import { TempStore } from "../../lib/tempStore";
+import { getScoreColor } from "../../lib/scoreLevel";
 
 interface ComparePickerSheetProps {
   visible: boolean;
   onClose: () => void;
   current: { data: any; image: string }; // ekrandaki mevcut ürün
 }
-
-const scoreColor = (s: number) => (s >= 80 ? "#10B981" : s >= 50 ? "#F59E0B" : "#EF4444");
 
 // History miniData -> result data (HistoryDrawerBody.openDetail ile aynı mantık)
 const parseItem = (item: ScanResult): { data: any; image: string } => {
@@ -57,7 +57,7 @@ export default function ComparePickerSheet({ visible, onClose, current }: Compar
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const screenHeight = Dimensions.get("window").height;
-  const panY = useRef(new Animated.Value(0)).current;
+  const panY = useRef(new Animated.Value(screenHeight)).current;
   const navigatingRef = useRef(false);
 
   const [history, setHistory] = useState<ScanResult[]>([]);
@@ -65,7 +65,10 @@ export default function ComparePickerSheet({ visible, onClose, current }: Compar
 
   useEffect(() => {
     if (visible) {
-      panY.setValue(0);
+      // Gerçek giriş animasyonu (setValue yerine) — 2. açılışta sheet'in ekran dışında
+      // kalıp sadece overlay görünmesi bug'ını önler (FullIngredientsSheet ile aynı düzeltme).
+      panY.setValue(screenHeight);
+      Animated.timing(panY, { toValue: 0, duration: 260, useNativeDriver: true }).start();
       navigatingRef.current = false;
       loadHistory();
     }
@@ -124,13 +127,16 @@ export default function ComparePickerSheet({ visible, onClose, current }: Compar
       <Image
         source={item.imageUrl ? { uri: item.imageUrl } : require("../../assets/placeholder.png")}
         style={styles.thumb}
-        resizeMode="cover"
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        transition={200}
+        recyclingKey={item.id}
       />
       <View style={{ flex: 1 }}>
         <Text style={styles.rowName} numberOfLines={1}>{item.productName}</Text>
         {!!item.verdict && <Text style={styles.rowVerdict} numberOfLines={1}>{item.verdict}</Text>}
       </View>
-      <View style={[styles.scorePill, { backgroundColor: scoreColor(item.score) }]}>
+      <View style={[styles.scorePill, { backgroundColor: getScoreColor(item.score) }]}>
         <Text style={styles.scorePillText}>{item.score}</Text>
       </View>
     </TouchableOpacity>

@@ -151,6 +151,7 @@ export const checkDeviceLimit = async (deviceId: string): Promise<UsageStats> =>
         await updateDoc(deviceRef, {
             scanCount: 0,
             aiChatCount: 0,
+            imageGenCount: 0,
             weekStartDate: serverTimestamp(),
         });
         return defaultStats;
@@ -161,7 +162,7 @@ export const checkDeviceLimit = async (deviceId: string): Promise<UsageStats> =>
         scanLimit: 3,
         aiChatCount: data.aiChatCount || 0,
         aiChatLimit: 5,
-        imageGenCount: 0,
+        imageGenCount: data.imageGenCount || 0,
         imageGenLimit: 0,
         weekStartDate: formatDateSafe(weekStart),
     };
@@ -475,16 +476,33 @@ export const saveScanResultToDB = async (
 // --- 7b. "GERÇEKTE NE TÜKETİYORSUN?" AI GÖRSEL KREDİSİ & CACHE ---
 
 // AI görsel üretim hakkını düş (premium: haftalık 2). Sadece kullanıcı seviyesinde tutulur.
-export const incrementImageGenCount = async (uid: string) => {
-    if (!uid) return;
+// Hem kullanıcı (users/{uid}/stats/weekly) hem CİHAZ (device_limits/{deviceId}) seviyesinde
+// say — scan/chat gibi. Böylece aynı cihazda yeni hesap açıp limit sıfırlama kaçağı kapanır.
+export const incrementImageGenCount = async (uid: string, deviceId?: string | null) => {
     try {
-        const statsRef = doc(db, "users", uid, "stats", "weekly");
-        await setDoc(
-            statsRef,
-            { imageGenCount: increment(1), lastImageGenAt: serverTimestamp() },
-            { merge: true },
-        );
-        console.log("✅ imageGenCount artırıldı");
+        const promises = [];
+        if (uid) {
+            const statsRef = doc(db, "users", uid, "stats", "weekly");
+            promises.push(
+                setDoc(
+                    statsRef,
+                    { imageGenCount: increment(1), lastImageGenAt: serverTimestamp() },
+                    { merge: true },
+                ),
+            );
+        }
+        if (deviceId) {
+            const deviceRef = doc(db, "device_limits", deviceId);
+            promises.push(
+                setDoc(
+                    deviceRef,
+                    { imageGenCount: increment(1), lastImageGenAt: serverTimestamp() },
+                    { merge: true },
+                ),
+            );
+        }
+        await Promise.all(promises);
+        console.log("✅ imageGenCount artırıldı (user + device)");
     } catch (error) {
         console.error("⚠️ Error incrementing imageGen (continuing):", error);
     }
