@@ -1,5 +1,6 @@
 ﻿import React, { useEffect, useMemo } from "react";
-import { Modal, View, Pressable, StyleSheet, Dimensions } from "react-native";
+import { Modal, View, Pressable, StyleSheet, Dimensions, ScrollView, useWindowDimensions } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "./AppText";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { AppColors } from "../../constants/colors";
@@ -71,6 +72,9 @@ export default function PremiumCompareModal({ visible, onClose, onSubscribe }: P
     const { t } = useTranslation();
     const { colors, isDark } = useTheme();
     const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+    const insets = useSafeAreaInsets();
+    const { height: winHeight } = useWindowDimensions();
+    const maxCardHeight = winHeight - insets.top - insets.bottom - 32;
 
     const translateY = useSharedValue(30);
     const opacity = useSharedValue(0);
@@ -101,14 +105,20 @@ export default function PremiumCompareModal({ visible, onClose, onSubscribe }: P
 
     return (
         <Modal transparent visible={visible} animationType="none" onRequestClose={onClose}>
-            <View style={styles.overlay}>
+            <View style={[styles.overlay, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}>
                 <Pressable style={styles.backdrop} onPress={onClose} />
-                <Animated.View style={[styles.container, animatedStyle]}>
+                <Animated.View style={[styles.container, { maxHeight: maxCardHeight }, animatedStyle]}>
                     {/* Close Button */}
                     <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={12}>
                         <Ionicons name="close" size={22} color={colors.gray[400]} />
                     </Pressable>
 
+                    <ScrollView
+                        style={styles.scrollArea}
+                        contentContainerStyle={styles.scrollContent}
+                        showsVerticalScrollIndicator={false}
+                        bounces={false}
+                    >
                     {/* Header */}
                     <View style={styles.headerSection}>
                         <LinearGradient
@@ -222,6 +232,7 @@ export default function PremiumCompareModal({ visible, onClose, onSubscribe }: P
                     >
                         <Text style={styles.secondaryText}>{t("premium.maybe_later")}</Text>
                     </Pressable>
+                    </ScrollView>
                 </Animated.View>
             </View>
         </Modal>
@@ -253,6 +264,12 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
         right: 14,
         zIndex: 10,
         padding: 4,
+    },
+    scrollArea: {
+        flexShrink: 1,
+    },
+    scrollContent: {
+        paddingBottom: 4,
     },
 
     // Header

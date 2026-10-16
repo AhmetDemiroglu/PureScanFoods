@@ -840,7 +840,7 @@
         "feat_ads": "Ad-Free Experience",
         "feat_priority": "Priority Support",
         "feat_visuals": "Consumption Visual",
-        "feat_visuals_value": "5/wk",
+        "feat_visuals_value": "10/wk",
         "upgrade_now": "Go Premium",
         "maybe_later": "Maybe Later"
     },
@@ -855,7 +855,7 @@
         "includes": "Everything included",
         "feat_unlimited_scan": "Unlimited Product Scans",
         "feat_unlimited_ai": "Unlimited AI Assistant",
-        "feat_weekly_visuals": "5 AI consumption visuals / week",
+        "feat_weekly_visuals": "10 AI consumption visuals / week",
         "feat_unlimited_family": "Unlimited Family Profiles",
         "feat_no_ads": "Ad-Free Experience",
         "feat_priority": "Priority Support",

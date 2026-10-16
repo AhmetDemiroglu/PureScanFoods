@@ -1,5 +1,6 @@
 ﻿import React, { useMemo, useState, useEffect } from 'react';
 import { View, StyleSheet, Modal, TextInput, TouchableOpacity, ScrollView, Pressable } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "../ui/AppText";
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { AppColors } from '../../constants/colors';
@@ -20,6 +21,7 @@ interface FamilyMemberModalProps {
 export default function FamilyMemberModal({ visible, onClose, onSave, onDelete, initialData }: FamilyMemberModalProps) {
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [selectedIcon, setSelectedIcon] = useState<IconName>(AVATAR_ICONS[0] as IconName);
   const [selectedColor, setSelectedColor] = useState(AVATAR_COLORS[0]);
@@ -46,7 +48,7 @@ export default function FamilyMemberModal({ visible, onClose, onSave, onDelete, 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={styles.container}>
+        <View style={[styles.container, { paddingBottom: 20 + insets.bottom }]}>
           <View style={styles.header}>
             <Text style={styles.title}>{initialData ? 'Üyeyi Düzenle' : 'Yeni Aile Üyesi'}</Text>
             <TouchableOpacity onPress={onClose}>

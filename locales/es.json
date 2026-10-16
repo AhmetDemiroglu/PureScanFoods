@@ -840,7 +840,7 @@
         "feat_ads": "Experiencia Sin Anuncios",
         "feat_priority": "Soporte Prioritario",
         "feat_visuals": "Visual de Consumo",
-        "feat_visuals_value": "5/sem",
+        "feat_visuals_value": "10/sem",
         "upgrade_now": "Obtener Premium",
         "maybe_later": "Quizás Después"
     },
@@ -855,7 +855,7 @@
         "includes": "Todo incluido",
         "feat_unlimited_scan": "Escaneos de Productos Ilimitados",
         "feat_unlimited_ai": "Asistente IA Ilimitado",
-        "feat_weekly_visuals": "5 visuales de consumo IA / semana",
+        "feat_weekly_visuals": "10 visuales de consumo IA / semana",
         "feat_unlimited_family": "Perfiles Familiares Ilimitados",
         "feat_no_ads": "Experiencia Sin Anuncios",
         "feat_priority": "Soporte Prioritario",

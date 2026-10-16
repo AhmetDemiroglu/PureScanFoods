@@ -72,7 +72,7 @@ export default function GenerationLoader() {
                 setIdx(idxRef.current);
                 Animated.timing(fade, { toValue: 1, duration: 340, useNativeDriver: true }).start();
             });
-        }, 2000);
+        }, 1600);
         return () => clearInterval(id);
     }, [messages.length, fade]);
 

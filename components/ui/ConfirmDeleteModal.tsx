@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { View, Modal, Pressable, TextInput, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Modal, Pressable, TextInput, StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, useWindowDimensions } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "./AppText";
 import { Ionicons } from "@expo/vector-icons";
 import { AppColors } from "../../constants/colors";
@@ -22,6 +23,9 @@ export default function ConfirmDeleteModal({
   const { t } = useTranslation();
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+  const insets = useSafeAreaInsets();
+  const { height: winHeight } = useWindowDimensions();
+  const maxCardHeight = winHeight - insets.top - insets.bottom - 32;
   const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -84,10 +88,16 @@ export default function ConfirmDeleteModal({
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.overlay}
+        style={[styles.overlay, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}
       >
         <Pressable style={styles.backdrop} onPress={onClose} />
-        <View style={styles.container}>
+        <View style={[styles.container, { maxHeight: maxCardHeight }]}>
+          <ScrollView
+            style={styles.scrollArea}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            bounces={false}
+          >
           {success ? (
             <View style={styles.successContent}>
               <View
@@ -224,6 +234,7 @@ export default function ConfirmDeleteModal({
               </View>
             </>
           )}
+          </ScrollView>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -253,6 +264,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     shadowOpacity: isDark ? 0.35 : 0.15,
     shadowRadius: 20,
   },
+  scrollArea: { flexShrink: 1 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",

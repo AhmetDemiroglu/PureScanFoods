@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { Modal, View, Pressable, StyleSheet, Dimensions, ScrollView, Linking, ActivityIndicator, Platform } from "react-native";
+import { Modal, View, Pressable, StyleSheet, Dimensions, ScrollView, Linking, ActivityIndicator, Platform, useWindowDimensions } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "./AppText";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { AppColors } from "../../constants/colors";
@@ -118,7 +119,10 @@ export default function PaywallModal({ visible, onClose, onAuthRequired }: Paywa
   const { colors, isDark } = useTheme();
   const { user, refreshPremiumStatus } = useAuth();
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
-  
+  const insets = useSafeAreaInsets();
+  const { height: winHeight } = useWindowDimensions();
+  const maxCardHeight = winHeight - insets.top - insets.bottom - 24;
+
   const [selectedPlan, setSelectedPlan] = useState<PlanType>("yearly");
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -303,10 +307,10 @@ export default function PaywallModal({ visible, onClose, onAuthRequired }: Paywa
 
   return (
     <Modal transparent visible={visible} animationType="none" onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 12 }]}>
         <Pressable style={styles.backdrop} onPress={onClose} />
 
-        <Animated.View style={[styles.container, animatedStyle]}>
+        <Animated.View style={[styles.container, { maxHeight: maxCardHeight }, animatedStyle]}>
           {/* Başarı ekranı */}
           {showSuccess && (
             <SuccessView 

@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { View, Modal, Pressable, StyleSheet } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "./AppText";
 import { Ionicons } from "@expo/vector-icons";
 import { AppColors } from "../../constants/colors";
@@ -29,6 +30,7 @@ export default function ReviewPromptModal({
   const { t } = useTranslation();
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+  const insets = useSafeAreaInsets();
   const [step, setStep] = useState<"ask" | "feedback">("ask");
 
   // Kapanınca bir sonraki açılış için adımı sıfırla (fade biterken flicker olmasın).
@@ -51,7 +53,7 @@ export default function ReviewPromptModal({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onSnooze}>
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}>
         {/* Backdrop kazara dokunuşta kapatmasın — yalnızca açık buton seçimleri kapatır.
             (Android donanım geri tuşu onRequestClose ile yine snooze yapar; bilinçli aksiyon.) */}
         <View style={styles.backdrop} />

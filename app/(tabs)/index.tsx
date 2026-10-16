@@ -48,6 +48,11 @@ export default function ScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [isScanning, setIsScanning] = useState(false);
+  // Barkod tarayıcı SENKRON kilidi: expo-camera onBarcodeScanned aynı barkodu
+  // saniyede birçok kez (her kare) tetikler. `isScanning` state'i async güncellendiği
+  // için arka arkaya gelen 2 kare guard'ı geçip AI'ya İKİ istek atabiliyordu
+  // (aynı ürüne 2 farklı sonuç). Ref anında güncellenir → çift tetikleme imkânsız.
+  const scanLockRef = useRef(false);
   const [processingMode, setProcessingMode] = useState<ProcessingMode>("camera");
   const router = useRouter();
 
@@ -79,6 +84,12 @@ export default function ScanScreen() {
       h.remove();
     };
   }, []);
+  // Kamera her (yeniden) açıldığında tarama kilidini sıfırla → önceki taramanın
+  // kilidi yeni taramayı engellemesin. Tüm çıkış yollarını (bulunamadı/hata/geçersiz/
+  // başarılı) tek noktadan garantiler.
+  useEffect(() => {
+    if (showCamera) scanLockRef.current = false;
+  }, [showCamera]);
   const kbPad = Math.max(20, kbHeight - tabBarHeight);
   const onInputFocus = useCallback(() => {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 220);
@@ -159,7 +170,9 @@ export default function ScanScreen() {
   };
 
   const handleCameraBarcodeScanned = async ({ type, data }: { type: string; data: string }) => {
-    if (activeTab !== "barcode" || !showCamera || isScanning) return;
+    // Senkron kilit ÖNCE kontrol edilir: aynı anda gelen 2. kare buradan döner.
+    if (scanLockRef.current || activeTab !== "barcode" || !showCamera || isScanning) return;
+    scanLockRef.current = true;
 
     setShowCamera(false);
     setBarcodeInput(data);
@@ -172,6 +185,7 @@ export default function ScanScreen() {
       if (!productData.found) {
         setShowNotFoundModal(true);
         setIsScanning(false);
+        scanLockRef.current = false;
         return;
       }
 
@@ -198,6 +212,7 @@ export default function ScanScreen() {
         t("scan.invalidScanDesc", { defaultValue: "Görüntüde okunabilir bir gıda içeriği tespit edilemedi veya bu bir gıda ürünü değil." })
       );
       setIsScanning(false);
+      scanLockRef.current = false;
     }
   };
 

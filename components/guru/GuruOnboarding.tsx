@@ -1,5 +1,6 @@
 ﻿import React, { useMemo, useState, useRef, useEffect } from "react";
 import { View, Pressable, StyleSheet, Modal, Dimensions, Animated, Easing, ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "../ui/AppText";
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Stop, Circle, Rect, Path, G, Line } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
@@ -106,6 +107,7 @@ export const GuruOnboarding = ({ visible, onFinish }: Props) => {
     const { t } = useTranslation();
     const { colors, isDark } = useTheme();
     const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+    const insets = useSafeAreaInsets();
     const [step, setStep] = useState(0);
 
     useEffect(() => {
@@ -143,7 +145,7 @@ export const GuruOnboarding = ({ visible, onFinish }: Props) => {
 
     return (
         <Modal transparent visible={visible} animationType="fade">
-            <View style={styles.overlay}>
+            <View style={[styles.overlay, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}>
                 <View style={styles.card}>
                     <ScrollView
                         contentContainerStyle={styles.cardContent}

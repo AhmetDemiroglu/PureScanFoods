@@ -1,5 +1,6 @@
 ﻿import React, { useMemo, useState, useEffect } from "react";
-import { Modal, View, TextInput, Pressable, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Animated } from "react-native";
+import { Modal, View, TextInput, Pressable, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Animated, ScrollView, useWindowDimensions } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "../ui/AppText";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { AppColors } from "../../constants/colors";
@@ -56,6 +57,9 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
     const { t } = useTranslation();
     const { colors, isDark } = useTheme();
     const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+    const insets = useSafeAreaInsets();
+    const { height: winHeight } = useWindowDimensions();
+    const maxModalHeight = winHeight - insets.top - insets.bottom - 32;
     const { user, userProfile, login, register, loginWithGoogle, loginWithApple, logout, usageStats, isPremium } = useAuth();
     const { familyMembers } = useUser();
     const [isRegister, setIsRegister] = useState(false);
@@ -519,8 +523,11 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
                     <Pressable style={styles.backdrop} onPress={onClose} />
 
                     {/* Modal */}
-                    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardView}>
-                        <View style={styles.modal}>
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === "ios" ? "padding" : "height"}
+                        style={[styles.keyboardView, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}
+                    >
+                        <View style={[styles.modal, { maxHeight: maxModalHeight }]}>
             <Toast message={toast.message} type={toast.type} visible={toast.visible} styles={styles} />
 
                             <Pressable
@@ -531,7 +538,14 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
                                 <Ionicons name="close" size={22} color={colors.gray[400]} />
                             </Pressable>
 
-                            {isLoggedIn ? renderProfile() : renderAuth()}
+                            <ScrollView
+                                style={styles.scrollArea}
+                                showsVerticalScrollIndicator={false}
+                                keyboardShouldPersistTaps="handled"
+                                bounces={false}
+                            >
+                                {isLoggedIn ? renderProfile() : renderAuth()}
+                            </ScrollView>
                         </View>
                     </KeyboardAvoidingView>
                 </View>
@@ -561,6 +575,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     keyboardView: { flex: 1, justifyContent: "center", alignItems: "center" },
     modal: { width: "88%", backgroundColor: colors.card, borderRadius: 24, padding: 24, shadowColor: "#000", shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 12, overflow: "hidden" },
     closeBtn: { position: "absolute", top: 16, right: 16, zIndex: 10 },
+    scrollArea: { flexShrink: 1 },
     content: { paddingTop: 8 },
 
     // Toast

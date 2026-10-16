@@ -1,5 +1,6 @@
 ﻿import React, { useEffect, useMemo, useState } from 'react';
-import { Modal, View, Pressable, StyleSheet, Dimensions, ActivityIndicator } from "react-native";
+import { Modal, View, Pressable, StyleSheet, Dimensions, ActivityIndicator, ScrollView, useWindowDimensions } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "./AppText";
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { AppColors } from '../../constants/colors';
@@ -87,6 +88,9 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium, stats
     const { t } = useTranslation();
     const { colors, isDark } = useTheme();
     const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+    const insets = useSafeAreaInsets();
+    const { height: winHeight } = useWindowDimensions();
+    const maxCardHeight = winHeight - insets.top - insets.bottom - 32;
     const { user: authUser, deviceId } = useAuth();
     const { familyMembers } = useUser();
 
@@ -190,9 +194,9 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium, stats
 
     return (
         <Modal transparent visible={visible} animationType="none" onRequestClose={onClose}>
-            <View style={styles.overlay}>
+            <View style={[styles.overlay, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}>
                 <Pressable style={styles.backdrop} onPress={onClose} />
-                <Animated.View style={[styles.container, animatedStyle]}>
+                <Animated.View style={[styles.container, { maxHeight: maxCardHeight }, animatedStyle]}>
                     <Pressable
                         style={({ pressed }) => [styles.closeIconBtn, pressed && { opacity: 0.6 }]}
                         onPress={onClose}
@@ -201,6 +205,12 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium, stats
                         <Ionicons name="close" size={20} color={colors.gray[500]} />
                     </Pressable>
 
+                    <ScrollView
+                        style={styles.scrollArea}
+                        contentContainerStyle={styles.scrollContent}
+                        showsVerticalScrollIndicator={false}
+                        bounces={false}
+                    >
                     <View style={styles.headerIconContainer}>
                         <View style={styles.headerIconBg}>
                             <MaterialCommunityIcons
@@ -317,6 +327,7 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium, stats
                     <Pressable style={styles.secondaryButton} onPress={onClose}>
                         <Text style={styles.secondaryText}>{t('limits.maybe_later', 'Şimdilik İdare Et')}</Text>
                     </Pressable>
+                    </ScrollView>
 
                 </Animated.View>
             </View>
@@ -337,6 +348,8 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     statusText: { fontSize: 12, fontWeight: '600', color: colors.gray[500] },
     statusTextError: { color: colors.error },
     container: { width: width * 0.88, maxWidth: 380, backgroundColor: colors.card, borderRadius: 24, padding: 24, alignItems: 'center' },
+    scrollArea: { width: '100%', flexShrink: 1 },
+    scrollContent: { alignItems: 'center' },
     backdrop: { ...StyleSheet.absoluteFillObject },
     closeIconBtn: { position: 'absolute', top: 12, right: 12, zIndex: 10, elevation: 3, width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
     headerIconContainer: { marginBottom: 16, marginTop: 8 },

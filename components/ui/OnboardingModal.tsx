@@ -1,5 +1,6 @@
 ﻿import React, { useMemo, useState, useRef, useEffect } from "react";
 import { View, Pressable, StyleSheet, Modal, Animated, Easing, ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "./AppText";
 import Svg, {
     Defs,
@@ -157,6 +158,7 @@ const illustrationStyles = StyleSheet.create({
 export const OnboardingModal = ({ visible, onFinish, slides, finishLabel, nextLabel }: Props) => {
     const { colors, isDark } = useTheme();
     const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+    const insets = useSafeAreaInsets();
     const [step, setStep] = useState(0);
     const fadeAnim = useRef(new Animated.Value(1)).current;
     const slideAnim = useRef(new Animated.Value(0)).current;
@@ -202,7 +204,7 @@ export const OnboardingModal = ({ visible, onFinish, slides, finishLabel, nextLa
 
     return (
         <Modal transparent visible={visible} animationType="fade">
-            <View style={styles.overlay}>
+            <View style={[styles.overlay, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}>
                 <View style={styles.card}>
                     <ScrollView
                         contentContainerStyle={styles.cardContent}

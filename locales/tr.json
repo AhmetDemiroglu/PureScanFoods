@@ -840,7 +840,7 @@
         "feat_ads": "Reklamsız Deneyim",
         "feat_priority": "Öncelikli Destek",
         "feat_visuals": "Tüketim Görseli",
-        "feat_visuals_value": "5/hafta",
+        "feat_visuals_value": "10/hafta",
         "upgrade_now": "Premium'a Geç",
         "maybe_later": "Daha Sonra"
     },
@@ -855,7 +855,7 @@
         "includes": "Dahil olan özellikler",
         "feat_unlimited_scan": "Sınırsız Ürün Taraması",
         "feat_unlimited_ai": "Sınırsız AI Asistan",
-        "feat_weekly_visuals": "Haftada 5 AI tüketim görseli",
+        "feat_weekly_visuals": "Haftada 10 AI tüketim görseli",
         "feat_unlimited_family": "Sınırsız Aile Profili",
         "feat_no_ads": "Reklamsız Deneyim",
         "feat_priority": "Öncelikli Destek",
