@@ -312,7 +312,12 @@ export default function ScanScreen() {
       // Denetçi (son kontrol): AI çıktısını NOVA floor + güvenlik puanı bandı ile
       // tutarlılık açısından denetle. AI karar verir, kod yalnızca net hataları düzeltir.
       const auditLang = i18n.language?.startsWith("tr") ? "tr" : i18n.language?.startsWith("es") ? "es" : "en";
-      const audited = auditAnalysis(parsedData, auditLang);
+      // Barkodda OFF'un kesin besin değerleri, katkı kodları ve NOVA'sı puanın girdisi olur.
+      const audited = auditAnalysis(parsedData, auditLang, offData ? {
+        additiveTags: offData.additives_tags,
+        nutriments: offData.nutriments,
+        novaGroup: offData.nova_group,
+      } : undefined);
 
       TempStore.setResult(audited, imageUri || "", {
         source: offData ? "barcode" : (activeTab === "text" ? "text" : "camera")

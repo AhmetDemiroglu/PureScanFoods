@@ -14,7 +14,7 @@ const ARTIFICIAL_SWEETENER_KEYWORDS_EN = [
     "e950", "e951", "e952", "e954", "e955", "e961", "e962",
 ];
 const PALM_HYDROGENATED_KEYWORDS_EN = [
-    "palm oil", "palm fat", "palm kernel", "palm olein", "palm stearin",
+    "palm", "palm oil", "palm fat", "palm kernel", "palm olein", "palm stearin",
     "hydrogenated", "partially hydrogenated", "fully hydrogenated", "trans fat", "trans fatty",
 ];
 const ARTIFICIAL_FLAVOR_KEYWORDS_EN = [
@@ -45,7 +45,7 @@ const ARTIFICIAL_SWEETENER_KEYWORDS_TR = [
     "aspartam", "sukraloz", "sakarin", "asesülfam", "neotam", "siklamat",
 ];
 const PALM_HYDROGENATED_KEYWORDS_TR = [
-    "palm yağı", "palm yagi", "palm çekirdek", "palm cekirdek",
+    "palm", "palm yağı", "palm yagi", "palmiye yağı", "palm çekirdek", "palm cekirdek",
     "hidrojenize", "kısmen hidrojenize", "kismen hidrojenize", "tam hidrojenize",
     "trans yağ", "trans yag",
 ];
@@ -75,7 +75,7 @@ const ARTIFICIAL_SWEETENER_KEYWORDS_ES = [
     "aspartamo", "sucralosa", "sacarina", "acesulfamo", "neotamo", "ciclamato",
 ];
 const PALM_HYDROGENATED_KEYWORDS_ES = [
-    "aceite de palma", "grasa de palma", "palmiste",
+    "palma", "aceite de palma", "grasa de palma", "palmiste",
     "hidrogenado", "parcialmente hidrogenado", "totalmente hidrogenado",
     "grasa trans", "ácidos grasos trans",
 ];

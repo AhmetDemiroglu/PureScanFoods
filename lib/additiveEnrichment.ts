@@ -57,9 +57,9 @@ export function enrichAdditives(
     let source: "ai" | "db" = "ai";
 
     if (info) {
-      const dbRisk = RISK_MAP[info.risk];
-      // AI riski yoksa ya da DB daha ağırsa DB riskini tercih et
-      if (!aiRiskCap || SEVERITY[dbRisk] < SEVERITY[risk]) risk = dbRisk;
+      // Kod DB'deyse risk DAİMA DB'den gelir: aynı ürün her taramada aynı riski göstersin
+      // (AI riski taramadan taramaya değişiyordu). AI riski yalnız DB'de olmayan kodlar için.
+      risk = RISK_MAP[info.risk];
       if (!name) name = dbName(info, lang);
       if (!description) {
         description = dbReason(info, lang);

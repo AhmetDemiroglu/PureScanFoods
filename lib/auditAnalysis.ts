@@ -1,15 +1,15 @@
-// Deterministik DENETÇİ katmanı — "AI karar verir, kod denetler".
-// AI'ın ürettiği analiz objesini alır, NET hatalarını düzeltir ve tutarlılık bandını uygular;
-// AI'ın yargısını YENİDEN yazmaz. Saf fonksiyon: mutasyon/I/O/global yok, aynı girdi → aynı çıktı.
+// Deterministik DENETÇİ katmanı. AI içerikleri okur ve açıklar; güvenlik PUANINI kod hesaplar.
+// Saf fonksiyon: mutasyon/I/O/global yok, aynı girdi → aynı çıktı.
 //
-// Üç değişmez:
-//  INV-1  NOVA yalnız YÜKSELİR: novaOut = max(novaAi, novaFloor). Kod asla düşürmez.
-//  INV-2  Puan bandı: AI puanı [S_det−tolDown, S_det+tolUp] içindeyse AYNEN korunur; dışındaysa
-//         en yakın band kenarına çekilir (anchor'a değil — AI bandın içinde sesini korur).
-//  INV-3  Saflık + iz: shallow-clone-with-overrides; her düzeltme `audit` alanında kayıtlı.
+// Değişmezler:
+//  INV-1  NOVA yalnız YÜKSELİR: novaOut = max(novaBase, novaFloor). Kod asla düşürmez.
+//  INV-2  Puan = NOVA tavanı − cezalar (sDet). AI'ın puanı yalnız `audit.aiScore` izinde durur.
+//         (2026-11-15: eski ±band yüzünden aynı ürün taramadan taramaya 12-14 puan oynuyordu.)
+//  INV-3  Ceza girdileri sabit kaynaktan: katkı riski yerel DB'den; barkodda besin değerleri,
+//         katkı kodları ve NOVA OpenFoodFacts'ten (`AuditFacts`). AI değeri yalnız yedek.
+//  INV-4  Saflık + iz: shallow-clone-with-overrides; her hesap `audit` alanında kayıtlı.
 
 import { getAdditiveInfo, getNovaInfo, NovaGroup } from "../constants/additives";
-import { enrichAdditives } from "./additiveEnrichment";
 import {
     NOVA_SWEETENER_MARKERS,
     NOVA_FLAVORING_MARKERS,
@@ -38,7 +38,6 @@ const PEN = {
     transFat: 15,             // >0 g
 };
 const SUGAR_HIGH = 22.5, SUGAR_MID = 10, SODIUM_HIGH = 600, SATFAT_HIGH = 5;
-const TOL_DOWN = 12, TOL_UP = 6;
 const SCORE_FLOOR = 5, SCORE_MAX = 100;
 
 // Steviol/stevia → NOVA-4'ü tetikler ama "yapay tatlandırıcı" cezası ALMAZ
@@ -47,6 +46,25 @@ const STEVIA_KEYWORDS = [
     "steviol", "stevia", "e960", "e960a",
     "steviol glycoside", "steviol glycosides", "glucósido de esteviol", "glucosido de esteviol",
 ];
+
+/** Barkodda OpenFoodFacts'ten gelen kesin değerler. Varsa AI değerinin yerine kullanılır. */
+export interface AuditFacts {
+    /** OFF additives_tags (ör. "en:e322i") */
+    additiveTags?: string[] | null;
+    /** OFF nutriments (100 g başına) */
+    nutriments?: any;
+    /** OFF nova_group */
+    novaGroup?: number | null;
+}
+
+const LEVELS: { max: number; level: string; color: string }[] = [
+    { max: 20, level: "Hazardous", color: "red" },
+    { max: 40, level: "Poor", color: "orange" },
+    { max: 60, level: "Average", color: "yellow" },
+    { max: 80, level: "Good", color: "lightgreen" },
+    { max: 100, level: "Excellent", color: "green" },
+];
+const levelFor = (score: number) => LEVELS.find((l) => score <= l.max) || LEVELS[LEVELS.length - 1];
 
 /* ─────────────── küçük yardımcılar ─────────────── */
 // analysisEngine.matchesKeyword ile aynı kelime-sınırı deseni (tutarlılık için birebir kopya).
@@ -62,11 +80,48 @@ const num = (v: any): number | null =>
 
 const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
 
-// Etiket metni + AI katkı adlarını tek havuzda birleştir (keyword taraması için).
-const buildHaystack = (r: any): string => {
+/** "en:e322i" / "E 341 iii" / "e450" → DB'de karşılığı olan kod ("E322", "E341", "E450"); yoksa null. */
+export const resolveAdditiveCode = (raw: any): string | null => {
+    const c = String(raw ?? "").replace(/^[a-z]{2}:/i, "").toUpperCase().replace(/[\s-]/g, "");
+    if (!c) return null;
+    if (getAdditiveInfo(c)) return c;
+    const base = c.match(/^E\d{3,4}/)?.[0];
+    return base && getAdditiveInfo(base) ? base : null;
+};
+
+/**
+ * Puanda sayılan katkı kodları (yalnız DB'de olanlar, riski DB'den).
+ * Barkodda OFF etiketleri, yoksa AI kodları; her iki durumda da içindekiler metnindeki E-kodları eklenir.
+ */
+const scoringAdditiveCodes = (r: any, facts?: AuditFacts): string[] => {
+    const codes = new Set<string>();
+    const offTags = Array.isArray(facts?.additiveTags) ? facts!.additiveTags! : [];
+    const source = offTags.length
+        ? offTags
+        : (Array.isArray(r?.details?.additives) ? r.details.additives.map((a: any) => a?.code) : []);
+    for (const raw of source) {
+        const code = resolveAdditiveCode(raw);
+        if (code) codes.add(code);
+    }
+    const re = /\bE\s?-?\s?(\d{3,4}[a-z]{0,3})\b/gi;
     const text = String(r?.details?.ingredients_full_text || "");
-    const adds = Array.isArray(r?.details?.additives) ? r.details.additives : [];
-    const names = adds.map((a: any) => String(a?.name || "")).join(" ; ");
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text)) !== null) {
+        const code = resolveAdditiveCode("E" + m[1]);
+        if (code) codes.add(code);
+    }
+    return Array.from(codes).sort();
+};
+
+// Etiket metni + puanlanan katkıların DB adları (keyword taraması için). AI'ın serbest katkı adları
+// kullanılmaz: taramadan taramaya değiştikleri için palm/tatlandırıcı tespiti de değişiyordu.
+const buildHaystack = (r: any, codes: string[]): string => {
+    const text = String(r?.details?.ingredients_full_text || "");
+    const names = codes
+        .map((c) => getAdditiveInfo(c))
+        .filter(Boolean)
+        .map((i: any) => `${i.name} ${i.nameTr}`)
+        .join(" ; ");
     return `${text} ; ${names}`;
 };
 
@@ -90,15 +145,13 @@ interface MarkerReport {
     hits: string[];
 }
 
-function detectMarkers(aiResult: any): MarkerReport {
+function detectMarkers(aiResult: any, codes: string[]): MarkerReport {
     const hits: string[] = [];
     let sweetener = false, flavoring = false, colorant = false, emulsifier = false, ultraProcessed = false;
 
     // Sinyal 1 — additive DB kategorisi (zararsız kategoriler tetiklemez).
-    const adds = Array.isArray(aiResult?.details?.additives) ? aiResult.details.additives : [];
-    for (const a of adds) {
-        const code = a?.code;
-        const info = code ? getAdditiveInfo(String(code)) : null;
+    for (const code of codes) {
+        const info = getAdditiveInfo(code);
         if (!info) continue;
         if (info.category === "sweetener") { sweetener = true; hits.push(`sweetener:${info.code}`); }
         else if (info.category === "colorant") { colorant = true; hits.push(`colorant:${info.code}`); }
@@ -108,7 +161,7 @@ function detectMarkers(aiResult: any): MarkerReport {
 
     // Sinyal 2+3 — etiket metni + AI katkı adları üzerinde keyword taraması.
     // (DB'de olmayan E960a steviol / E140 klorofil bu sinyalle yakalanır.)
-    const hay = buildHaystack(aiResult);
+    const hay = buildHaystack(aiResult, codes);
     if (!sweetener && anyKeyword(hay, NOVA_SWEETENER_MARKERS)) { sweetener = true; hits.push("sweetener:kw"); }
     if (!flavoring && anyKeyword(hay, NOVA_FLAVORING_MARKERS)) { flavoring = true; hits.push("flavor:kw"); }
     if (!colorant && anyKeyword(hay, NOVA_COLORANT_MARKERS)) { colorant = true; hits.push("colorant:kw"); }
@@ -119,34 +172,42 @@ function detectMarkers(aiResult: any): MarkerReport {
 }
 
 /* ─────────────── ana giriş ─────────────── */
-export function auditAnalysis(aiResult: any, lang: Lang): any {
+export function auditAnalysis(aiResult: any, lang: Lang, facts?: AuditFacts): any {
     // Defansif: obje değilse, yiyecek değilse ya da zaten denetlenmişse dokunma.
     if (!aiResult || typeof aiResult !== "object") return aiResult;
     if (aiResult.audit) return aiResult;
     if (aiResult?.product?.isFood === false) return aiResult;
 
-    const markers = detectMarkers(aiResult);
+    const codes = scoringAdditiveCodes(aiResult, facts);
+    const markers = detectMarkers(aiResult, codes);
     const anyMarker = markers.sweetener || markers.flavoring || markers.colorant || markers.emulsifier || markers.ultraProcessed;
 
-    // 2) NOVA floor (yalnız yükseltir)
+    // 2) NOVA floor (yalnız yükseltir). Barkodda OFF NOVA'sı taban, yoksa AI.
     const novaAi = readNovaGroup(aiResult);
-    const novaFloor: NovaGroup = anyMarker ? 4 : (novaAi ?? 1);
-    const novaOut = Math.max(novaAi ?? novaFloor, novaFloor) as NovaGroup;
+    const offNova = num(facts?.novaGroup);
+    const novaBase = (offNova != null && offNova >= 1 && offNova <= 4 ? Math.round(offNova) : novaAi) as NovaGroup | null;
+    const novaFloor: NovaGroup = anyMarker ? 4 : (novaBase ?? 1);
+    const novaOut = Math.max(novaBase ?? novaFloor, novaFloor) as NovaGroup;
 
-    // 3) Deterministik zarar anchor'ı + band + clamp
-    const enriched = enrichAdditives(aiResult?.details?.additives || [], aiResult?.details?.ingredients_full_text || "", lang);
-    const hazardous = enriched.filter((e) => e.risk === "Hazardous").length;
-    const caution = enriched.filter((e) => e.risk === "Caution").length;
+    // 3) Deterministik puan: katkı riski DB'den, besin değerleri önce OFF'tan.
+    let hazardous = 0, caution = 0;
+    for (const code of codes) {
+        const risk = getAdditiveInfo(code)?.risk;
+        if (risk === "HAZARDOUS") hazardous++;
+        else if (risk === "CAUTION") caution++;
+    }
 
-    const hay = buildHaystack(aiResult);
+    const hay = buildHaystack(aiResult, codes);
     const hasArtificialSweet = anyKeyword(hay, ARTIFICIAL_SWEETENER_HARM_KEYWORDS);
     const hasStevia = anyKeyword(hay, STEVIA_KEYWORDS);
     const hasPalm = anyKeyword(hay, PALM_HYDROGENATED_KEYWORDS);
 
-    const sugar = num(aiResult?.sugar_per_100g) ?? num(aiResult?.nutrition_facts?.sugar);
-    const sodium = num(aiResult?.nutrition_facts?.sodium);
-    const satFat = num(aiResult?.nutrition_facts?.saturated_fat);
-    const transFat = num(aiResult?.nutrition_facts?.trans_fat);
+    const n = facts?.nutriments || {};
+    const offSodiumG = num(n.sodium_100g);
+    const sugar = num(n.sugars_100g) ?? num(aiResult?.sugar_per_100g) ?? num(aiResult?.nutrition_facts?.sugar);
+    const sodium = (offSodiumG != null ? offSodiumG * 1000 : null) ?? num(aiResult?.nutrition_facts?.sodium);
+    const satFat = num(n["saturated-fat_100g"]) ?? num(aiResult?.nutrition_facts?.saturated_fat);
+    const transFat = num(n["trans-fat_100g"]) ?? num(aiResult?.nutrition_facts?.trans_fat);
 
     const pen = {
         hazardous: hazardous * PEN.hazardous,
@@ -162,17 +223,25 @@ export function auditAnalysis(aiResult: any, lang: Lang): any {
     const penaltyTotal = Object.values(pen).reduce((s, n) => s + n, 0);
 
     const ceiling = NOVA_CEILING[novaOut];
-    const sDet = clamp(ceiling - penaltyTotal, SCORE_FLOOR, SCORE_MAX);
-    const lo = Math.max(SCORE_FLOOR, sDet - TOL_DOWN);
-    const hi = Math.max(lo, Math.min(ceiling, sDet + TOL_UP));
-
+    const sDet = Math.round(clamp(ceiling - penaltyTotal, SCORE_FLOOR, SCORE_MAX));
     const aiScore = num(aiResult?.scores?.safety?.value);
-    let sFinal: number;
-    if (aiScore == null) sFinal = sDet;
-    else if (aiScore < lo) sFinal = lo;
-    else if (aiScore > hi) sFinal = hi;
-    else sFinal = aiScore;
-    sFinal = Math.round(sFinal);
+    const sFinal = sDet;
+    const lvl = levelFor(sFinal);
+
+    // Puanda sayılan ama AI listesinde olmayan katkılar listeye eklenir: kullanıcı cezanın nedenini görsün.
+    const aiAdditives = Array.isArray(aiResult?.details?.additives) ? aiResult.details.additives : [];
+    const listed = new Set(aiAdditives.map((a: any) => resolveAdditiveCode(a?.code)).filter(Boolean));
+    const missing = codes
+        .filter((c) => !listed.has(c))
+        .map((c) => {
+            const info: any = getAdditiveInfo(c);
+            return {
+                code: c,
+                name: lang === "tr" ? info.nameTr : lang === "es" ? info.nameEs : info.name,
+                risk: info.risk === "HAZARDOUS" ? "Hazardous" : info.risk === "CAUTION" ? "Caution" : "Safe",
+                description: lang === "tr" ? info.reasonTr : lang === "es" ? info.reasonEs : info.reason,
+            };
+        });
 
     // 4) NOVA etiketi/açıklamayı yeniden üret (sayı ile string daima tutarlı)
     const info = getNovaInfo(novaOut);
@@ -182,15 +251,16 @@ export function auditAnalysis(aiResult: any, lang: Lang): any {
     const scoreChanged = aiScore == null || sFinal !== aiScore;
 
     const breakdown =
-        `NOVA ${novaAi ?? "?"}→${novaOut}${markers.hits.length ? ` [${markers.hits.join(", ")}]` : ""}; ` +
-        `tavan ${ceiling} − ceza ${penaltyTotal} = anchor ${sDet}; band [${lo},${hi}]; ` +
-        `AI ${aiScore ?? "?"} → ${sFinal}`;
+        `NOVA ${novaBase ?? "?"}→${novaOut}${markers.hits.length ? ` [${markers.hits.join(", ")}]` : ""}; ` +
+        `tavan ${ceiling} - ceza ${penaltyTotal} = ${sFinal}`;
 
     const audit = {
-        novaAi, novaFloor, novaOut,
+        novaAi, offNova, novaFloor, novaOut,
         markers: markers.hits,
+        additiveCodes: codes,
+        inputs: { sugar, sodium, satFat, transFat, fromOff: !!facts },
         ceiling, penalties: { ...pen, total: penaltyTotal },
-        sDet, band: [lo, hi] as [number, number],
+        sDet,
         aiScore, sFinal,
         adjusted: { nova: novaChanged, score: scoreChanged },
     };
@@ -202,11 +272,14 @@ export function auditAnalysis(aiResult: any, lang: Lang): any {
             safety: {
                 ...(aiResult.scores?.safety || {}),
                 value: sFinal,
+                level: lvl.level,
+                color: lvl.color,
                 breakdown,
             },
         },
         details: {
             ...aiResult.details,
+            additives: [...aiAdditives, ...missing],
             processing: {
                 ...(aiResult.details?.processing || {}),
                 classification,

@@ -8,6 +8,9 @@ interface GeminiRequest {
 
 const REGION = "europe-west1";
 
+// Yalnız Gemini model çağrısı forward edilir; başka API yolu (ör. dosya/ayar uçları) geçemez.
+const ENDPOINT_PATTERN = /^gemini-[a-z0-9.-]+:generateContent$/;
+
 export const geminiProxy = onCall(
     {
         region: REGION,
@@ -18,6 +21,12 @@ export const geminiProxy = onCall(
     },
     async (request) => {
         try {
+            // Uygulama her zaman Firebase'de oturum açar (en az anonim). Oturumsuz istek dışarıdan gelir:
+            // açık proxy, API anahtarını herkesin kullanmasına izin veriyordu.
+            if (!request.auth) {
+                throw new HttpsError("unauthenticated", "Authentication required.");
+            }
+
             const { endpoint, body } = request.data as GeminiRequest;
 
             if (!process.env.GEMINI_API_KEY) {
@@ -26,6 +35,10 @@ export const geminiProxy = onCall(
 
             if (!endpoint) {
                 throw new HttpsError("invalid-argument", "Endpoint parameter is required.");
+            }
+
+            if (typeof endpoint !== "string" || !ENDPOINT_PATTERN.test(endpoint)) {
+                throw new HttpsError("invalid-argument", "Unsupported endpoint.");
             }
 
             logger.info(`Calling Gemini endpoint: ${endpoint}`);

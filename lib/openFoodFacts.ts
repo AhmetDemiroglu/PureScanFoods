@@ -20,6 +20,10 @@ export interface FoodProduct {
     nutriscore_grade?: string;
     nutriscore_score?: number;
     nutrient_levels?: any;
+    /** OFF katkı kodları (ör. "en:e322i"): puanın sabit girdisi */
+    additives_tags?: string[];
+    /** OFF NOVA grubu */
+    nova_group?: number | null;
 }
 
 const PLATFORM_LABEL = Platform.OS === "ios" ? "iOS" : Platform.OS === "android" ? "Android" : Platform.OS;
@@ -74,6 +78,8 @@ export const getIngredientsByBarcode = async (barcode: string): Promise<FoodProd
                     nutriscore_grade: nutriscoreGrade,
                     nutriscore_score: nutriscoreScore,
                     nutrient_levels: p.nutrient_levels || {},
+                    additives_tags: Array.isArray(p.additives_tags) ? p.additives_tags : [],
+                    nova_group: typeof p.nova_group === "number" ? p.nova_group : null,
                 };
             }
         }
