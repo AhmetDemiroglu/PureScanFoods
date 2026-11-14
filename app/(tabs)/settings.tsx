@@ -1,5 +1,5 @@
 ﻿import React, { useState, useMemo } from "react";
-import { View, StyleSheet, ScrollView, Pressable, StatusBar, Linking, Image, LayoutAnimation, Platform, UIManager, TextInput, ActivityIndicator, TouchableOpacity, Alert } from "react-native";
+import { View, StyleSheet, ScrollView, Pressable, StatusBar, Linking, LayoutAnimation, Platform, UIManager, TextInput, ActivityIndicator, TouchableOpacity, Alert } from "react-native";
 import { Text } from "../../components/ui/AppText";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -23,6 +23,7 @@ import PaywallModal from "../../components/ui/PaywallModal";
 import ConfirmDeleteModal from "../../components/ui/ConfirmDeleteModal";
 import AuthModal from "../../components/profile/AuthModal";
 import { useTheme } from "../../context/ThemeContext";
+import { SeptimusSignature } from "../../components/brand/SeptimusSignature";
 
 
 if (Platform.OS === "android" && !(global as any).nativeFabricUIManager && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -562,14 +563,9 @@ export default function SettingsScreen() {
           <Text style={styles.disclaimerText}>{t("settings.disclaimer_text")}</Text>
         </View>
 
-        {/* === SECTION 7: Developer + Version === */}
+        {/* === SECTION 7: İmza + Sürüm === */}
         <View style={styles.developerCard}>
-          <Text style={styles.developerTitle}>{t("settings.developer_text")} </Text>
-          <Image
-            source={require("../../assets/septimus_lab.png")}
-            style={styles.developerLogo}
-            resizeMode="contain"
-          />
+          <SeptimusSignature theme={isDark ? "dark" : "light"} size={20} />
           <View style={styles.versionBadge}>
             <Text style={styles.versionBadgeText}>v{APP_VERSION}</Text>
           </View>
@@ -955,22 +951,13 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     opacity: 0.6,
   },
 
-  // Developer Card
+  // İmza + sürüm
   developerCard: {
     padding: 0,
     alignItems: "center",
+    marginTop: 8,
     marginBottom: 0,
-    opacity: 0.65,
-  },
-  developerLogo: {
-    width: 180,
-    height: 75,
-  },
-  developerTitle: {
-    fontSize: 13,
-    fontWeight: "700",
-    paddingBottom: 4,
-    color: colors.gray[500],
+    gap: 10,
   },
   versionBadge: {
     marginTop: 0,
