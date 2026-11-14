@@ -26,7 +26,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   splash: {
     image: "./assets/splash-icon.png",
     resizeMode: "contain",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#FFFAF5",
   },
   ios: {
     bundleIdentifier: "com.purescan.foods",
@@ -45,7 +45,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     adaptiveIcon: {
       foregroundImage: "./assets/adaptive-icon.png",
-      backgroundColor: "#FFFFFF",
+      backgroundColor: "#E8580B",
     },
     package: "com.purescan.foods",
     googleServicesFile: "./google-services.json",

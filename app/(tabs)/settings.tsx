@@ -157,7 +157,7 @@ export default function SettingsScreen() {
 
       {/* Header */}
       <LinearGradient
-        colors={isDark ? ["#B45309", "#9A3412"] : [colors.primary, "#E65100"]}
+        colors={[colors.primary, colors.primaryDeep]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.header}
@@ -308,7 +308,7 @@ export default function SettingsScreen() {
               onPress={() => setShowAuthModal(true)}
             >
               <LinearGradient
-                colors={isDark ? ["#D97706", "#9A3412"] : [colors.primary, "#E65100"]}
+                colors={[colors.primary, colors.primaryDeep]}
                 style={styles.loginGradient}
               >
                 <View style={styles.loginIconBox}>
@@ -847,7 +847,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
   },
   premiumDesc: {
     fontSize: 12,
-    color: isDark ? "#FDBA74" : "#EA580C",
+    color: colors.primary,
     marginTop: 2,
   },
 

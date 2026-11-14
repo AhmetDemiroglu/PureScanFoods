@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Image, StyleSheet } from "react-native";
 import { Text } from "../ui/AppText";
+import BrandLogo from "../brand/BrandLogo";
 import ConsumptionJar from "./ConsumptionJar";
 import { RenderLayer } from "../../lib/composition";
 import { useTranslation } from "react-i18next";
@@ -19,7 +20,7 @@ const C = {
     bg: "#FBF8F3",
     text: "#16203A",
     muted: "#6B7280",
-    accent: "#FF6F00",
+    accent: "#F2600C",
     border: "#ECE6DC",
 };
 
@@ -32,8 +33,7 @@ export default function ShareCard({ layers, spoons, sugarEstimated, aiUrl, produ
         <View style={[styles.root, { width }]}>
             {/* Marka başlığı */}
             <View style={styles.header}>
-                <Image source={require("../../assets/adaptive-icon.png")} style={styles.logo} resizeMode="contain" />
-                <Text style={styles.brand}>PureScan Foods</Text>
+                <BrandLogo variant="compact" height={30} tone="light" />
             </View>
 
             <Text style={styles.title}>
@@ -111,8 +111,6 @@ const styles = StyleSheet.create({
         alignSelf: "center",
         marginBottom: 8,
     },
-    logo: { width: 26, height: 26, borderRadius: 6 },
-    brand: { fontSize: 16, fontWeight: "900", color: C.text, letterSpacing: -0.2 },
     title: { fontSize: 18, fontWeight: "900", color: C.text, textAlign: "center", letterSpacing: -0.3 },
     product: { fontSize: 13, fontWeight: "600", color: C.muted, textAlign: "center", marginTop: 1, marginBottom: 2 },
     photo: { borderRadius: 16, marginTop: 8, backgroundColor: "#EEE9E0" },

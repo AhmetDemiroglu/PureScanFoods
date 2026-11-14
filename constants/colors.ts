@@ -2,6 +2,8 @@ export type ThemeMode = "light" | "dark";
 
 export interface AppColors {
   primary: string;
+  /** Vurgu geçişlerinin koyu ucu (buton ve kart geçişleri). */
+  primaryDeep: string;
   secondary: string;
   surface: string;
   white: string;
@@ -28,56 +30,59 @@ export interface AppColors {
 }
 
 export const LightColors: AppColors = {
-  primary: "#FF6F00",
-  secondary: "#1E293B",
-  surface: "#F8FAFC",
+  // Mandalina teması (2026-11 marka yenilemesi): derin turuncu, sıcak nötrler.
+  primary: "#F2600C",
+  primaryDeep: "#D9480A",
+  secondary: "#2A1F18",
+  surface: "#FFFAF5",
   white: "#FFFFFF",
-  text: "#0F172A",
-  textMuted: "#64748B",
+  text: "#1F1611",
+  textMuted: "#76675A",
   card: "#FFFFFF",
-  border: "#E2E8F0",
+  border: "#EFE4D8",
   success: "#10B981",
   error: "#EF4444",
   warning: "#F59E0B",
-  overlay: "rgba(0,0,0,0.6)",
+  overlay: "rgba(24,14,8,0.6)",
   gray: {
-    50: "#F8FAFC",
-    100: "#F1F5F9",
-    200: "#E2E8F0",
-    300: "#CBD5E1",
-    400: "#94A3B8",
-    500: "#64748B",
-    600: "#475569",
-    700: "#334155",
-    800: "#1E293B",
-    900: "#0F172A",
+    50: "#FBF8F4",
+    100: "#F5EFE8",
+    200: "#EBE2D8",
+    300: "#D8CCBF",
+    400: "#A99A8C",
+    500: "#7A6B5E",
+    600: "#5D5045",
+    700: "#433830",
+    800: "#2A1F18",
+    900: "#1F1611",
   },
 };
 
 export const DarkColors: AppColors = {
-  primary: "#FF8A33",
-  secondary: "#E2E8F0",
-  surface: "#0B1220",
-  white: "#F8FAFC",
-  text: "#F8FAFC",
-  textMuted: "#94A3B8",
-  card: "#111827",
-  border: "#243245",
+  primary: "#FF8B3D",
+  primaryDeep: "#E2550B",
+  secondary: "#EDE4DA",
+  surface: "#15100C",
+  white: "#FBF7F2",
+  text: "#FBF7F2",
+  textMuted: "#B3A496",
+  card: "#221912",
+  border: "#382A1F",
   success: "#34D399",
   error: "#F87171",
   warning: "#FBBF24",
-  overlay: "rgba(2,6,23,0.82)",
+  overlay: "rgba(10,6,3,0.82)",
   gray: {
-    50: "#0F172A",
-    100: "#111827",
-    200: "#1F2937",
-    300: "#334155",
-    400: "#64748B",
-    500: "#94A3B8",
-    600: "#CBD5E1",
-    700: "#E2E8F0",
-    800: "#F1F5F9",
-    900: "#F8FAFC",
+    50: "#15100C",
+    100: "#1C1510",
+    200: "#2A2019",
+    300: "#3E3127",
+    400: "#6E5F52",
+    500: "#A39384",
+    600: "#CFC2B5",
+    700: "#E7DDD2",
+    800: "#F3ECE4",
+    900: "#FBF7F2",
   },
 };
 

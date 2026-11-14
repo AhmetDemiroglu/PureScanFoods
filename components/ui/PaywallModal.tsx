@@ -455,7 +455,7 @@ export default function PaywallModal({ visible, onClose, onAuthRequired }: Paywa
                     onPress={handleSubscribe}
                     disabled={purchasing}
                   >
-                    <LinearGradient colors={["#FF8C00", "#EA580C"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.ctaGradient}>
+                    <LinearGradient colors={[colors.primary, colors.primaryDeep]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.ctaGradient}>
                       {purchasing ? (
                         <ActivityIndicator size="small" color="#FFF" />
                       ) : (

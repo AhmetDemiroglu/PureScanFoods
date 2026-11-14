@@ -184,7 +184,7 @@ export default function GuruScreen() {
             <View style={{ backgroundColor: colors.surface }}>
                 {/* SafeArea Üstü */}
                 <LinearGradient
-                    colors={isDark ? ["#D97706", "#9A3412"] : [colors.primary, "#E65100"]}
+                    colors={[colors.primary, colors.primaryDeep]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     style={{ paddingTop: insets.top }}

@@ -61,7 +61,7 @@ const ScanIllustration = (colors: AppColors) => (
         <Defs>
           <SvgLinearGradient id="scanCircle" x1="0" y1="0" x2="1" y2="1">
             <Stop offset="0" stopColor={colors.primary} stopOpacity="0.15" />
-            <Stop offset="1" stopColor="#E65100" stopOpacity="0.05" />
+            <Stop offset="1" stopColor="#D9480A" stopOpacity="0.05" />
           </SvgLinearGradient>
           <SvgLinearGradient id="cardGrad" x1="0" y1="0" x2="0" y2="1">
             <Stop offset="0" stopColor={colors.card} />
@@ -125,7 +125,7 @@ const InsightIllustration = (colors: AppColors) => (
           </SvgLinearGradient>
           <SvgLinearGradient id="botGrad" x1="0" y1="0" x2="0" y2="1">
             <Stop offset="0" stopColor={colors.primary} />
-            <Stop offset="1" stopColor="#E65100" />
+            <Stop offset="1" stopColor="#D9480A" />
           </SvgLinearGradient>
         </Defs>
 
@@ -229,7 +229,7 @@ const DisclaimerIllustration = (colors: AppColors) => (
         <Defs>
           <SvgLinearGradient id="discBg" x1="0" y1="0" x2="1" y2="1">
             <Stop offset="0" stopColor={colors.primary} stopOpacity="0.10" />
-            <Stop offset="1" stopColor="#E65100" stopOpacity="0.03" />
+            <Stop offset="1" stopColor="#D9480A" stopOpacity="0.03" />
           </SvgLinearGradient>
         </Defs>
 

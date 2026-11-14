@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { AppColors } from "../../constants/colors";
 import Header from "../../components/ui/Header";
 import Hero from "../../components/ui/Hero";
+import BrandLogo from "../../components/brand/BrandLogo";
 import { callGemini } from "../../lib/api";
 import { TempStore } from "../../lib/tempStore";
 import { generateAnalysisPrompt, generateBarcodeDataPrompt } from "../../lib/prompt";
@@ -512,7 +513,7 @@ export default function ScanScreen() {
                     }}
                   >
                     <LinearGradient
-                      colors={isDark ? ["#D97706", "#9A3412"] : [colors.primary, "#E65100"]}
+                      colors={[colors.primary, colors.primaryDeep]}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
                       style={styles.mainButton}
@@ -555,7 +556,7 @@ export default function ScanScreen() {
                     }}
                   >
                     <LinearGradient
-                      colors={isDark ? ["#334155", "#0F172A"] : [colors.secondary, "#0F172A"]}
+                      colors={isDark ? ["#3A2C22", "#1A130E"] : [colors.secondary, "#140E0A"]}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
                       style={styles.mainButton}
@@ -678,8 +679,7 @@ export default function ScanScreen() {
                 <Ionicons name="close" size={24} color={colors.white} />
               </TouchableOpacity>
               <View style={styles.headerTitle}>
-                <Ionicons name="scan" size={20} color={colors.primary} />
-                <Text style={styles.headerTitleText}>PureScan Foods</Text>
+                <BrandLogo variant="compact" height={22} tone="dark" />
               </View>
               <View style={{ width: 40 }} />
             </View>

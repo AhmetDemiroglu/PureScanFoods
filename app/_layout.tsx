@@ -77,7 +77,6 @@ function AppShell() {
     "Inter-Medium": require("../assets/fonts/Inter-Medium.ttf"),
     "Inter-SemiBold": require("../assets/fonts/Inter-SemiBold.ttf"),
     "Inter-Bold": require("../assets/fonts/Inter-Bold.ttf"),
-    "Caveat-Bold": require("../assets/fonts/Caveat-Bold.ttf"),
   });
 
   useEffect(() => {

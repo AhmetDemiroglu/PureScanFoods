@@ -215,7 +215,7 @@ export default function PremiumCompareModal({ visible, onClose, onSubscribe }: P
                         onPress={handleSubscribe}
                     >
                         <LinearGradient
-                            colors={["#FF8C00", "#EA580C"]}
+                            colors={[colors.primary, colors.primaryDeep]}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 0 }}
                             style={styles.ctaGradient}

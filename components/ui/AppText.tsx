@@ -9,7 +9,7 @@ import { upper as toUpper } from "../../lib/text";
  * - fontWeight'i Inter static varyantına eşler (Inter custom font'unda numeric
  *   fontWeight çalışmaz; doğru aile adı seçilmeli).
  * - `upper` prop'u ile Türkçe-doğru büyük harf (textTransform:'uppercase' yerine).
- * - style'da explicit fontFamily varsa (ör. Hero "foods" → Caveat-Bold) korunur.
+ * - style'da explicit fontFamily varsa korunur.
  */
 
 const FAMILY_BY_WEIGHT: Record<string, string> = {

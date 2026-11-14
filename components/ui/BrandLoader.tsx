@@ -1,8 +1,8 @@
 ﻿import React, { useEffect, useMemo, useRef } from "react";
-import { View, Image, Animated, StyleSheet } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { View, Animated, StyleSheet } from "react-native";
 import { AppColors } from "../../constants/colors";
 import { useTheme } from "../../context/ThemeContext";
+import BrandLogo from "../brand/BrandLogo";
 
 type BrandLoaderProps = {
   mode?: "fullscreen" | "inline";
@@ -31,11 +31,12 @@ export function BrandLoader({ mode = "fullscreen", size }: BrandLoaderProps) {
     ).start();
   }, [fadeAnim, pulseAnim]);
 
+  // Açılış ekranıyla aynı zemin ve simge: native splash'ten sonra görünür geçiş olmaz.
   const logoSize = size || (mode === "fullscreen" ? 120 : 60);
 
   const content = (
     <Animated.View style={[styles.logoContainer, { transform: [{ scale: pulseAnim }], opacity: fadeAnim }]}> 
-      <Image source={require("../../assets/brand-logo.png")} style={{ width: logoSize, height: logoSize }} resizeMode="contain" />
+      <BrandLogo variant="mark" size={logoSize} />
     </Animated.View>
   );
 
@@ -44,9 +45,7 @@ export function BrandLoader({ mode = "fullscreen", size }: BrandLoaderProps) {
   }
 
   return (
-    <LinearGradient colors={isDark ? ["#0F172A", "#111827"] : ["#FFFFFF", "#FFF8F3"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.fullscreenWrapper}>
-      {content}
-    </LinearGradient>
+    <View style={styles.fullscreenWrapper}>{content}</View>
   );
 }
 

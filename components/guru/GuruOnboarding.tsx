@@ -43,7 +43,7 @@ const ShelfIllustration = (colors: AppColors) => (
         <Defs>
             <SvgLinearGradient id="shelfGrad" x1="0" y1="0" x2="1" y2="1">
                 <Stop offset="0" stopColor={colors.primary} stopOpacity="0.2" />
-                <Stop offset="1" stopColor="#E65100" stopOpacity="0.1" />
+                <Stop offset="1" stopColor="#D9480A" stopOpacity="0.1" />
             </SvgLinearGradient>
             <SvgLinearGradient id="bottleGrad" x1="0" y1="0" x2="0" y2="1">
                 <Stop offset="0" stopColor="#F472B6" />

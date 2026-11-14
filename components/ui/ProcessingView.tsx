@@ -7,6 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../../context/ThemeContext";
+import BrandLogo from "../brand/BrandLogo";
 
 const { width, height } = Dimensions.get("window");
 const STEP_ADVANCE_MS = 1800;
@@ -41,9 +42,7 @@ const LogoSpinner = ({ colors, styles }: { colors: AppColors; styles: ReturnType
       </Animated.View>
 
       <View style={styles.logoContainer}>
-        <LinearGradient colors={[colors.primary, "#E65100"]} style={styles.logoGradient}>
-          <Ionicons name="scan" size={24} color={colors.white} />
-        </LinearGradient>
+        <BrandLogo variant="mark" size={34} />
       </View>
     </View>
   );

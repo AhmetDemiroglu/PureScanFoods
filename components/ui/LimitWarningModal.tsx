@@ -306,7 +306,7 @@ export default function LimitWarningModal({ visible, onClose, onGoPremium, stats
                     {/* Butonlar AYNI */}
                     <Pressable style={styles.ctaButton} onPress={onGoPremium}>
                         <LinearGradient
-                            colors={['#FF8C00', '#EA580C']}
+                            colors={[colors.primary, colors.primaryDeep]}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 0 }}
                             style={styles.ctaGradient}
