@@ -55,7 +55,8 @@ export default function GuruScreen() {
     const {
         messages = [],
         isLoading = false,
-        sendMessage = async () => { },
+        sendMessage = async () => "skipped" as const,
+        retryMessage = async () => "skipped" as const,
         clearHistory = () => { },
         activeProduct = null,
         setActiveProduct = () => { },
@@ -144,8 +145,16 @@ export default function GuruScreen() {
             return;
         }
 
-        const success = await sendMessage(text);
-        if (success === false && !isPremium) {
+        const result = await sendMessage(text);
+        if (result === "limit") {
+            setShowLimitModal(true);
+        }
+    };
+
+    const handleRetry = async (messageId: string) => {
+        if (isLoading) return;
+        const result = await retryMessage(messageId);
+        if (result === "limit") {
             setShowLimitModal(true);
         }
     };
@@ -171,9 +180,9 @@ export default function GuruScreen() {
 
         const text = inputText.trim();
         setInputText("");
-        const success = await sendMessage(text);
+        const result = await sendMessage(text);
 
-        if (success === false && !isPremium) {
+        if (result === "limit") {
             setShowLimitModal(true);
         }
     };
@@ -237,7 +246,12 @@ export default function GuruScreen() {
                         data={messages}
                         keyExtractor={item => item.id}
                         renderItem={({ item }) => (
-                            <ChatBubble role={item.role} content={item.content} />
+                            <ChatBubble
+                                role={item.role}
+                                content={item.content}
+                                failed={item.failed}
+                                onRetry={() => handleRetry(item.id)}
+                            />
                         )}
                         contentContainerStyle={styles.listContent}
                         ListEmptyComponent={

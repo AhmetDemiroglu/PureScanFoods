@@ -12,6 +12,7 @@ export interface GuruMessage {
     role: "user" | "assistant";
     content: string;
     timestamp: number;
+    failed?: boolean;
 }
 
 export interface ActiveProduct {
@@ -40,11 +41,14 @@ interface GuruContextType {
         diet?: string | null;
         allergens?: string[];
     }>;
-    sendMessage: (text: string) => Promise<boolean | undefined>;
+    sendMessage: (text: string) => Promise<GuruSendResult>;
+    retryMessage: (messageId: string) => Promise<GuruSendResult>;
     clearHistory: () => void;
     setActiveProduct: (product: ActiveProduct | null) => void;
     remainingMessages: number;
 }
+
+export type GuruSendResult = "sent" | "failed" | "limit" | "skipped";
 
 const STORAGE_KEY = "@purescan_guru_messages";
 
@@ -91,31 +95,11 @@ export const GuruProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
-    const sendMessage = async (text: string) => {
-        if (!userProfile || !getActiveProfile) {
-            console.warn("UserProfile or ActiveProfile is null");
-            return;
-        }
-
-        const userIsPremium = authIsPremium ?? false;
-
-        if (!userIsPremium && remainingMessages <= 0) {
-            return false;
-        }
-
-        setIsLoading(true);
-
-        const userMessage: GuruMessage = {
-            id: Date.now().toString(),
-            role: "user",
-            content: text,
-            timestamp: Date.now()
-        };
-
+    // Mesajı gönderir. Hata olursa kullanıcı mesajı "failed" işaretlenir, hak düşmez,
+    // hata metni cevap olarak kaydedilmez; arayüz "Tekrar dene" gösterir.
+    const deliver = async (text: string, prior: GuruMessage[], userMessage: GuruMessage): Promise<GuruSendResult> => {
         const activeProfile = getActiveProfile();
-        const nextMessages = [...messages, userMessage];
-        setMessages(nextMessages);
-
+        setIsLoading(true);
         try {
             const guruContext = {
                 userProfile: {
@@ -129,12 +113,7 @@ export const GuruProvider = ({ children }: { children: React.ReactNode }) => {
                 recentScans: []
             };
 
-            const response = await sendGuruMessage(
-                text,
-                guruContext,
-                nextMessages,
-                i18n.language
-            );
+            const response = await sendGuruMessage(text, guruContext, prior, i18n.language);
 
             const assistantMessage: GuruMessage = {
                 id: (Date.now() + 1).toString(),
@@ -144,31 +123,71 @@ export const GuruProvider = ({ children }: { children: React.ReactNode }) => {
             };
 
             setMessages(prev => {
-                const updated = [...prev, assistantMessage];
+                const updated = [
+                    ...prev.map(m => (m.id === userMessage.id ? { ...m, failed: false } : m)),
+                    assistantMessage
+                ];
                 saveToStorage(updated);
                 return updated;
             });
 
             if (user?.uid) {
-                await incrementAiChatCount(user.uid, deviceId);
+                try {
+                    await incrementAiChatCount(user.uid, deviceId);
+                } catch (e) {
+                    console.error("Guru count error:", e);
+                }
             }
-
-            return true;
-
+            return "sent";
         } catch (error) {
             console.error("Guru Error:", error);
-            const errorMsg: GuruMessage = {
-                id: (Date.now() + 1).toString(),
-                role: "assistant",
-                content: isTr ? "Bir hata oluştu. Lütfen tekrar deneyin." : "An error occurred. Please try again.",
-                timestamp: Date.now()
-            };
-            setMessages(prev => [...prev, errorMsg]);
-            return false;
+            setMessages(prev => {
+                const updated = prev.map(m => (m.id === userMessage.id ? { ...m, failed: true } : m));
+                saveToStorage(updated);
+                return updated;
+            });
+            return "failed";
         } finally {
             setIsLoading(false);
         }
     };
+
+    const canSend = () => (authIsPremium ?? false) || remainingMessages > 0;
+
+    const sendMessage = async (text: string): Promise<GuruSendResult> => {
+        if (!userProfile || !getActiveProfile) {
+            console.warn("UserProfile or ActiveProfile is null");
+            return "skipped";
+        }
+        if (isLoading) return "skipped";
+        if (!canSend()) return "limit";
+
+        const userMessage: GuruMessage = {
+            id: Date.now().toString(),
+            role: "user",
+            content: text,
+            timestamp: Date.now()
+        };
+
+        const prior = messages;
+        setMessages([...prior, userMessage]);
+        return deliver(text, prior, userMessage);
+    };
+
+    const retryMessage = async (messageId: string): Promise<GuruSendResult> => {
+        if (!userProfile || !getActiveProfile || isLoading) return "skipped";
+        const index = messages.findIndex(m => m.id === messageId);
+        const target = messages[index];
+        if (!target || target.role !== "user" || !target.failed) return "skipped";
+        if (!canSend()) return "limit";
+
+        // Tekrar denenen mesaj sona taşınır, geçmiş yalnız ondan öncekilerdir.
+        const prior = messages.filter(m => m.id !== messageId);
+        const moved: GuruMessage = { ...target, failed: false, timestamp: Date.now() };
+        setMessages([...prior, moved]);
+        return deliver(target.content, prior, moved);
+    };
+
     const clearHistory = () => {
         setMessages([]);
         saveToStorage([]);
@@ -200,6 +219,7 @@ export const GuruProvider = ({ children }: { children: React.ReactNode }) => {
             userName,
             familyMembers: memberList,
             sendMessage,
+            retryMessage,
             clearHistory,
             setActiveProduct,
             remainingMessages

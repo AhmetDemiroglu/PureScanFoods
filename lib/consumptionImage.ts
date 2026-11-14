@@ -1,9 +1,10 @@
 // "Gerçekte ne tüketiyorsun?" AI fotogerçekçi kavanoz üretimi.
-// Mevcut geminiProxy üzerinden gemini-3.1-flash-lite-image (Nano Banana 2 Lite, GA) çağrılır.
+// Mevcut geminiProxy üzerinden AI_MODELS.consumptionImage (gemini-3.1-flash-lite-image, Nano Banana 2 Lite) çağrılır.
 // Proxy modeli dinamik forward eder → sadece model string değişti, deploy gerekmez.
 // AI sadece KAVANOZU çizer (metinsiz); etiket/yüzde/kaşık native overlay'de (ConsumptionJar) kalır.
 
 import { callGemini } from "./api";
+import { endpointFor } from "./aiModels";
 import { CompositionLayer } from "./composition";
 
 // Katmanın FİZİKSEL formu (kimliği değil — kimlik display_name'den gelir).
@@ -80,7 +81,7 @@ export const requestJarImageBase64 = async (
     if (referenceBase64) reqParts.push({ inlineData: { mimeType: "image/png", data: referenceBase64 } });
     reqParts.push({ text: prompt });
 
-    const result: any = await callGemini("gemini-3.1-flash-lite-image:generateContent", {
+    const result: any = await callGemini(endpointFor("consumptionImage"), {
         contents: [{ parts: reqParts }],
         generationConfig: { responseModalities: ["IMAGE"] },
     });

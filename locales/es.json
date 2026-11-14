@@ -24,6 +24,8 @@
     "guru": {
         "title": "PureScan Guru",
         "subtitle": "Asistente de Nutrición IA",
+        "sendFailed": "No se pudo enviar el mensaje. No se descontó de tu límite.",
+        "retry": "Reintentar",
         "placeholder": "Pregunta sobre comida o nutrición...",
         "disclaimer": {
             "title": "Aviso Importante",

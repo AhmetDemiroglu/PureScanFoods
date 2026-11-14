@@ -1,5 +1,5 @@
 // "Gerçekte ne tüketiyorsun?" görseli için içerik kompozisyonu yardımcıları.
-// Yüzdeler AI tarafından (gemini-3.1-flash-lite) içindekiler sırası + OFF/QUID/besin
+// Yüzdeler analiz modeli tarafından (lib/aiModels.ts) içindekiler sırası + OFF/QUID/besin
 // verisinden TAHMİN edilir. Burada sadece normalize eder, renklendirir ve kaşık hesabı yaparız.
 // Model rakam icat etmez; bu modül de uydurmaz — yalnızca eldeki aralıkları görselleştirir.
 

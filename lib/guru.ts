@@ -1,10 +1,13 @@
 import { callGemini } from "./api";
+import { endpointFor, extractText } from "./aiModels";
 
 export interface GuruMessage {
     id: string;
     role: "user" | "assistant";
     content: string;
     timestamp: number;
+    /** Gönderilemeyen kullanıcı mesajı: modele geçmiş olarak gitmez, arayüzde "Tekrar dene" gösterilir. */
+    failed?: boolean;
 }
 
 export interface ActiveProduct {
@@ -36,6 +39,16 @@ export interface GuruContext {
         verdict: string;
     }>;
 }
+
+// 3.5.0 öncesi sürümler hata metnini asistan cevabı olarak kaydediyordu; bunlar modele geçmiş olarak gitmez.
+const LEGACY_ERROR_TEXTS = new Set([
+    "Üzgünüm, bir hata oluştu.",
+    "Sorry, an error occurred.",
+    "Bağlantı hatası. Lütfen tekrar deneyin.",
+    "Connection error. Please try again.",
+    "Bir hata oluştu. Lütfen tekrar deneyin.",
+    "An error occurred. Please try again.",
+]);
 
 export const sendGuruMessage = async (message: string, context: GuruContext, history: GuruMessage[], lang: string): Promise<string> => {
     const targetLang = lang === "tr" ? "TURKISH" : "ENGLISH";
@@ -152,22 +165,26 @@ ${
 }
     `.trim();
 
-    const recentMessages = history.slice(-5).map((msg) => ({
-        role: msg.role === "user" ? "user" : "model",
-        parts: [{ text: msg.content }],
-    }));
+    // `history` yalnız ÖNCEKİ mesajlardır; yeni mesaj aşağıda bir kez eklenir.
+    // Gönderilemeyen mesajlar geçmişe girmez. Geçmiş kullanıcı turuyla başlar.
+    const recent = history.filter((m) => !m.failed && m.content?.trim() && !LEGACY_ERROR_TEXTS.has(m.content.trim())).slice(-6);
+    while (recent.length && recent[0].role !== "user") recent.shift();
 
-    try {
-        const responseRaw = await callGemini("gemini-3.1-flash-lite:generateContent", {
-            contents: [{ role: "user", parts: [{ text: systemPrompt }] }, ...recentMessages, { role: "user", parts: [{ text: message }] }],
-        });
-        const response = responseRaw as any;
+    const contents = [
+        ...recent.map((msg) => ({
+            role: msg.role === "user" ? "user" : "model",
+            parts: [{ text: msg.content }],
+        })),
+        { role: "user", parts: [{ text: message }] },
+    ];
 
-        const resultText = response.candidates?.[0]?.content?.parts?.[0]?.text || (isTr ? "Üzgünüm, bir hata oluştu." : "Sorry, an error occurred.");
+    // Hata durumunda metin dönülmez, hata fırlatılır: çağıran taraf hakkı düşürmez ve cevabı kaydetmez.
+    const response = await callGemini(endpointFor("guru"), {
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents,
+    });
 
-        return resultText;
-    } catch (error) {
-        console.error("Guru API Error:", error);
-        return isTr ? "Bağlantı hatası. Lütfen tekrar deneyin." : "Connection error. Please try again.";
-    }
+    const resultText = extractText(response);
+    if (!resultText) throw new Error("Guru: empty response");
+    return resultText;
 };

@@ -24,6 +24,8 @@
     "guru": {
         "title": "PureScan Guru",
         "subtitle": "AI Nutrition Assistant",
+        "sendFailed": "Message could not be sent. It did not count toward your limit.",
+        "retry": "Try again",
         "placeholder": "Ask about food or nutrition...",
         "disclaimer": {
             "title": "Important Disclaimer",

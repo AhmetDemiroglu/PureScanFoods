@@ -24,6 +24,8 @@
     "guru": {
         "title": "PureScan Guru",
         "subtitle": "Yapay Zeka Beslenme Asistanı",
+        "sendFailed": "Mesaj gönderilemedi. Hakkın düşmedi.",
+        "retry": "Tekrar dene",
         "placeholder": "Gıda veya beslenme hakkında sorun...",
         "disclaimer": {
             "title": "Önemli Yasal Uyarı",

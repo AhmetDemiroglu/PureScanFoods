@@ -16,6 +16,9 @@ import BrandLogo from "../../components/brand/BrandLogo";
 import { callGemini } from "../../lib/api";
 import { TempStore } from "../../lib/tempStore";
 import { generateAnalysisPrompt, generateBarcodeDataPrompt } from "../../lib/prompt";
+import { endpointFor, extractText, jsonConfig } from "../../lib/aiModels";
+import { ANALYSIS_SCHEMA } from "../../lib/analysisSchema";
+import { readIngredientLabel, labelToAnalysisInput } from "../../lib/labelReader";
 import { auditAnalysis } from "../../lib/auditAnalysis";
 import { getIngredientsByBarcode } from "../../lib/openFoodFacts";
 import * as ImagePicker from "expo-image-picker";
@@ -33,6 +36,26 @@ import { useTheme } from "../../context/ThemeContext";
 type ScanTab = "camera" | "barcode" | "text";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+
+// Barkod / metin / fotoğraf analizi: 3.5 Flash-Lite, düşünme "low", şemalı JSON.
+// "minimal" uzun içerik listelerinde madde atlıyordu (2026-11-15, 12 ürün ölçümü).
+const analysisRequest = (parts: any[]) => ({
+  contents: [{ role: "user", parts }],
+  generationConfig: jsonConfig("low", ANALYSIS_SCHEMA),
+});
+
+// Şemalı istekte cevap doğrudan JSON'dur; eski model (yedek yol) metne JSON gömebilir.
+const parseAnalysisJson = (apiResult: any) => {
+  const rawText = extractText(apiResult);
+  try {
+    return JSON.parse(rawText);
+  } catch {
+    const startIndex = rawText.indexOf("{");
+    const endIndex = rawText.lastIndexOf("}");
+    if (startIndex === -1 || endIndex === -1) throw new Error("JSON bulunamadı");
+    return JSON.parse(rawText.substring(startIndex, endIndex + 1));
+  }
+};
 
 export default function ScanScreen() {
   const { t, i18n } = useTranslation();
@@ -152,11 +175,7 @@ export default function ScanScreen() {
 
       const systemPrompt = generateBarcodeDataPrompt(currentLang, promptProfile, productData);
 
-      const apiResult = await callGemini("gemini-3.1-flash-lite:generateContent", {
-        contents: [{
-          parts: [{ text: systemPrompt }]
-        }]
-      });
+      const apiResult = await callGemini(endpointFor("analysis"), analysisRequest([{ text: systemPrompt }]));
 
       processGeminiResult(apiResult, productData.image || null, productData);
 
@@ -200,9 +219,7 @@ export default function ScanScreen() {
 
       const systemPrompt = generateBarcodeDataPrompt(currentLang, promptProfile, productData);
 
-      const apiResult = await callGemini("gemini-3.1-flash-lite:generateContent", {
-        contents: [{ parts: [{ text: systemPrompt }] }]
-      });
+      const apiResult = await callGemini(endpointFor("analysis"), analysisRequest([{ text: systemPrompt }]));
 
       processGeminiResult(apiResult, productData.image || null, productData);
 
@@ -242,11 +259,7 @@ export default function ScanScreen() {
       const basePrompt = generateAnalysisPrompt(currentLang, promptProfile);
       const combinedPrompt = `${basePrompt}\n\nAnalyze this ingredient list text:\n"${textInput}"`;
 
-      const apiResult = await callGemini("gemini-3.1-flash-lite:generateContent", {
-        contents: [{
-          parts: [{ text: combinedPrompt }]
-        }]
-      });
+      const apiResult = await callGemini(endpointFor("analysis"), analysisRequest([{ text: combinedPrompt }]));
 
       processGeminiResult(apiResult, null, undefined);
 
@@ -262,14 +275,7 @@ export default function ScanScreen() {
 
   const processGeminiResult = (apiResult: any, imageUri?: string | null, offData?: any) => {
     try {
-      const rawText = (apiResult as any).candidates[0].content.parts[0].text;
-      const startIndex = rawText.indexOf('{');
-      const endIndex = rawText.lastIndexOf('}');
-
-      if (startIndex === -1 || endIndex === -1) throw new Error("JSON bulunamadı");
-
-      const cleanJson = rawText.substring(startIndex, endIndex + 1);
-      const parsedData = JSON.parse(cleanJson);
+      const parsedData = parseAnalysisJson(apiResult);
 
       if (parsedData.product?.isFood === false || !parsedData.details?.ingredients || parsedData.details.ingredients.length === 0) {
         setIsScanning(false);
@@ -325,6 +331,8 @@ export default function ScanScreen() {
     }
   };
 
+  // Fotoğraf: önce 3.8 Flash etiketi madde madde okur, sonra 3.5 Flash-Lite metin olarak analiz eder.
+  // Okuma kesilirse (RECITATION/ağ) fotoğraf tek adımda analiz modeline, o da kesilirse eski 3.1 isteğine gider.
   const analyzeImageWithGemini = async (base64Image: string, imageUri?: string) => {
     const currentLang = i18n.language;
     const profileData = getActiveData();
@@ -335,16 +343,32 @@ export default function ScanScreen() {
     };
 
     const systemPrompt = generateAnalysisPrompt(currentLang, promptProfile);
+    const imagePart = { inlineData: { mimeType: "image/jpeg", data: base64Image } };
 
-    const apiResult = await callGemini("gemini-3.1-flash-lite:generateContent", {
-      contents: [{
-        parts: [
-          { text: systemPrompt },
-          { inlineData: { mimeType: "image/jpeg", data: base64Image } }
-        ]
-      }]
-    });
+    const label = await readIngredientLabel(base64Image);
 
+    if (label.status === "notFood") {
+      setIsScanning(false);
+      setShowInvalidScanModal(true);
+      return;
+    }
+
+    if (label.status === "ok") {
+      const apiResult = await callGemini(
+        endpointFor("analysis"),
+        analysisRequest([{ text: `${systemPrompt}\n\n${labelToAnalysisInput(label)}` }])
+      );
+      processGeminiResult(apiResult, imageUri, undefined);
+      return;
+    }
+
+    console.warn("Label read failed, single-step fallback:", label.reason);
+    let apiResult: any = await callGemini(endpointFor("analysis"), analysisRequest([{ text: systemPrompt }, imagePart]));
+    if (!extractText(apiResult)) {
+      apiResult = await callGemini(endpointFor("legacyFallback"), {
+        contents: [{ role: "user", parts: [{ text: systemPrompt }, imagePart] }]
+      });
+    }
     processGeminiResult(apiResult, imageUri, undefined);
   };
 

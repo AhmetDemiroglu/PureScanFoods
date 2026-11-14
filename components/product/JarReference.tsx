@@ -9,7 +9,7 @@ interface Props {
 }
 
 // AI img2img için ETİKETSİZ referans kavanoz: yalnızca renkli, oranlı yatay bantlar.
-// view-shot ile yakalanıp gemini-2.5-flash-image'a "bu yapıyı birebir fotogerçekçi yap"
+// view-shot ile yakalanıp görsel modeline (lib/aiModels.ts, consumptionImage) "bu yapıyı birebir fotogerçekçi yap"
 // referansı olarak verilir. Oranlar SVG (ConsumptionJar) ile aynı renderFraction'dan gelir.
 export default function JarReference({ layers, size = 512 }: Props) {
     const jarW = size * 0.46;
