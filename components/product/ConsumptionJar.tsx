@@ -68,8 +68,8 @@ export default function ConsumptionJar({
         });
     }, [layers, jarH, jarTop]);
 
-    const glassStroke = darkMode ? "rgba(255,255,255,0.22)" : "rgba(15,23,42,0.18)";
-    const leaderStroke = darkMode ? "rgba(255,255,255,0.28)" : "rgba(15,23,42,0.22)";
+    const glassStroke = darkMode ? "rgba(255,255,255,0.22)" : "rgba(31,22,17,0.18)";
+    const leaderStroke = darkMode ? "rgba(255,255,255,0.28)" : "rgba(31,22,17,0.22)";
     const clipId = "jarClip";
 
     const spoonsToShow = Math.min(Math.round(spoons), 8);

@@ -244,7 +244,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
         flex: 1,
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "rgba(15, 23, 42, 0.6)",
+        backgroundColor: "rgba(31,22,17, 0.6)",
     },
     backdrop: {
         ...StyleSheet.absoluteFillObject,

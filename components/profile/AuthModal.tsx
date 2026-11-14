@@ -571,7 +571,7 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
 // STYLES
 const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     container: { flex: 1 },
-    backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(15,23,42,0.5)" },
+    backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(31,22,17,0.5)" },
     keyboardView: { flex: 1, justifyContent: "center", alignItems: "center" },
     modal: { width: "88%", backgroundColor: colors.card, borderRadius: 24, padding: 24, shadowColor: "#000", shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 12, overflow: "hidden" },
     closeBtn: { position: "absolute", top: 16, right: 16, zIndex: 10 },

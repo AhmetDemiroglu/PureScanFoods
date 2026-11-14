@@ -473,9 +473,9 @@ const createStyles = (colors: any, isDark: boolean) =>
             padding: 14,
             marginBottom: 16,
             borderRadius: 16,
-            backgroundColor: isDark ? "rgba(255,111,0,0.10)" : "#FFF7ED",
+            backgroundColor: isDark ? "rgba(242,96,12,0.10)" : "#FFF7ED",
             borderWidth: 1,
-            borderColor: isDark ? "rgba(255,138,51,0.30)" : "rgba(255,111,0,0.18)",
+            borderColor: isDark ? "rgba(255,139,61,0.30)" : "rgba(242,96,12,0.18)",
         },
         cardIconWrap: {
             width: 38,
@@ -519,7 +519,7 @@ const createStyles = (colors: any, isDark: boolean) =>
             paddingVertical: 6,
             borderRadius: 20,
             marginBottom: 6,
-            backgroundColor: isDark ? "rgba(255,138,51,0.12)" : "#FFF7ED",
+            backgroundColor: isDark ? "rgba(255,139,61,0.12)" : "#FFF7ED",
         },
         estimateBadgeText: { fontSize: 11.5, fontWeight: "700", color: colors.primary },
         aiImage: {
