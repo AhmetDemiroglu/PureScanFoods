@@ -10,6 +10,9 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { AppColors } from "../../constants/colors";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useIsFocused } from "@react-navigation/native";
+import { useTour, useTourTarget } from "../../components/tour/TourContext";
+import { ENCYCLOPEDIA_TOUR } from "../../components/tour/tours";
 import { useShell } from "../../context/ShellContext";
 import * as haptics from "../../lib/haptics";
 import { OnboardingModal } from "../../components/ui/OnboardingModal";
@@ -107,11 +110,12 @@ export default function AdditivesLibraryScreen() {
     const { openSidebar } = useShell();
     const [showOnboarding, setShowOnboarding] = useState(false);
 
-    useEffect(() => {
-        AsyncStorage.getItem("@encyclopedia_onboarding_shown_v1").then(shown => {
-            if (shown !== "true") setShowOnboarding(true);
-        });
-    }, []);
+    // Karşılama ekranı artık kendiliğinden açılmaz (info simgesinden açılır); ilk girişte kullanım turu çalışır.
+    const isFocused = useIsFocused();
+    const tabsTarget = useTourTarget("encyclopedia.tabs");
+    const searchTarget = useTourTarget("encyclopedia.search");
+    const infoTarget = useTourTarget("encyclopedia.info");
+    useTour("encyclopedia", ENCYCLOPEDIA_TOUR, { ready: isFocused && !showOnboarding && activeTab === "additives" });
 
     // Sonuç ekranındaki E-koduna tıklanınca: additives sekmesine geç, ilgili katkıyı
     // ara ile en üste getir + aç (scrollToIndex kırılganlığından kaçınılır).
@@ -396,16 +400,18 @@ export default function AdditivesLibraryScreen() {
                                 {isTr ? "Katkı maddeleri ve NOVA rehberi" : isEs ? "Guía de aditivos y NOVA" : "Additives & NOVA guide"}
                             </Text>
                         </View>
-                        <TouchableOpacity style={styles.infoButton} onPress={() => setShowOnboarding(true)}>
-                            <Ionicons name="information-circle-outline" size={18} color="rgba(255,255,255,0.7)" />
-                        </TouchableOpacity>
+                        <View {...infoTarget}>
+                            <TouchableOpacity style={styles.infoButton} onPress={() => setShowOnboarding(true)}>
+                                <Ionicons name="information-circle-outline" size={18} color="rgba(255,255,255,0.7)" />
+                            </TouchableOpacity>
+                        </View>
                         <TouchableOpacity style={[styles.backButton, { marginRight: 0 }]} onPress={() => { haptics.impactLight(); openSidebar(); }}>
                             <MaterialCommunityIcons name="history" size={22} color="#FFF" />
                         </TouchableOpacity>
                     </View>
 
                     {/* Tab Switcher */}
-                    <View style={styles.tabContainer}>
+                    <View {...tabsTarget} style={styles.tabContainer}>
                         <TouchableOpacity
                             style={[styles.tab, activeTab === "additives" && styles.tabActive]}
                             onPress={() => { haptics.selection(); setActiveTab("additives"); }}
@@ -481,7 +487,7 @@ export default function AdditivesLibraryScreen() {
                     ListHeaderComponent={
                         <>
                             {/* Search */}
-                            <View style={styles.searchContainer}>
+                            <View {...searchTarget} style={styles.searchContainer}>
                                 <Ionicons name="search" size={20} color={colors.gray[400]} />
                                 <TextInput
                                     style={styles.searchInput}

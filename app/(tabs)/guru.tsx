@@ -14,6 +14,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { AppColors } from "../../constants/colors";
 import { useGuru } from "../../context/GuruContext";
+import { useIsFocused } from "@react-navigation/native";
+import { useTour, useTourTarget } from "../../components/tour/TourContext";
+import { GURU_TOUR } from "../../components/tour/tours";
 import { ChatBubble } from "../../components/guru/ChatBubble";
 import { ProductContextCard } from "../../components/guru/ProductContextCard";
 import { GuruEmptyState } from "../../components/guru/GuruEmptyState";
@@ -76,12 +79,14 @@ export default function GuruScreen() {
     const isTr = i18n.language === "tr";
     const isEs = i18n.language?.startsWith("es");
 
+    // Karşılama ekranı artık kendiliğinden açılmaz (info simgesinden açılır); ilk girişte kullanım turu çalışır.
+    const isFocused = useIsFocused();
+    const productTarget = useTourTarget("guru.product");
+    const suggestionsTarget = useTourTarget("guru.suggestions");
+    const inputTarget = useTourTarget("guru.input");
+    useTour("guru", GURU_TOUR, { ready: isFocused && !showOnboarding && !showLimitModal && !showPaywall });
+
     // --- EFFECTS ---
-    useEffect(() => {
-        AsyncStorage.getItem("@guru_onboarding_shown_v2").then(shown => {
-            if (shown !== "true") setShowOnboarding(true);
-        });
-    }, []);
 
     useEffect(() => {
         if (messages?.length > 0) {
@@ -228,6 +233,7 @@ export default function GuruScreen() {
             {/* --- CONTENT & INPUT --- */}
             <Animated.View style={[{ flex: 1 }, inputAreaStyle]}>
                 <View style={styles.contentWrapper}>
+                    <View {...productTarget}>
                     {activeProduct ? (
                         <ProductContextCard
                             product={activeProduct}
@@ -240,6 +246,7 @@ export default function GuruScreen() {
                             isLoading={loadingScans}
                         />
                     )}
+                    </View>
 
                     <FlatList
                         ref={flatListRef}
@@ -255,7 +262,9 @@ export default function GuruScreen() {
                         )}
                         contentContainerStyle={styles.listContent}
                         ListEmptyComponent={
-                            <GuruEmptyState onSelectSuggestion={handleSuggestion} />
+                            <View {...suggestionsTarget}>
+                                <GuruEmptyState onSelectSuggestion={handleSuggestion} />
+                            </View>
                         }
                         ListFooterComponent={
                             showTyping ? <TypingIndicator /> : <View style={{ height: 12 }} />
@@ -272,12 +281,14 @@ export default function GuruScreen() {
                         </Text>
                     </View>
 
+                    <View {...inputTarget}>
                     <ChatInput
                         value={inputText}
                         onChangeText={setInputText}
                         onSend={handleSend}
                         isLoading={isLoading}
                     />
+                    </View>
                 </View>
             </Animated.View>
 

@@ -21,6 +21,9 @@ import { ANALYSIS_SCHEMA } from "../../lib/analysisSchema";
 import { readIngredientLabel, labelToAnalysisInput } from "../../lib/labelReader";
 import { auditAnalysis } from "../../lib/auditAnalysis";
 import { getIngredientsByBarcode } from "../../lib/openFoodFacts";
+import { useIsFocused } from "@react-navigation/native";
+import { useTour, useTourTarget } from "../../components/tour/TourContext";
+import { HOME_TOUR } from "../../components/tour/tours";
 import * as ImagePicker from "expo-image-picker";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { useUser } from "../../context/UserContext";
@@ -97,6 +100,12 @@ export default function ScanScreen() {
   // İçerik tab bar'da bittiği, keyboard yüksekliği ekran altından ölçüldüğü için
   // tabBarHeight çıkarılır (yoksa tab bar kadar fazla boşluk kalır).
   const scrollRef = useRef<ScrollView>(null);
+
+  // Kullanım turu: ilk girişte tarama yolları, alt çubuk ve geçmiş vurgulanır.
+  const isFocused = useIsFocused();
+  const tabsTarget = useTourTarget("home.tabs");
+  const scanTarget = useTourTarget("home.scan");
+  useTour("home", HOME_TOUR, { ready: isFocused && !showCamera && !isScanning, delay: 500 });
   const [kbHeight, setKbHeight] = useState(0);
   useEffect(() => {
     const s = Keyboard.addListener("keyboardDidShow", (e) =>
@@ -478,7 +487,7 @@ export default function ScanScreen() {
 
           {/* Scan Card */}
           <View style={styles.scanCard}>
-            <View style={styles.tabSwitcher}>
+            <View style={styles.tabSwitcher} {...tabsTarget}>
               <Pressable
                 style={[styles.tab, activeTab === "camera" && styles.tabActive]}
                 onPress={() => setActiveTab("camera")}
@@ -529,6 +538,7 @@ export default function ScanScreen() {
               {activeTab === "camera" && (
                 <>
                   {/* 1. Ana Sayfa Büyük Tara Butonu */}
+                  <View {...scanTarget}>
                   <Pressable
                     style={styles.mainButtonWrapper}
                     onPress={() => {
@@ -553,6 +563,7 @@ export default function ScanScreen() {
                       </Text>
                     </LinearGradient>
                   </Pressable>
+                  </View>
 
                   {/* 2. Galeri Seçeneği */}
                   <View style={styles.divider}>

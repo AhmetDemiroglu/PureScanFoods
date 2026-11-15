@@ -11,7 +11,7 @@
         "later": "Maybe later",
         "never": "Don't ask again",
         "neg_title": "We're sorry 😔 What can we fix?",
-        "neg_subtitle": "Drop us a few lines — it comes straight to us.",
+        "neg_subtitle": "Drop us a few lines. It comes straight to us.",
         "neg_feedback_btn": "Send feedback",
         "neg_close": "Cancel"
     },
@@ -886,5 +886,118 @@
         "sodium": "Sodium",
         "satfat": "Saturated fat",
         "note": "Values are based on label/database data and may be missing for some products."
+    },
+    "tour": {
+        "next": "Next",
+        "skip": "Skip",
+        "done": "Let's go",
+        "replay": "Show usage tips again",
+        "replayDone": "Tips will show again the first time you open each page.",
+        "home": {
+            "modes": {
+                "title": "Three ways to scan",
+                "desc": "Label photo, barcode or ingredient text. Pick whichever you have."
+            },
+            "scan": {
+                "title": "Snap the ingredients",
+                "desc": "Frame the ingredient list. Every item is read one by one, additives are flagged and a safety score is calculated."
+            },
+            "anywhere": {
+                "title": "Scan from anywhere",
+                "desc": "The orange button at the bottom takes you straight to scanning from any page."
+            },
+            "profile": {
+                "title": "Scores made for you",
+                "desc": "Add your diet, allergens and family in the Nutrition tab. Every product is scored for each of you."
+            },
+            "history": {
+                "title": "Your history",
+                "desc": "Every product you scan is saved. You can also open it by swiping left from the right edge."
+            },
+            "guru": {
+                "title": "Ask Guru",
+                "desc": "Ask anything about a product or ingredient. Guru answers simply, based on your profile."
+            },
+            "encyclopedia": {
+                "title": "Food encyclopedia",
+                "desc": "Additives, NOVA and Nutri-Score guide. Look up a code you saw on a label."
+            }
+        },
+        "result": {
+            "score": {
+                "title": "Safety score",
+                "desc": "Out of 100. Additives, processing level, sugar, salt and fat are counted. With a profile, a compatibility score appears next to it."
+            },
+            "summary": {
+                "title": "Quick verdict",
+                "desc": "A summary of the product and why it got this score."
+            },
+            "consumption": {
+                "title": "What are you really eating?",
+                "desc": "Shows the approximate share of each ingredient as a jar."
+            },
+            "family": {
+                "title": "For your family",
+                "desc": "A separate score for each family member based on their diet and allergens. Tap to see why."
+            },
+            "details": {
+                "title": "Detailed analysis",
+                "desc": "Ingredients, additives and nutrition facts. Tap a card to open the details."
+            },
+            "compare": {
+                "title": "Compare",
+                "desc": "Put this product next to another one from your history and see which is better."
+            },
+            "guru": {
+                "title": "Ask Guru",
+                "desc": "Ask anything about this product. Guru answers knowing its analysis."
+            }
+        },
+        "guru": {
+            "product": {
+                "title": "Pick a product",
+                "desc": "Choose one of your recent scans and Guru answers about that product."
+            },
+            "suggestions": {
+                "title": "Ready questions",
+                "desc": "Not sure where to start? Tap a suggestion."
+            },
+            "input": {
+                "title": "Ask freely",
+                "desc": "Diet, allergens, additives or recipes. Ask anything about food."
+            }
+        },
+        "nutrition": {
+            "profile": {
+                "title": "Your profile",
+                "desc": "Your name, avatar and personal settings live here."
+            },
+            "family": {
+                "title": "Family profiles",
+                "desc": "Add your child, partner or parents. Scans show a separate compatibility score for each."
+            },
+            "diet": {
+                "title": "Your diet",
+                "desc": "Vegan, gluten free or keto. Products that don't fit your diet get a warning."
+            },
+            "allergens": {
+                "title": "Allergens",
+                "desc": "If a product contains an allergen you picked, its compatibility score drops to zero with a red warning."
+            }
+        },
+        "encyclopedia": {
+            "tabs": {
+                "title": "Three guides",
+                "desc": "Additives, NOVA processing groups and Nutri-Score. Swipe sideways to switch tabs."
+            },
+            "search": {
+                "title": "Look up a code",
+                "desc": "Type an E number or name from a label to learn what it is and how risky it is."
+            },
+            "info": {
+                "title": "Intro is here",
+                "desc": "Tap this icon to see this page's introduction again."
+            }
+        }
     }
 }

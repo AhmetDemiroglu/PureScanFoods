@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import { Tabs } from "expo-router";
 import { View, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -7,6 +7,17 @@ import { useTranslation } from "react-i18next";
 import { AppColors } from "../../constants/colors";
 import { useTheme } from "../../context/ThemeContext";
 import * as haptics from "../../lib/haptics";
+import { useTourTarget } from "../../components/tour/TourContext";
+
+// Sekme simgesini tur hedefi yapar (alt çubuktaki düğmeler turda vurgulanır).
+function TourIcon({ id, children, style }: { id: string; children: React.ReactNode; style?: any }) {
+  const target = useTourTarget(id);
+  return (
+    <View {...target} style={style}>
+      {children}
+    </View>
+  );
+}
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
@@ -41,7 +52,11 @@ export default function TabsLayout() {
         name="nutrition"
         options={{
           title: t("navigation.nutrition"),
-          tabBarIcon: ({ color }) => <Ionicons name="nutrition-outline" size={24} color={color} />,
+          tabBarIcon: ({ color }) => (
+            <TourIcon id="tab.nutrition">
+              <Ionicons name="nutrition-outline" size={24} color={color} />
+            </TourIcon>
+          ),
         }}
       />
 
@@ -49,7 +64,11 @@ export default function TabsLayout() {
         name="guru"
         options={{
           title: t("navigation.guru", { defaultValue: "Guru" }),
-          tabBarIcon: ({ color }) => <Ionicons name="chatbubbles-outline" size={24} color={color} />,
+          tabBarIcon: ({ color }) => (
+            <TourIcon id="tab.guru">
+              <Ionicons name="chatbubbles-outline" size={24} color={color} />
+            </TourIcon>
+          ),
         }}
       />
 
@@ -58,9 +77,11 @@ export default function TabsLayout() {
         options={{
           title: "",
           tabBarIcon: ({ focused }) => (
-            <View style={[styles.centerButton, focused && styles.centerButtonActive]}>
-              <Ionicons name="scan" size={28} color={colors.white} />
-            </View>
+            <TourIcon id="tab.scan" style={styles.centerSlot}>
+              <View style={[styles.centerButton, focused && styles.centerButtonActive]}>
+                <Ionicons name="scan" size={28} color={colors.white} />
+              </View>
+            </TourIcon>
           ),
           tabBarLabelStyle: {
             fontSize: 11,
@@ -74,7 +95,11 @@ export default function TabsLayout() {
         name="encyclopedia"
         options={{
           title: t("navigation.encyclopedia"),
-          tabBarIcon: ({ color }) => <Ionicons name="book-outline" size={24} color={color} />,
+          tabBarIcon: ({ color }) => (
+            <TourIcon id="tab.encyclopedia">
+              <Ionicons name="book-outline" size={24} color={color} />
+            </TourIcon>
+          ),
         }}
       />
 
@@ -98,13 +123,16 @@ const createStyles = (colors: AppColors, isDark: boolean) =>
       borderRadius: 16,
       alignItems: "center",
       justifyContent: "center",
-      marginBottom: 24,
       transform: [{ rotate: "8deg" }],
       shadowColor: colors.primary,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: isDark ? 0.16 : 0.3,
       shadowRadius: 8,
       elevation: 8,
+    },
+    // Alt boşluk sarmalayıcıda: tur halkası düğmenin kendisine otursun.
+    centerSlot: {
+      marginBottom: 24,
     },
     centerButtonActive: {
       shadowOpacity: isDark ? 0.26 : 0.5,

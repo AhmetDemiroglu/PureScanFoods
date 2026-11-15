@@ -24,6 +24,7 @@ import ConfirmDeleteModal from "../../components/ui/ConfirmDeleteModal";
 import AuthModal from "../../components/profile/AuthModal";
 import { useTheme } from "../../context/ThemeContext";
 import { SeptimusSignature } from "../../components/brand/SeptimusSignature";
+import { resetAllTours } from "../../components/tour/TourContext";
 
 
 if (Platform.OS === "android" && !(global as any).nativeFabricUIManager && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -446,6 +447,26 @@ export default function SettingsScreen() {
               </View>
             </View>
             <Ionicons name="open-outline" size={18} color={colors.gray[400]} style={styles.chevronRight} />
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
+            onPress={async () => {
+              haptics.selection();
+              await resetAllTours();
+              router.replace("/");
+            }}
+          >
+            <View style={styles.menuItemLeft}>
+              <View style={[styles.menuIconBox, { backgroundColor: isDark ? "rgba(242,96,12,0.20)" : "#FFF3EA" }]}>
+                <Ionicons name="sparkles-outline" size={18} color={colors.primary} />
+              </View>
+              <View style={{ flexShrink: 1 }}>
+                <Text style={styles.menuItemText}>{t("tour.replay")}</Text>
+                <Text style={styles.menuItemSubtext}>{t("tour.replayDone")}</Text>
+              </View>
+            </View>
+            <Ionicons name="refresh" size={18} color={colors.gray[400]} style={styles.chevronRight} />
           </Pressable>
         </View>
 

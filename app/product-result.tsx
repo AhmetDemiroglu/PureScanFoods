@@ -9,6 +9,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { getDietDefinition } from "../lib/diets";
 import { getAllergenDefinition, AllergenType } from "../lib/allergens";
 import ScoreRing from "../components/ui/ScoreRing";
+import { useIsFocused } from "@react-navigation/native";
+import { useTour, useTourScroll, useTourTarget } from "../components/tour/TourContext";
+import { RESULT_TOUR } from "../components/tour/tours";
 import { TempStore } from "../lib/tempStore";
 import DetailCards from "../components/product/DetailCards";
 import { enrichAdditives } from "../lib/additiveEnrichment";
@@ -122,6 +125,21 @@ export default function ProductResultScreen() {
 
     const [selectedMemberReport, setSelectedMemberReport] = useState<{ member: any, report: CompatibilityReport } | null>(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
+
+    // Kullanım turu: ilk sonuçta puan, özet, aile, ayrıntı ve Guru vurgulanır.
+    const isFocused = useIsFocused();
+    const tourScroll = useTourScroll("result");
+    const scoreTarget = useTourTarget("result.score");
+    const summaryTarget = useTourTarget("result.summary");
+    const consumptionTarget = useTourTarget("result.consumption");
+    const familyTarget = useTourTarget("result.family");
+    const detailsTarget = useTourTarget("result.details");
+    const compareTarget = useTourTarget("result.compare");
+    const guruTarget = useTourTarget("result.guru");
+    useTour("result", RESULT_TOUR, {
+        ready: isFocused && !(isAdLoading && !isPremium) && !showReviewPrompt && !showResultPaywall && !showComparePicker && !showDetailModal,
+        delay: 900,
+    });
 
     const screenHeight = Dimensions.get('window').height;
     const panY = useRef(new Animated.Value(0)).current;
@@ -532,7 +550,7 @@ export default function ProductResultScreen() {
     return (
         <View style={styles.container}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-            <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom + 20, 36) }]} showsVerticalScrollIndicator={false} bounces={false}>
+            <ScrollView {...tourScroll} contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom + 20, 36) }]} showsVerticalScrollIndicator={false} bounces={false}>
                 {/* Image Header */}
                 <View style={styles.imageContainer}>
                     <Image source={imageUri ? { uri: imageUri } : require('../assets/placeholder.png')} style={styles.productImage} contentFit="cover" cachePolicy="memory-disk" transition={200} />
@@ -543,9 +561,11 @@ export default function ProductResultScreen() {
                     <TouchableOpacity style={[styles.headerBtn, styles.headerBtnRight]} onPress={handleRescan}>
                         <Ionicons name="scan-outline" size={20} color="#FFF" />
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.headerBtn, styles.headerBtnRight2]} onPress={() => setShowComparePicker(true)}>
-                        <Ionicons name="git-compare-outline" size={20} color="#FFF" />
-                    </TouchableOpacity>
+                    <View {...compareTarget} style={[styles.headerBtn, styles.headerBtnRight2, styles.tourHeaderSlot]}>
+                        <TouchableOpacity style={styles.tourHeaderFill} onPress={() => setShowComparePicker(true)}>
+                            <Ionicons name="git-compare-outline" size={20} color="#FFF" />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Pull-up Sheet Card */}
@@ -585,7 +605,7 @@ export default function ProductResultScreen() {
                     </ScrollView>
 
                     {/* Score Display: profil varsa iki ring, yoksa tek güvenlik skoru + sade not */}
-                    <View style={[styles.scoreZone, !mainHasProfile && styles.scoreZoneSingle]}>
+                    <View {...scoreTarget} style={[styles.scoreZone, !mainHasProfile && styles.scoreZoneSingle]}>
                         <ScoreRing
                             score={scores.safety?.value || 0}
                             label={isTr ? 'Güvenlik Skoru' : isEs ? 'Seguridad' : 'Safety Score'}
@@ -612,7 +632,7 @@ export default function ProductResultScreen() {
                     )}
 
                     {/* Verdict + Summary */}
-                    <View style={[styles.summaryCard, { borderLeftColor: scoreColor }]}>
+                    <View {...summaryTarget} style={[styles.summaryCard, { borderLeftColor: scoreColor }]}>
                         <View style={styles.verdictRow}>
                             <View style={[styles.verdictDot, { backgroundColor: scoreColor }]} />
                             <Text style={[styles.verdictTitle, { color: scoreColor }]}>{displayVerdict}</Text>
@@ -631,12 +651,14 @@ export default function ProductResultScreen() {
                     ) : null}
 
                     {/* Gerçekte ne tüketiyorsun? — kompozisyon görseli */}
-                    <ConsumptionReveal
-                        data={data}
-                        scanId={savedScanId || (data as any)?.scanId || null}
-                        isHistoryView={isHistoryView}
-                        onRequirePaywall={() => setShowResultPaywall(true)}
-                    />
+                    <View {...consumptionTarget}>
+                        <ConsumptionReveal
+                            data={data}
+                            scanId={savedScanId || (data as any)?.scanId || null}
+                            isHistoryView={isHistoryView}
+                            onRequirePaywall={() => setShowResultPaywall(true)}
+                        />
+                    </View>
 
                     {/* Critical Alerts */}
                     {criticalBadges.length > 0 && (
@@ -661,7 +683,7 @@ export default function ProductResultScreen() {
                 </View>
 
                 {/* Family Compatibility */}
-                <View style={styles.familyZone}>
+                <View {...familyTarget} style={styles.familyZone}>
                     <View style={styles.sectionHeader}>
                         <View style={styles.sectionLine} />
                         <Text upper style={styles.sectionLabel}>{t("results.family.title")}</Text>
@@ -693,7 +715,7 @@ export default function ProductResultScreen() {
                 </View>
 
                 {/* Detailed Analysis */}
-                <View style={styles.detailZone}>
+                <View {...detailsTarget} style={styles.detailZone}>
                     <View style={styles.sectionHeader}>
                         <View style={styles.sectionLine} />
                         <Text upper style={styles.sectionLabel}>{t("results.detailedAnalysis")}</Text>
@@ -703,10 +725,12 @@ export default function ProductResultScreen() {
                 </View>
 
                 {/* Guru'ya Sor */}
-                <TouchableOpacity style={styles.askGuruBtn} onPress={handleAskGuru} activeOpacity={0.85}>
-                    <Ionicons name="sparkles" size={18} color="#FFF" />
-                    <Text style={styles.askGuruText}>{t("results.ask_guru")}</Text>
-                </TouchableOpacity>
+                <View {...guruTarget}>
+                    <TouchableOpacity style={styles.askGuruBtn} onPress={handleAskGuru} activeOpacity={0.85}>
+                        <Ionicons name="sparkles" size={18} color="#FFF" />
+                        <Text style={styles.askGuruText}>{t("results.ask_guru")}</Text>
+                    </TouchableOpacity>
+                </View>
 
                 {/* Disclaimer */}
                 <View style={styles.footerNote}>
@@ -961,6 +985,15 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
         marginTop: -4,
         marginBottom: 16,
         paddingHorizontal: 24,
+    },
+    tourHeaderSlot: {
+        padding: 0,
+    },
+    tourHeaderFill: {
+        flex: 1,
+        alignSelf: "stretch",
+        alignItems: "center",
+        justifyContent: "center",
     },
     askGuruBtn: {
         flexDirection: 'row' as const,

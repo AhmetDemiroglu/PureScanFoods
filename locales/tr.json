@@ -886,5 +886,118 @@
         "sodium": "Sodyum",
         "satfat": "Doymuş yağ",
         "note": "Değerler etiket/veritabanı verisine dayanır; bazı ürünlerde eksik olabilir."
+    },
+    "tour": {
+        "next": "İleri",
+        "skip": "Geç",
+        "done": "Başlayalım",
+        "replay": "Kullanım ipuçlarını yeniden göster",
+        "replayDone": "İpuçları her sayfaya ilk girişinde yeniden gösterilecek.",
+        "home": {
+            "modes": {
+                "title": "Üç yolla tara",
+                "desc": "Etiket fotoğrafı, barkod ya da içerik metni. Elinde hangisi varsa onu seç."
+            },
+            "scan": {
+                "title": "İçindekileri çek",
+                "desc": "İçerik listesini kadraja al. Her maddeyi tek tek okur, katkıları işaretler ve güvenlik puanını hesaplar."
+            },
+            "anywhere": {
+                "title": "Her yerden tara",
+                "desc": "Alttaki turuncu düğme, hangi sayfada olursan ol seni doğrudan taramaya götürür."
+            },
+            "profile": {
+                "title": "Sana göre puan",
+                "desc": "Beslenme sekmesinde diyetini, alerjenlerini ve aileni ekle. Her ürün sizin için ayrıca puanlanır."
+            },
+            "history": {
+                "title": "Geçmişin burada",
+                "desc": "Taradığın her ürün saklanır. Ekranın sağ kenarından sola kaydırarak da açabilirsin."
+            },
+            "guru": {
+                "title": "Guru'ya sor",
+                "desc": "Bir ürün ya da içerik hakkında merak ettiğini sor. Profiline göre sade bir cevap verir."
+            },
+            "encyclopedia": {
+                "title": "Gıda sözlüğü",
+                "desc": "Katkı maddeleri, NOVA ve Nutri-Score rehberi. Etikette gördüğün bir kodu burada ara."
+            }
+        },
+        "result": {
+            "score": {
+                "title": "Güvenlik puanı",
+                "desc": "100 üzerinden. Katkılar, işlenme düzeyi, şeker, tuz ve yağ hesaba katılır. Profilin varsa yanında uyum puanı da çıkar."
+            },
+            "summary": {
+                "title": "Kısa hüküm",
+                "desc": "Ürünün özeti ve bu puanı neden aldığı."
+            },
+            "consumption": {
+                "title": "Gerçekte ne tüketiyorsun?",
+                "desc": "İçeriklerin yaklaşık oranlarını kavanoz görseliyle gösterir."
+            },
+            "family": {
+                "title": "Ailen için",
+                "desc": "Her aile üyesine diyetine ve alerjenlerine göre ayrı puan. Dokununca nedenini görürsün."
+            },
+            "details": {
+                "title": "Ayrıntılı analiz",
+                "desc": "İçerikler, katkı maddeleri ve besin değerleri. Kartlara dokunarak ayrıntıyı açabilirsin."
+            },
+            "compare": {
+                "title": "Karşılaştır",
+                "desc": "Bu ürünü geçmişindeki başka bir ürünle yan yana koy, hangisi daha iyi gör."
+            },
+            "guru": {
+                "title": "Guru'ya sor",
+                "desc": "Bu ürünle ilgili aklına takılanı sor. Guru ürünün analizini bilerek cevaplar."
+            }
+        },
+        "guru": {
+            "product": {
+                "title": "Bir ürün seç",
+                "desc": "Son taramalarından birini seçersen Guru o ürüne göre cevap verir."
+            },
+            "suggestions": {
+                "title": "Hazır sorular",
+                "desc": "Nereden başlayacağını bilmiyorsan bir öneriye dokun."
+            },
+            "input": {
+                "title": "Serbestçe yaz",
+                "desc": "Diyet, alerjen, katkı maddesi ya da tarif. Gıdayla ilgili her şeyi sorabilirsin."
+            }
+        },
+        "nutrition": {
+            "profile": {
+                "title": "Senin profilin",
+                "desc": "Adın, avatarın ve sana özel ayarların burada."
+            },
+            "family": {
+                "title": "Aile profilleri",
+                "desc": "Çocuğunu, eşini ya da anneni ekle. Taramalarda her biri için ayrı uyum puanı görürsün."
+            },
+            "diet": {
+                "title": "Diyetin",
+                "desc": "Vegan, glutensiz ya da keto. Seçtiğin diyete uymayan ürünler uyarı alır."
+            },
+            "allergens": {
+                "title": "Alerjenler",
+                "desc": "Seçtiğin alerjeni içeren üründe uyum puanı sıfıra iner ve kırmızı uyarı çıkar."
+            }
+        },
+        "encyclopedia": {
+            "tabs": {
+                "title": "Üç rehber",
+                "desc": "Katkı maddeleri, NOVA işlenme grupları ve Nutri-Score. Sekmeler arasında yana kaydırarak da geçebilirsin."
+            },
+            "search": {
+                "title": "Kodu ara",
+                "desc": "Etikette gördüğün E kodunu ya da adını yaz, ne olduğunu ve riskini öğren."
+            },
+            "info": {
+                "title": "Tanıtım burada",
+                "desc": "Bu sayfanın tanıtımını yeniden görmek istersen bu simgeye dokun."
+            }
+        }
     }
 }

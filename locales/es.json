@@ -886,5 +886,118 @@
         "sodium": "Sodio",
         "satfat": "Grasa saturada",
         "note": "Los valores se basan en datos de la etiqueta o base de datos y pueden faltar en algunos productos."
+    },
+    "tour": {
+        "next": "Siguiente",
+        "skip": "Omitir",
+        "done": "Empecemos",
+        "replay": "Mostrar consejos de uso otra vez",
+        "replayDone": "Los consejos se mostrarán de nuevo la primera vez que abras cada página.",
+        "home": {
+            "modes": {
+                "title": "Tres formas de escanear",
+                "desc": "Foto de la etiqueta, código de barras o texto de ingredientes. Elige la que tengas."
+            },
+            "scan": {
+                "title": "Fotografía los ingredientes",
+                "desc": "Encuadra la lista de ingredientes. Se lee cada uno, se marcan los aditivos y se calcula la puntuación de seguridad."
+            },
+            "anywhere": {
+                "title": "Escanea desde cualquier sitio",
+                "desc": "El botón naranja de abajo te lleva directo a escanear desde cualquier página."
+            },
+            "profile": {
+                "title": "Puntuación a tu medida",
+                "desc": "Añade tu dieta, alérgenos y familia en la pestaña Nutrición. Cada producto se puntúa para cada uno."
+            },
+            "history": {
+                "title": "Tu historial",
+                "desc": "Cada producto escaneado se guarda. También puedes abrirlo deslizando a la izquierda desde el borde derecho."
+            },
+            "guru": {
+                "title": "Pregunta a Guru",
+                "desc": "Pregunta lo que quieras sobre un producto o ingrediente. Guru responde de forma sencilla según tu perfil."
+            },
+            "encyclopedia": {
+                "title": "Enciclopedia",
+                "desc": "Guía de aditivos, NOVA y Nutri-Score. Busca un código que viste en una etiqueta."
+            }
+        },
+        "result": {
+            "score": {
+                "title": "Puntuación de seguridad",
+                "desc": "Sobre 100. Se tienen en cuenta aditivos, procesamiento, azúcar, sal y grasa. Con perfil, aparece también la compatibilidad."
+            },
+            "summary": {
+                "title": "Veredicto",
+                "desc": "Resumen del producto y por qué obtuvo esta puntuación."
+            },
+            "consumption": {
+                "title": "¿Qué comes en realidad?",
+                "desc": "Muestra la proporción aproximada de cada ingrediente en un frasco."
+            },
+            "family": {
+                "title": "Para tu familia",
+                "desc": "Una puntuación para cada miembro según su dieta y alérgenos. Toca para ver por qué."
+            },
+            "details": {
+                "title": "Análisis detallado",
+                "desc": "Ingredientes, aditivos y valores nutricionales. Toca una tarjeta para ver el detalle."
+            },
+            "compare": {
+                "title": "Comparar",
+                "desc": "Pon este producto junto a otro de tu historial y mira cuál es mejor."
+            },
+            "guru": {
+                "title": "Pregunta a Guru",
+                "desc": "Pregunta lo que quieras sobre este producto. Guru responde conociendo su análisis."
+            }
+        },
+        "guru": {
+            "product": {
+                "title": "Elige un producto",
+                "desc": "Si eliges uno de tus escaneos recientes, Guru responde sobre ese producto."
+            },
+            "suggestions": {
+                "title": "Preguntas listas",
+                "desc": "¿No sabes por dónde empezar? Toca una sugerencia."
+            },
+            "input": {
+                "title": "Escribe libremente",
+                "desc": "Dieta, alérgenos, aditivos o recetas. Pregunta lo que quieras sobre alimentos."
+            }
+        },
+        "nutrition": {
+            "profile": {
+                "title": "Tu perfil",
+                "desc": "Tu nombre, avatar y ajustes personales están aquí."
+            },
+            "family": {
+                "title": "Perfiles familiares",
+                "desc": "Añade a tu hijo, pareja o padres. Cada escaneo muestra una compatibilidad para cada uno."
+            },
+            "diet": {
+                "title": "Tu dieta",
+                "desc": "Vegana, sin gluten o keto. Los productos que no encajan reciben un aviso."
+            },
+            "allergens": {
+                "title": "Alérgenos",
+                "desc": "Si un producto contiene un alérgeno elegido, su compatibilidad baja a cero con un aviso rojo."
+            }
+        },
+        "encyclopedia": {
+            "tabs": {
+                "title": "Tres guías",
+                "desc": "Aditivos, grupos NOVA y Nutri-Score. Desliza de lado para cambiar de pestaña."
+            },
+            "search": {
+                "title": "Busca un código",
+                "desc": "Escribe un número E o un nombre de la etiqueta para saber qué es y su riesgo."
+            },
+            "info": {
+                "title": "La introducción está aquí",
+                "desc": "Toca este icono para ver de nuevo la introducción de esta página."
+            }
+        }
     }
 }

@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { AppColors } from "../../constants/colors";
 import { useAuth } from "../../context/AuthContext";
 import AuthModal from "../profile/AuthModal";
+import { useTourTarget } from "../tour/TourContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LANGUAGE_STORAGE_KEY } from "../../lib/i18n";
 import { useTheme } from "../../context/ThemeContext";
@@ -21,6 +22,7 @@ export default function Header({ onHistoryPress }: HeaderProps) {
   const { isPremium, user, userProfile } = useAuth();
   const { colors, isDark, toggleTheme } = useTheme();
   const [showAuth, setShowAuth] = useState(false);
+  const historyTarget = useTourTarget("home.history");
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
   const toggleLanguage = () => {
@@ -80,12 +82,14 @@ export default function Header({ onHistoryPress }: HeaderProps) {
           )}
         </Pressable>
 
-        <Pressable
-          style={({ pressed }) => [styles.iconButton, pressed && styles.buttonPressed]}
-          onPress={onHistoryPress}
-        >
-          <MaterialCommunityIcons name="history" size={22} color={colors.secondary} />
-        </Pressable>
+        <View {...historyTarget}>
+          <Pressable
+            style={({ pressed }) => [styles.iconButton, pressed && styles.buttonPressed]}
+            onPress={onHistoryPress}
+          >
+            <MaterialCommunityIcons name="history" size={22} color={colors.secondary} />
+          </Pressable>
+        </View>
 
         <Pressable
           style={({ pressed }) => [styles.langButton, pressed && styles.buttonPressed]}

@@ -38,6 +38,9 @@ import LimitWarningModal from "../../components/ui/LimitWarningModal";
 import { useShell } from "../../context/ShellContext";
 import * as haptics from "../../lib/haptics";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useIsFocused } from "@react-navigation/native";
+import { useTour, useTourScroll, useTourTarget } from "../../components/tour/TourContext";
+import { NUTRITION_TOUR } from "../../components/tour/tours";
 import { OnboardingModal } from "../../components/ui/OnboardingModal";
 import PaywallModal from "../../components/ui/PaywallModal";
 import { useTheme } from "../../context/ThemeContext";
@@ -158,11 +161,18 @@ export default function NutritionScreen() {
   const { openSidebar } = useShell();
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  React.useEffect(() => {
-    AsyncStorage.getItem("@nutrition_onboarding_shown_v1").then(shown => {
-      if (shown !== "true") setShowOnboarding(true);
-    });
-  }, []);
+  // Karşılama ekranı artık kendiliğinden açılmaz (info simgesinden açılır); ilk girişte kullanım turu çalışır.
+  const isFocused = useIsFocused();
+  const tourScroll = useTourScroll("nutrition");
+  const profileTarget = useTourTarget("nutrition.profile");
+  const familyTarget = useTourTarget("nutrition.family");
+  const dietTarget = useTourTarget("nutrition.diet");
+  const allergensTarget = useTourTarget("nutrition.allergens");
+  useTour("nutrition", NUTRITION_TOUR, {
+    ready:
+      isFocused && !showOnboarding && !showFamilyModal && !showDietModal && !showAllergenModal &&
+      !showAvatarModal && !showLimitModal && !showPaywall,
+  });
 
   const handleOnboardingFinish = async () => {
     await AsyncStorage.setItem("@nutrition_onboarding_shown_v1", "true");
@@ -464,7 +474,7 @@ export default function NutritionScreen() {
           </View>
 
           {/* Profile Card */}
-          <View style={styles.profileContainer}>
+          <View {...profileTarget} style={styles.profileContainer}>
             {(() => {
               const mainUser = familyMembers.find(m => m.id === "main_user") || familyMembers[0];
               return (
@@ -502,13 +512,14 @@ export default function NutritionScreen() {
 
       {/* --- CONTENT --- */}
       <ScrollView
+        {...tourScroll}
         style={styles.scrollContainer}
         contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
 
         {/* FAMILY PROFILES */}
-        <View style={styles.section}>
+        <View {...familyTarget} style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{t("nutrition.family.title")}</Text>
             <TouchableOpacity onPress={openAddModal} style={styles.actionButton}>
@@ -553,7 +564,7 @@ export default function NutritionScreen() {
         </View>
 
         {/* DIET SECTION */}
-        <View style={styles.section}>
+        <View {...dietTarget} style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{t("nutrition.dietTitle")}</Text>
             <TouchableOpacity onPress={() => setShowDietModal(true)} style={styles.actionButton}>
@@ -564,7 +575,7 @@ export default function NutritionScreen() {
         </View>
 
         {/* ALLERGENS SECTION */}
-        <View style={styles.section}>
+        <View {...allergensTarget} style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{t("nutrition.allergenTitle")}</Text>
             <TouchableOpacity onPress={() => setShowAllergenModal(true)} style={styles.actionButton}>

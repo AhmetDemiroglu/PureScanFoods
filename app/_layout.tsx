@@ -20,6 +20,7 @@ import { ThemeProvider, useTheme } from "../context/ThemeContext";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import AnimatedSplash from "../components/brand/AnimatedSplash";
+import { TourProvider } from "../components/tour/TourContext";
 import { ShellProvider } from "../context/ShellContext";
 import AppShellSidebar from "../components/shell/AppShellSidebar";
 
@@ -81,6 +82,8 @@ function AppShell() {
     boolean | null
   >(null);
   const [splashDone, setSplashDone] = useState(false);
+  // Kullanım turu ATT kararından sonra başlar; ikisi aynı anda ekrana gelmesin.
+  const [trackingSettled, setTrackingSettled] = useState(false);
   const { isDark, isReady } = useTheme();
 
   // Custom fontlar runtime'da yüklenir (prebuild gerekmez). Türkçe tam destekli.
@@ -118,7 +121,7 @@ function AppShell() {
   // iOS, ekranda geçiş varken gelen ATT dialogunu sessizce düşürüyor (Apple 2.1 reddi).
   useEffect(() => {
     if (splashDone && hasAcceptedDisclaimer === true) {
-      ensureTrackingDecision();
+      ensureTrackingDecision().finally(() => setTrackingSettled(true));
     }
   }, [splashDone, hasAcceptedDisclaimer]);
 
@@ -149,7 +152,7 @@ function AppShell() {
   return (
     <>
       {appReady && (
-        <>
+        <TourProvider gateOpen={splashDone && hasAcceptedDisclaimer === true && trackingSettled}>
           <AppShellSidebar>
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
@@ -175,7 +178,7 @@ function AppShell() {
             visible={splashDone && hasAcceptedDisclaimer === false}
             onAccept={handleOnboardingAccept}
           />
-        </>
+        </TourProvider>
       )}
       <StatusBar style={splashDone ? (isDark ? "light" : "dark") : "dark"} />
       {splash}
