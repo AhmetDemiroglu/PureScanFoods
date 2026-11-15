@@ -3,7 +3,7 @@
 // üstünden geçer, çevresinde nefes alan halka ve dışa yayılan dalga var. Delik adımdan adıma yayla akar.
 
 import React, { useEffect, useMemo } from "react";
-import { Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
@@ -43,12 +43,14 @@ type Props = {
   index: number;
   total: number;
   rect: TourRect;
+  /** Tur katmanının kendi boyutu. rect bu katmana göredir (pencere ölçüsü kullanılmaz). */
+  frame: { w: number; h: number };
   onNext: () => void;
   onSkip: () => void;
 };
 
-export default function SpotlightOverlay({ step, index, total, rect, onNext, onSkip }: Props) {
-  const { width: W, height: H } = useWindowDimensions();
+export default function SpotlightOverlay({ step, index, total, rect, frame, onNext, onSkip }: Props) {
+  const { w: W, h: H } = frame;
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
   const { t } = useTranslation();
@@ -102,7 +104,7 @@ export default function SpotlightOverlay({ step, index, total, rect, onNext, onS
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Adım değişince: delik yayla yeni hedefe akar, köşeler yeniden oturur, tarama çizgisi bir kez geçer.
+  // Delik yayla yeni ölçüye akar (adım değişimi ya da canlı izlemede hedefin yer değiştirmesi).
   useEffect(() => {
     const go = (v: { value: number }, to: number) => {
       v.value = reduce ? withTiming(to, { duration: 180 }) : withSpring(to, SPRING);
@@ -112,12 +114,18 @@ export default function SpotlightOverlay({ step, index, total, rect, onNext, onS
     go(hw, hole.w);
     go(hh, hole.h);
     go(hr, hole.r);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hole]);
+
+  // Köşeler ve tarama çizgisi yalnız ADIM değişince yeniden oynar. Hedef canlı izlendiği için delik
+  // ölçüsü adım içinde de değişebilir (banner gelir, düzen oturur); o zaman yalnız konum akar.
+  useEffect(() => {
     corners.value = 0;
     corners.value = withDelay(reduce ? 0 : 160, withSpring(1, { damping: 13, stiffness: 190 }));
     scan.value = 0;
     if (!reduce) scan.value = withDelay(260, withTiming(1, { duration: 760, easing: Easing.inOut(Easing.cubic) }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hole]);
+  }, [index, step.target]);
 
   // Karartma: dış dikdörtgen + yuvarlatılmış delik, evenodd ile.
   const dimProps = useAnimatedProps(() => {

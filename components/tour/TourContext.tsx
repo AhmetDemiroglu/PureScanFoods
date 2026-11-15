@@ -4,11 +4,15 @@
 // Kullanım:
 //   const t = useTourTarget("home.tabs");   <View ref={t.ref} collapsable={false}>...</View>
 //   useTour("home", HOME_STEPS, { ready: isFocused });
-// Hedef ölçüsü measureInWindow ile tur anında alınır. Ekran dışındaki hedef için ekran
-// useTourScroll ile kaydırma kabını bildirir; tur hedefi görünür alana kaydırır.
+// Hedef ölçüsü tur katmanının KENDİ köküne göre alınır (hedef ve katman aynı anda measureInWindow
+// ile ölçülür, fark alınır). Android'de measureInWindow durum çubuğu kadar kayık değer döndürebiliyor
+// (kenardan kenara çizim, kesik, gezinme çubuğu türüne göre değişir); iki ölçüm aynı sistemde olduğu
+// için kayma birbirini götürür. Tur açıkken hedef 250 ms'de bir yeniden ölçülür: banner gelmesi,
+// yazı tipi yüklenmesi, klavye gibi sonradan olan düzen değişimlerinde vurgu hedefi izler.
+// Ekran dışındaki hedef için ekran useTourScroll ile kaydırma kabını bildirir; tur hedefi görünür alana kaydırır.
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { ScrollView, View, useWindowDimensions, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
+import { ScrollView, StyleSheet, View, useWindowDimensions, LayoutChangeEvent, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import SpotlightOverlay from "./SpotlightOverlay";
 import type { TourStep } from "./tours";
@@ -35,7 +39,7 @@ const TourCtx = createContext<Ctx | null>(null);
 
 // Ekrandan ayrılmış görünümde measureInWindow geri dönüşü hiç çağrılmayabiliyor:
 // 400 ms içinde cevap gelmezse hedef yok sayılır (tur takılıp dokunuşları yutmasın).
-const measure = (node: View | null): Promise<TourRect | null> =>
+const measureWindow = (node: View | null): Promise<TourRect | null> =>
   new Promise((resolve) => {
     if (!node) return resolve(null);
     let done = false;
@@ -56,12 +60,41 @@ const measure = (node: View | null): Promise<TourRect | null> =>
     }
   });
 
+/** Hedefin, tur katmanının köküne göre konumu. İki ölçüm aynı anda alınır, sistem kayması birbirini götürür. */
+const measureIn = async (node: View | null, host: View | null): Promise<TourRect | null> => {
+  const [r, h] = await Promise.all([measureWindow(node), measureWindow(host)]);
+  if (!r) return null;
+  return { x: r.x - (h?.x ?? 0), y: r.y - (h?.y ?? 0), w: r.w, h: r.h };
+};
+
+const sameRect = (a: TourRect | null, b: TourRect | null) =>
+  !!a && !!b && Math.abs(a.x - b.x) < 0.75 && Math.abs(a.y - b.y) < 0.75 && Math.abs(a.w - b.w) < 0.75 && Math.abs(a.h - b.h) < 0.75;
+
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export function TourProvider({ children, gateOpen }: { children: React.ReactNode; gateOpen: boolean }) {
   const targets = useRef(new Map<string, View>());
   const scrollers = useRef(new Map<string, Scroller>());
-  const { height: H } = useWindowDimensions();
+  const win = useWindowDimensions();
+  // Tur katmanının kökü: her zaman ekranda (dokunuş almaz), ölçümlerin başvuru noktası ve boyutu.
+  const host = useRef<View | null>(null);
+  const [frame, setFrame] = useState<{ w: number; h: number } | null>(null);
+  const onHostLayout = useCallback((e: LayoutChangeEvent) => {
+    const { width, height } = e.nativeEvent.layout;
+    setFrame((f) => (f && Math.abs(f.w - width) < 0.5 && Math.abs(f.h - height) < 0.5 ? f : { w: width, h: height }));
+  }, []);
+  const W = frame?.w ?? win.width;
+  const H = frame?.h ?? win.height;
+  const measure = useCallback((node: View | null) => measureIn(node, host.current), []);
+  // Uzun hedefler ekranın %42'siyle sınırlanır: açıklama kartı görünür kalsın.
+  const clampRect = useCallback(
+    (r: TourRect): TourRect => {
+      const top = Math.max(r.y, 8);
+      const bottom = Math.min(r.y + r.h, top + H * 0.42);
+      return { x: r.x, y: top, w: r.w, h: Math.max(36, bottom - top) };
+    },
+    [H],
+  );
 
   const [tour, setTour] = useState<{ id: string; steps: TourStep[] } | null>(null);
   const [index, setIndex] = useState(0);
@@ -125,10 +158,7 @@ export function TourProvider({ children, gateOpen }: { children: React.ReactNode
         }
         if (cancelled) return;
         if (r) {
-          // Uzun hedefler ekranın %42'siyle sınırlanır: açıklama kartı görünür kalsın.
-          const top = Math.max(r.y, 8);
-          const bottom = Math.min(r.y + r.h, top + H * 0.42);
-          setRect({ x: r.x, y: top, w: r.w, h: Math.max(36, bottom - top) });
+          setRect(clampRect(r));
           if (i !== index) setIndex(i);
           break;
         }
@@ -145,6 +175,30 @@ export function TourProvider({ children, gateOpen }: { children: React.ReactNode
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tour, index]);
 
+  // Canlı izleme: adım ekrandayken hedef yeniden ölçülür, yeri ya da boyutu değiştiyse delik oraya akar.
+  // Ekran boyutu değişince (döndürme, bölünmüş ekran) de aynı döngü yeni ölçüyü alır.
+  useEffect(() => {
+    if (!tour || measuring) return;
+    const node = targets.current.get(tour.steps[index]?.target) ?? null;
+    if (!node) return;
+    let cancelled = false;
+    let busy = false;
+    const tick = async () => {
+      if (busy) return;
+      busy = true;
+      const r = await measure(node);
+      busy = false;
+      if (cancelled || !r) return;
+      const nextRect = clampRect(r);
+      setRect((cur) => (sameRect(cur, nextRect) ? cur : nextRect));
+    };
+    const id = setInterval(tick, 250);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [tour, index, measuring, measure, clampRect]);
+
   const next = useCallback(() => {
     if (!tour || measuring) return;
     if (index < tour.steps.length - 1) setIndex(index + 1);
@@ -159,16 +213,25 @@ export function TourProvider({ children, gateOpen }: { children: React.ReactNode
   return (
     <TourCtx.Provider value={value}>
       {children}
-      {tour && rect ? (
-        <SpotlightOverlay
-          step={tour.steps[index]}
-          index={index}
-          total={tour.steps.length}
-          rect={rect}
-          onNext={next}
-          onSkip={finish}
-        />
-      ) : null}
+      <View
+        ref={host}
+        collapsable={false}
+        onLayout={onHostLayout}
+        style={StyleSheet.absoluteFill}
+        pointerEvents={tour && rect ? "box-none" : "none"}
+      >
+        {tour && rect ? (
+          <SpotlightOverlay
+            step={tour.steps[index]}
+            index={index}
+            total={tour.steps.length}
+            rect={rect}
+            frame={{ w: W, h: H }}
+            onNext={next}
+            onSkip={finish}
+          />
+        ) : null}
+      </View>
     </TourCtx.Provider>
   );
 }
