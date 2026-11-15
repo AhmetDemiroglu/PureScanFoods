@@ -72,7 +72,7 @@
             "barcode": "Ex: 869052..."
         },
         "actions": {
-            "scanIngredients": "Scan Ingredients",
+            "scanIngredients": "Snap Ingredients",
             "scanBarcode": "Scan Barcode",
             "enterText": "Paste ingredient list here...",
             "analyzeText": "Analyze",

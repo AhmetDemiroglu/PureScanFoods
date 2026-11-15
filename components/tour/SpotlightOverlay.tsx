@@ -14,7 +14,6 @@ import Animated, {
   FadeIn,
   FadeInDown,
   FadeInUp,
-  FadeOut,
   cancelAnimation,
   useAnimatedProps,
   useAnimatedStyle,
@@ -136,34 +135,24 @@ export default function SpotlightOverlay({ step, index, total, rect, onNext, onS
 
   const dimStyle = useAnimatedStyle(() => ({ opacity: dim.value }));
 
-  const ringStyle = useAnimatedStyle(() => {
-    const s = 1 + breathe.value * 0.025;
-    return {
-      left: hx.value,
-      top: hy.value,
-      width: hw.value,
-      height: hh.value,
-      borderRadius: hr.value,
-      transform: [{ scale: s }],
-    };
-  });
-
-  const rippleStyle = useAnimatedStyle(() => ({
+  // ÖNEMLİ (performans): konum/boyut (left, top, width, height) yalnız adım geçişindeki yaylarla değişir.
+  // Sürekli dönen nefes ve dalga animasyonları yalnız transform ve opacity değiştirir: bunlar UI
+  // thread'de doğrudan uygulanır. Önceden sonsuz animasyon her karede konum/boyutu da yazıyordu;
+  // telefonda her karede tüm ağacın yerleşimi yeniden hesaplanıyor, React güncellemeleri sıraya
+  // giriyordu ve tur kapandıktan sonra dokunuşlar saniyelerce gecikiyordu.
+  const frameStyle = useAnimatedStyle(() => ({
     left: hx.value,
     top: hy.value,
     width: hw.value,
     height: hh.value,
-    borderRadius: hr.value,
+  }));
+  const radiusStyle = useAnimatedStyle(() => ({ borderRadius: hr.value }));
+  const breatheStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: 1 + breathe.value * 0.025 }],
+  }));
+  const rippleStyle = useAnimatedStyle(() => ({
     opacity: (1 - ripple.value) * 0.55,
     transform: [{ scale: 1 + ripple.value * 0.16 }],
-  }));
-
-  const clipStyle = useAnimatedStyle(() => ({
-    left: hx.value,
-    top: hy.value,
-    width: hw.value,
-    height: hh.value,
-    borderRadius: hr.value,
   }));
 
   const scanStyle = useAnimatedStyle(() => ({
@@ -218,9 +207,11 @@ export default function SpotlightOverlay({ step, index, total, rect, onNext, onS
       </Pressable>
 
       {/* Dalga, halka, tarama çizgisi, köşeler */}
-      <Animated.View pointerEvents="none" style={[styles.ripple, rippleStyle]} />
-      <Animated.View pointerEvents="none" style={[styles.ring, ringStyle]} />
-      <Animated.View pointerEvents="none" style={[styles.clip, clipStyle]}>
+      <Animated.View pointerEvents="none" style={[styles.frame, frameStyle]}>
+        <Animated.View style={[styles.ripple, radiusStyle, rippleStyle]} />
+        <Animated.View style={[styles.ring, radiusStyle, breatheStyle]} />
+      </Animated.View>
+      <Animated.View pointerEvents="none" style={[styles.clip, frameStyle, radiusStyle]}>
         <Animated.View style={[styles.scanWrap, scanStyle]}>
           <LinearGradient
             colors={["rgba(242,96,12,0)", "rgba(242,96,12,0.28)", "rgba(242,96,12,0)"]}
@@ -239,7 +230,9 @@ export default function SpotlightOverlay({ step, index, total, rect, onNext, onS
       <Animated.View pointerEvents="none" style={[styles.corner, styles.cBL, bl]} />
       <Animated.View pointerEvents="none" style={[styles.corner, styles.cBR, br]} />
 
-      {/* Açıklama kartı */}
+      {/* Açıklama kartı. Kapanış (exiting) animasyonu BİLEREK yok: Reanimated, çıkış animasyonu süren
+          çocuğu yüzünden kaldırılan tur katmanını (tam ekran dokunma alanı dahil) görünmez halde ekranda
+          tutuyordu; tur bitince dokunuşlar saniyelerce yutuluyordu. */}
       <Animated.View
         key={`${index}-${placeBelow ? "b" : "a"}`}
         entering={
@@ -247,7 +240,6 @@ export default function SpotlightOverlay({ step, index, total, rect, onNext, onS
             ? FadeIn.duration(150)
             : (placeBelow ? FadeInDown : FadeInUp).springify().damping(16).stiffness(170).delay(120)
         }
-        exiting={FadeOut.duration(110)}
         style={[styles.card, { width: cardW, left: cardLeft }, cardPos]}
       >
         <View
@@ -305,8 +297,11 @@ export default function SpotlightOverlay({ step, index, total, rect, onNext, onS
 
 const createStyles = (colors: any, isDark: boolean) =>
   StyleSheet.create({
-    ring: {
+    frame: {
       position: "absolute",
+    },
+    ring: {
+      ...StyleSheet.absoluteFillObject,
       borderWidth: 2,
       borderColor: colors.primary,
       shadowColor: colors.primary,
@@ -315,7 +310,7 @@ const createStyles = (colors: any, isDark: boolean) =>
       shadowOffset: { width: 0, height: 0 },
     },
     ripple: {
-      position: "absolute",
+      ...StyleSheet.absoluteFillObject,
       borderWidth: 2,
       borderColor: "#FFB27A",
     },

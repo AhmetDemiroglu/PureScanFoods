@@ -72,7 +72,7 @@
             "barcode": "Ej: 869052..."
         },
         "actions": {
-            "scanIngredients": "Escanear Ingredientes",
+            "scanIngredients": "Fotografiar Ingredientes",
             "scanBarcode": "Escanear Código",
             "enterText": "Pega la lista de ingredientes aquí...",
             "analyzeText": "Analizar",

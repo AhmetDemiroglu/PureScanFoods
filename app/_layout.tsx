@@ -125,10 +125,11 @@ function AppShell() {
     }
   }, [splashDone, hasAcceptedDisclaimer]);
 
-  const handleOnboardingAccept = async () => {
-    await AsyncStorage.setItem(APP_ONBOARDING_ACCEPTED_KEY, "true");
+  const handleOnboardingAccept = () => {
+    // Ekran ANINDA kapanır, kayıt arkada yazılır (depolama yavaşken düğme tepkisiz kalmasın).
     // ATT izni yukarıdaki effect ile sorulur (kullanıcı uygulama bağlamını anladıktan sonra).
     setHasAcceptedDisclaimer(true);
+    AsyncStorage.setItem(APP_ONBOARDING_ACCEPTED_KEY, "true").catch(() => {});
   };
 
   const appReady = isReady && fontsLoaded;
