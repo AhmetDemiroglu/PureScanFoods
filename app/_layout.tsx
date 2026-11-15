@@ -18,8 +18,13 @@ import { preloadAds } from "../lib/admob";
 import { AppOnboardingModal } from "../components/ui/AppOnboardingModal";
 import { ThemeProvider, useTheme } from "../context/ThemeContext";
 import { useFonts } from "expo-font";
+import * as SplashScreen from "expo-splash-screen";
+import AnimatedSplash from "../components/brand/AnimatedSplash";
 import { ShellProvider } from "../context/ShellContext";
 import AppShellSidebar from "../components/shell/AppShellSidebar";
+
+// Yerel açılış ekranı, hareketli açılışın ilk karesi çizilene kadar kalır (geçiş görünmesin).
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const APP_ONBOARDING_ACCEPTED_KEY = "@app_onboarding_disclaimer_accepted_v1";
 export const ATT_STATUS_KEY = "@purescan_att_status";
@@ -60,7 +65,8 @@ async function ensureTrackingDecision(): Promise<void> {
       status = result.status;
     }
 
-    const persisted = status === PermissionStatus.GRANTED ? "granted" : "denied";
+    const persisted =
+      status === PermissionStatus.GRANTED ? "granted" : "denied";
     await AsyncStorage.setItem(ATT_STATUS_KEY, persisted);
   } catch (err) {
     if (__DEV__) console.warn("[ATT] tracking decision failed:", err);
@@ -68,7 +74,10 @@ async function ensureTrackingDecision(): Promise<void> {
 }
 
 function AppShell() {
-  const [hasAcceptedDisclaimer, setHasAcceptedDisclaimer] = useState<boolean | null>(null);
+  const [hasAcceptedDisclaimer, setHasAcceptedDisclaimer] = useState<
+    boolean | null
+  >(null);
+  const [splashDone, setSplashDone] = useState(false);
   const { isDark, isReady } = useTheme();
 
   // Custom fontlar runtime'da yüklenir (prebuild gerekmez). Türkçe tam destekli.
@@ -91,10 +100,6 @@ function AppShell() {
         if (!mounted) return;
         const accepted = value === "true";
         setHasAcceptedDisclaimer(accepted);
-        // Onboarding zaten kabul edilmişse ATT izni hala sorulmadıysa burada tetikle.
-        if (accepted) {
-          await ensureTrackingDecision();
-        }
       })
       .catch(() => {
         if (!mounted) return;
@@ -106,46 +111,71 @@ function AppShell() {
     };
   }, []);
 
+  // ATT izni yalnız açılış animasyonu bittikten sonra ve onboarding kabul edilmişse sorulur:
+  // iOS, ekranda geçiş varken gelen ATT dialogunu sessizce düşürüyor (Apple 2.1 reddi).
+  useEffect(() => {
+    if (splashDone && hasAcceptedDisclaimer === true) {
+      ensureTrackingDecision();
+    }
+  }, [splashDone, hasAcceptedDisclaimer]);
+
   const handleOnboardingAccept = async () => {
     await AsyncStorage.setItem(APP_ONBOARDING_ACCEPTED_KEY, "true");
+    // ATT izni yukarıdaki effect ile sorulur (kullanıcı uygulama bağlamını anladıktan sonra).
     setHasAcceptedDisclaimer(true);
-    // ATT izni onboarding sonrasında sorulur (Apple guideline: kullanıcı uygulama
-    // bağlamını anladıktan sonra istenmeli).
-    await ensureTrackingDecision();
   };
 
-  if (!isReady || !fontsLoaded) {
-    return null;
-  }
+  const appReady = isReady && fontsLoaded;
 
+  const splash = splashDone ? null : (
+    <AnimatedSplash
+      ready={appReady}
+      onFirstFrame={() => {
+        // İki kare bekle: SVG'ler çizilmeden yerel ekran kalkarsa boş bir kare görünür.
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            SplashScreen.hideAsync().catch(() => {});
+          }),
+        );
+      }}
+      onFinish={() => setSplashDone(true)}
+    />
+  );
+
+  // Açılış bileşeni ağaçta hep aynı yerde durur; uygulama hazır olunca yeniden mount olup baştan başlamaz.
   return (
     <>
-      <AppShellSidebar>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
-          <Stack.Screen
-            name="product-result"
-            options={{
-              gestureEnabled: true,
-              gestureDirection: "horizontal",
-              animation: "slide_from_right",
-            }}
+      {appReady && (
+        <>
+          <AppShellSidebar>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
+              <Stack.Screen
+                name="product-result"
+                options={{
+                  gestureEnabled: true,
+                  gestureDirection: "horizontal",
+                  animation: "slide_from_right",
+                }}
+              />
+              <Stack.Screen
+                name="compare"
+                options={{
+                  gestureEnabled: true,
+                  gestureDirection: "horizontal",
+                  animation: "slide_from_right",
+                }}
+              />
+            </Stack>
+          </AppShellSidebar>
+          <AppOnboardingModal
+            visible={splashDone && hasAcceptedDisclaimer === false}
+            onAccept={handleOnboardingAccept}
           />
-          <Stack.Screen
-            name="compare"
-            options={{
-              gestureEnabled: true,
-              gestureDirection: "horizontal",
-              animation: "slide_from_right",
-            }}
-          />
-        </Stack>
-      </AppShellSidebar>
-      <AppOnboardingModal
-        visible={hasAcceptedDisclaimer === false}
-        onAccept={handleOnboardingAccept}
-      />
-      <StatusBar style={isDark ? "light" : "dark"} />
+        </>
+      )}
+      <StatusBar style={splashDone ? (isDark ? "light" : "dark") : "dark"} />
+      {splash}
     </>
   );
 }

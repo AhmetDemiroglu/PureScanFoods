@@ -18,15 +18,17 @@
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                         <subviews>
                             <imageView id="EXPO-SplashScreen" userLabel="SplashScreenLogo" image="SplashScreenLogo" contentMode="scaleAspectFit" clipsSubviews="true" userInteractionEnabled="false" translatesAutoresizingMaskIntoConstraints="false">
-                                <rect key="frame" x="136.5" y="366" width="120" height="120"/>
+                                <rect key="frame" x="110" y="339.5" width="173" height="173"/>
                             </imageView>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="Rmq-lb-GrQ"/>
                         <constraints>
                             <constraint firstItem="EXPO-SplashScreen" firstAttribute="centerX" secondItem="EXPO-ContainerView" secondAttribute="centerX" id="ps-logo-cx"/>
                             <constraint firstItem="EXPO-SplashScreen" firstAttribute="centerY" secondItem="EXPO-ContainerView" secondAttribute="centerY" id="ps-logo-cy"/>
-                            <constraint firstItem="EXPO-SplashScreen" firstAttribute="width" constant="120" id="ps-logo-w"/>
-                            <constraint firstItem="EXPO-SplashScreen" firstAttribute="height" constant="120" id="ps-logo-h"/>
+                            <!-- Hareketli açılışla aynı ölçü (components/brand/AnimatedSplash.tsx splashMarkSize): genişliğin %44'ü, en fazla 220 pt -->
+                            <constraint firstItem="EXPO-SplashScreen" firstAttribute="width" secondItem="EXPO-ContainerView" secondAttribute="width" multiplier="0.44" priority="750" id="ps-logo-w"/>
+                            <constraint firstItem="EXPO-SplashScreen" firstAttribute="width" relation="lessThanOrEqual" constant="220" id="ps-logo-wmax"/>
+                            <constraint firstItem="EXPO-SplashScreen" firstAttribute="height" secondItem="EXPO-SplashScreen" secondAttribute="width" id="ps-logo-h"/>
                         </constraints>
                         <color key="backgroundColor" name="SplashScreenBackground"/>
                     </view>
@@ -37,7 +39,7 @@
         </scene>
     </scenes>
     <resources>
-        <image name="SplashScreenLogo" width="120" height="120"/>
+        <image name="SplashScreenLogo" width="220" height="220"/>
         <systemColor name="systemBackgroundColor">
             <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
         </systemColor>
