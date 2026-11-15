@@ -21,8 +21,8 @@ export type TourStep = {
 // Alt sekme: simge hedef, delik altındaki yazıyı da kapsar.
 const TAB = { padding: 4, grow: { bottom: 17, left: 14, right: 14 } } as const;
 
-// Otomatik turlar yalnız ana ekranda ve ilk sonuçta, kısa tutulur (Ahmet: "eğitime boğmayalım").
-// Guru, Beslenme ve Sözlük turları yalnız o sayfanın info simgesinden açılır.
+// Turlar kısa tutulur (Ahmet: "eğitime boğmayalım"), her sayfada ilk girişte bir kez.
+// Guru, Beslenme ve Sözlük turları ilk girişte kendiliğinden açılır; info simgesi yeniden açar.
 export const HOME_TOUR: TourStep[] = [
   { target: "home.tabs", key: "home.modes", icon: "albums-outline", padding: 6 },
   { target: "home.scan", key: "home.scan", icon: "scan-outline", padding: 6 },

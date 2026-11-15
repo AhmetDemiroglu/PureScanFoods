@@ -37,7 +37,8 @@ import { useAuth } from "../../context/AuthContext";
 import LimitWarningModal from "../../components/ui/LimitWarningModal";
 import { useShell } from "../../context/ShellContext";
 import * as haptics from "../../lib/haptics";
-import { useTourReplay, useTourScroll, useTourTarget } from "../../components/tour/TourContext";
+import { useIsFocused } from "@react-navigation/native";
+import { useTour, useTourReplay, useTourScroll, useTourTarget } from "../../components/tour/TourContext";
 import { NUTRITION_TOUR } from "../../components/tour/tours";
 import PaywallModal from "../../components/ui/PaywallModal";
 import { useTheme } from "../../context/ThemeContext";
@@ -157,12 +158,14 @@ export default function NutritionScreen() {
   const [showPaywall, setShowPaywall] = useState(false);
   const { openSidebar } = useShell();
 
-  // Karşılama ekranı yok: info simgesi bu sayfanın ipuçlarını (vurgulamalı tur) açar.
+  // Karşılama ekranı yok: ilk girişte ipuçları (vurgulamalı tur) kendiliğinden açılır, info simgesi yeniden açar.
   const tourScroll = useTourScroll("nutrition");
   const profileTarget = useTourTarget("nutrition.profile");
   const familyTarget = useTourTarget("nutrition.family");
   const dietTarget = useTourTarget("nutrition.diet");
   const allergensTarget = useTourTarget("nutrition.allergens");
+  const isFocused = useIsFocused();
+  useTour("nutrition", NUTRITION_TOUR, { ready: isFocused && !showFamilyModal && !showDietModal && !showAllergenModal && !showAvatarModal && !showLimitModal && !showPaywall });
   const replayTour = useTourReplay("nutrition", NUTRITION_TOUR);
 
   React.useEffect(() => {

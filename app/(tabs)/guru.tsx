@@ -13,7 +13,8 @@ import { useTranslation } from "react-i18next";
 import { LinearGradient } from "expo-linear-gradient";
 import { AppColors } from "../../constants/colors";
 import { useGuru } from "../../context/GuruContext";
-import { useTourReplay, useTourTarget } from "../../components/tour/TourContext";
+import { useIsFocused } from "@react-navigation/native";
+import { useTour, useTourReplay, useTourTarget } from "../../components/tour/TourContext";
 import { GURU_TOUR } from "../../components/tour/tours";
 import { ChatBubble } from "../../components/guru/ChatBubble";
 import { ProductContextCard } from "../../components/guru/ProductContextCard";
@@ -75,10 +76,12 @@ export default function GuruScreen() {
     const isTr = i18n.language === "tr";
     const isEs = i18n.language?.startsWith("es");
 
-    // Karşılama ekranı yok: info simgesi bu sayfanın ipuçlarını (vurgulamalı tur) açar.
+    // Karşılama ekranı yok: ilk girişte ipuçları (vurgulamalı tur) kendiliğinden açılır, info simgesi yeniden açar.
     const productTarget = useTourTarget("guru.product");
     const suggestionsTarget = useTourTarget("guru.suggestions");
     const inputTarget = useTourTarget("guru.input");
+    const isFocused = useIsFocused();
+    useTour("guru", GURU_TOUR, { ready: isFocused && !showLimitModal && !showPaywall });
     const replayTour = useTourReplay("guru", GURU_TOUR);
 
     // --- EFFECTS ---

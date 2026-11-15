@@ -11,7 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { AppColors } from "../../constants/colors";
 import Header from "../../components/ui/Header";
-import Hero, { HERO_LOGO_ASPECT } from "../../components/ui/Hero";
+import Hero, { HERO_MARK_GAP, HERO_WORDMARK_ASPECT } from "../../components/ui/Hero";
 import BrandLogo from "../../components/brand/BrandLogo";
 import { callGemini } from "../../lib/api";
 import { TempStore } from "../../lib/tempStore";
@@ -102,30 +102,31 @@ export default function ScanScreen() {
   const scrollRef = useRef<ScrollView>(null);
 
   // Ana ekran kaymadan sığsın: logo ve boşluklar kalan yüksekliğe göre ayarlanır.
-  // Sıra: önce boşluk daralır, sonra logo küçülür, en son alt başlık gizlenir.
+  // Sıra: önce boşluk daralır, sonra simge küçülür, en son alt başlık gizlenir.
   // Çok büyük yazı boyutu gibi uç durumlarda içerik yine sığmazsa ScrollView kaymaya başlar.
   const [viewportH, setViewportH] = useState(0);
   const [cardH, setCardH] = useState(0);
   const heroLayout = useMemo(() => {
     const fontScale = Math.min(PixelRatio.getFontScale(), 1.8);
-    const maxLogoW = Math.min(width - 56, 460);
-    const minLogoW = Math.min(maxLogoW, 190);
+    // Simge ortada büyük, altında "PureScan | FOODS" yazısı (genişliği simgeye bağlı).
+    const maxMark = Math.min(width * 0.46, 210);
+    const minMark = 72;
+    const wordFor = (mark: number) => Math.min(width - 64, 400, Math.max(200, mark * 1.9));
     const headline = 22 * 1.35 * fontScale + 8;
     const sub = 14 * 1.45 * fontScale + 6;
     const logoGap = 18;
-    if (!viewportH || !cardH) return { logoW: maxLogoW, gap: 40, showSub: true };
+    const fallback = { mark: Math.min(maxMark, 150), word: wordFor(Math.min(maxMark, 150)), gap: 32, showSub: true };
+    if (!viewportH || !cardH) return fallback;
     const room = viewportH - cardH - 24;
-    const need = (w: number, g: number, s: boolean) => w / HERO_LOGO_ASPECT + logoGap + headline + (s ? sub : 0) + g;
+    const need = (m: number, g: number, s: boolean) =>
+      m + HERO_MARK_GAP + wordFor(m) / HERO_WORDMARK_ASPECT + logoGap + headline + (s ? sub : 0) + g;
     let gap = 40;
-    let logoW = maxLogoW;
+    let mark = maxMark;
     let showSub = true;
-    if (need(logoW, gap, showSub) > room) gap = Math.max(18, gap - (need(logoW, gap, showSub) - room));
-    if (need(logoW, gap, showSub) > room) {
-      const over = need(logoW, gap, showSub) - room;
-      logoW = Math.max(minLogoW, logoW - over * HERO_LOGO_ASPECT);
-    }
-    if (need(logoW, gap, showSub) > room) showSub = false;
-    return { logoW, gap, showSub };
+    if (need(mark, gap, showSub) > room) gap = Math.max(18, gap - (need(mark, gap, showSub) - room));
+    if (need(mark, gap, showSub) > room) mark = Math.max(minMark, mark - (need(mark, gap, showSub) - room));
+    if (need(mark, gap, showSub) > room) showSub = false;
+    return { mark, word: wordFor(mark), gap, showSub };
   }, [width, viewportH, cardH]);
 
   // Kullanım turu: ilk girişte tarama yolları, alt çubuk ve geçmiş vurgulanır.
@@ -511,7 +512,7 @@ export default function ScanScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Hero logoWidth={heroLayout.logoW} showSubheadline={heroLayout.showSub} />
+          <Hero markSize={heroLayout.mark} wordmarkWidth={heroLayout.word} showSubheadline={heroLayout.showSub} />
 
           {/* Scan Card */}
           <View

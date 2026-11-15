@@ -9,7 +9,8 @@ import { useTranslation } from "react-i18next";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { AppColors } from "../../constants/colors";
-import { useTourReplay, useTourTarget } from "../../components/tour/TourContext";
+import { useIsFocused } from "@react-navigation/native";
+import { useTour, useTourReplay, useTourTarget } from "../../components/tour/TourContext";
 import { ENCYCLOPEDIA_TOUR } from "../../components/tour/tours";
 import { useShell } from "../../context/ShellContext";
 import * as haptics from "../../lib/haptics";
@@ -106,10 +107,12 @@ export default function AdditivesLibraryScreen() {
     const [expandedNova, setExpandedNova] = useState<NovaGroup | null>(null);
     const { openSidebar } = useShell();
 
-    // Karşılama ekranı yok: info simgesi bu sayfanın ipuçlarını (vurgulamalı tur) açar.
+    // Karşılama ekranı yok: ilk girişte ipuçları (vurgulamalı tur) kendiliğinden açılır, info simgesi yeniden açar.
     const tabsTarget = useTourTarget("encyclopedia.tabs");
     const searchTarget = useTourTarget("encyclopedia.search");
     const infoTarget = useTourTarget("encyclopedia.info");
+    const isFocused = useIsFocused();
+    useTour("encyclopedia", ENCYCLOPEDIA_TOUR, { ready: isFocused && activeTab === "additives" });
     const replayTour = useTourReplay("encyclopedia", ENCYCLOPEDIA_TOUR);
 
     // Sonuç ekranındaki E-koduna tıklanınca: additives sekmesine geç, ilgili katkıyı

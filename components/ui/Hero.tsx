@@ -22,17 +22,21 @@ const GradientText = ({ colors, ...props }: any) => {
   );
 };
 
-/** Yatay logonun (simge + PureScan | FOODS) en/boy oranı. */
-export const HERO_LOGO_ASPECT = 4.7865;
+/** "PureScan | FOODS" yazı logosunun en/boy oranı (brandSvgs wordmark). */
+export const HERO_WORDMARK_ASPECT = 8.8693;
+/** Simge ile yazı arasındaki boşluk. */
+export const HERO_MARK_GAP = 10;
 
 type HeroProps = {
-  /** Logo genişliği: ana ekran, kalan yüksekliğe göre hesaplar. */
-  logoWidth: number;
+  /** Ortadaki portakal simgesinin ölçüsü: ana ekran, kalan yüksekliğe göre hesaplar. */
+  markSize: number;
+  /** Altındaki "PureScan | FOODS" yazısının genişliği. */
+  wordmarkWidth: number;
   /** Çok dar ekranda alt başlık gizlenir. */
   showSubheadline?: boolean;
 };
 
-export default function Hero({ logoWidth, showSubheadline = true }: HeroProps) {
+export default function Hero({ markSize, wordmarkWidth, showSubheadline = true }: HeroProps) {
   const { t } = useTranslation();
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
@@ -58,7 +62,8 @@ export default function Hero({ logoWidth, showSubheadline = true }: HeroProps) {
           },
         ]}
       >
-        <BrandLogo variant="horizontal" width={logoWidth} />
+        <BrandLogo variant="mark" size={markSize} />
+        <BrandLogo variant="wordmark" width={wordmarkWidth} style={{ marginTop: HERO_MARK_GAP }} />
       </Animated.View>
 
       <View style={styles.sloganContainer}>

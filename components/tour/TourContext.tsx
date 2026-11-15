@@ -17,6 +17,8 @@ export type TourRect = { x: number; y: number; w: number; h: number };
 
 const seenKey = (id: string) => `@tour_seen_${id}_v1`;
 const ALL_TOURS_KEY = "@tour_ids_v1";
+// Bu oturumda bitirilen turlar: kayıt arkada yazılırken tur yeniden başlamasın.
+const seenThisSession = new Set<string>();
 
 type Scroller = { ref: React.RefObject<ScrollView | null>; offset: { current: number } };
 
@@ -31,16 +33,26 @@ type Ctx = {
 
 const TourCtx = createContext<Ctx | null>(null);
 
+// Ekrandan ayrılmış görünümde measureInWindow geri dönüşü hiç çağrılmayabiliyor:
+// 400 ms içinde cevap gelmezse hedef yok sayılır (tur takılıp dokunuşları yutmasın).
 const measure = (node: View | null): Promise<TourRect | null> =>
   new Promise((resolve) => {
     if (!node) return resolve(null);
+    let done = false;
+    const finishWith = (r: TourRect | null) => {
+      if (done) return;
+      done = true;
+      resolve(r);
+    };
+    const timer = setTimeout(() => finishWith(null), 400);
     try {
       node.measureInWindow((x, y, w, h) => {
-        if (!w || !h) return resolve(null);
-        resolve({ x, y, w, h });
+        clearTimeout(timer);
+        finishWith(w && h ? { x, y, w, h } : null);
       });
     } catch {
-      resolve(null);
+      clearTimeout(timer);
+      finishWith(null);
     }
   });
 
@@ -71,17 +83,23 @@ export function TourProvider({ children, gateOpen }: { children: React.ReactNode
     setIndex(0);
   }, []);
 
-  const finish = useCallback(async () => {
-    if (tour) {
-      await AsyncStorage.setItem(seenKey(tour.id), "1").catch(() => {});
-      const list = JSON.parse((await AsyncStorage.getItem(ALL_TOURS_KEY).catch(() => null)) || "[]");
-      if (!list.includes(tour.id)) {
-        await AsyncStorage.setItem(ALL_TOURS_KEY, JSON.stringify([...list, tour.id])).catch(() => {});
-      }
-    }
+  // Katman ANINDA kalkar, "görüldü" kaydı arkada yazılır. Önceden kayıt bitmeden katman
+  // kalkmıyordu; depolama yavaşken görünmez katman saniyelerce dokunuşları yutuyordu.
+  const finish = useCallback(() => {
+    const id = tour?.id;
+    if (id) seenThisSession.add(id);
     setTour(null);
     setRect(null);
     setIndex(0);
+    setMeasuring(false);
+    if (!id) return;
+    (async () => {
+      await AsyncStorage.setItem(seenKey(id), "1").catch(() => {});
+      const list = JSON.parse((await AsyncStorage.getItem(ALL_TOURS_KEY).catch(() => null)) || "[]");
+      if (!list.includes(id)) {
+        await AsyncStorage.setItem(ALL_TOURS_KEY, JSON.stringify([...list, id])).catch(() => {});
+      }
+    })();
   }, [tour]);
 
   // Adım değişince hedefi bul, gerekirse kaydır, ölç. Bulunamayan hedef atlanır.
@@ -191,6 +209,7 @@ export function useTour(tourId: string, steps: TourStep[], { ready, delay = 650 
     if (!ctx || !ready || !gateOpen || busy) return;
     let cancelled = false;
     const timer = setTimeout(async () => {
+      if (seenThisSession.has(tourId)) return;
       const seen = await AsyncStorage.getItem(seenKey(tourId)).catch(() => "1");
       if (!cancelled && !seen) ctx.start(tourId, steps);
     }, delay);
@@ -219,5 +238,6 @@ export function useTourReplay(tourId: string, steps: TourStep[]) {
 export async function resetAllTours() {
   const list: string[] = JSON.parse((await AsyncStorage.getItem(ALL_TOURS_KEY).catch(() => null)) || "[]");
   const ids = new Set([...list, "home", "result", "guru", "nutrition", "encyclopedia"]);
+  seenThisSession.clear();
   await AsyncStorage.multiRemove([...ids].map(seenKey)).catch(() => {});
 }
