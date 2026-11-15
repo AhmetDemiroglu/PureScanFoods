@@ -9,6 +9,8 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import {
+  LayoutChangeEvent,
+  Platform,
   StyleSheet,
   View,
   useColorScheme,
@@ -35,9 +37,13 @@ import {
   FOODS_WIDTH_RATIO,
 } from "./splashSvgs";
 
-/** Simge ölçüsü: storyboard'daki kısıtlarla aynı formül. */
+/**
+ * Simge ölçüsü, yerel açılış ekranıyla aynı:
+ * iOS: storyboard kısıtı (genişliğin %44'ü, en fazla 220 pt).
+ * Android: sistem açılış simgesi sabit 180dp (splashscreen_icon: 288dp tuval, 180dp kutu).
+ */
 export const splashMarkSize = (screenWidth: number) =>
-  Math.min(screenWidth * 0.44, 220);
+  Platform.OS === "android" ? 180 : Math.min(screenWidth * 0.44, 220);
 
 // Zamanlama (ms)
 const T = {
@@ -70,7 +76,12 @@ export default function AnimatedSplash({
   onFirstFrame,
   onFinish,
 }: Props) {
-  const { width: W, height: H } = useWindowDimensions();
+  const win = useWindowDimensions();
+  // Konum gerçek kök görünüm ölçüsünden: Android'de pencere ölçüsü sistem çubuklarını dışarıda
+  // bırakabiliyor, yerel açılış simgesi ise tüm ekranın ortasında.
+  const [box, setBox] = useState<{ w: number; h: number } | null>(null);
+  const W = box?.w ?? win.width;
+  const H = box?.h ?? win.height;
   const reduceMotion = useReducedMotion();
   const tone = useColorScheme() === "dark" ? "dark" : "light";
   const art = SPLASH_SVG[tone];
@@ -260,11 +271,19 @@ export default function AnimatedSplash({
     transform: [{ translateY: (1 - foods.value) * 6 }],
   }));
 
-  const handleLayout = () => {
-    if (firstFrameSent.current) return;
+  const handleLayout = (e: LayoutChangeEvent) => {
+    const { width, height } = e.nativeEvent.layout;
+    if (!box || box.w !== width || box.h !== height)
+      setBox({ w: width, h: height });
+  };
+
+  // İlk kare, ölçü alınıp içerik o ölçüyle çizildikten sonra bildirilir.
+  useEffect(() => {
+    if (!box || firstFrameSent.current) return;
     firstFrameSent.current = true;
     onFirstFrame?.();
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [box]);
 
   return (
     <Animated.View

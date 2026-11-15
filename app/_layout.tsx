@@ -25,6 +25,9 @@ import AppShellSidebar from "../components/shell/AppShellSidebar";
 
 // Yerel açılış ekranı, hareketli açılışın ilk karesi çizilene kadar kalır (geçiş görünmesin).
 SplashScreen.preventAutoHideAsync().catch(() => {});
+// Hareketli açılış ilk karesi yerel ekranla aynı: solarak kapanma yerine anında kapansın
+// (Android varsayılanı 400 ms solma, o sırada sabit logo hareketli çubuğun üstünde kalıyordu).
+SplashScreen.setOptions({ duration: 0, fade: false });
 
 const APP_ONBOARDING_ACCEPTED_KEY = "@app_onboarding_disclaimer_accepted_v1";
 export const ATT_STATUS_KEY = "@purescan_att_status";
