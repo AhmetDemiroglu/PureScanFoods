@@ -37,14 +37,6 @@
             ],
             "accept": "Anladım, Başla"
         },
-        "onboarding": {
-            "slide1Title": "PureScan Guru ile Tanış",
-            "slide1Desc": "Yapay zeka destekli gıda uzmanın. Herhangi bir içerik hakkında sor, ürünleri karşılaştır veya diyetine özel tavsiyeler al - bilime dayalı, sana özel.",
-            "slide2Title": "Akıllı, Ama Doktor Değil",
-            "slide2Desc": "Guru gıda ve beslenmeyi bilimsel doğrulukla analiz eder, ancak doktorunun yerini almaz. Sağlık kararlarında mutlaka bir uzmana danışın.",
-            "nextBtn": "İlerle",
-            "finishBtn": "Başla"
-        },
         "emptyState": {
             "title": "Size nasıl yardımcı olabilirim?",
             "subtitle": "Gıda, diyet veya beslenme hakkında sorular sorabilirsiniz"
@@ -63,31 +55,6 @@
         "premium_subtitle": "Premium Asistan",
         "recentScans": "Son Taramalar",
         "activeProduct": "Aktif Ürün"
-    },
-    "appOnboarding": {
-        "slide1Title": "Ne Yediğini Bil",
-        "slide1Desc": "Kameranı herhangi bir ürün etiketine doğrult. PureScan tüm içerikleri analiz eder, zararlı katkıları işaretler ve sana net bir güvenlik puanı verir - saniyeler içinde.",
-        "slide2Title": "Kişisel AI Beslenme Danışmanın",
-        "slide2Desc": "Gıda ve beslenme hakkında her şeyi sor. PureScan Guru, diyetine, alerjenlerine ve sağlık hedeflerine göre ürünleri analiz eder - cebinde bir gıda bilimci gibi.",
-        "slide3Title": "Tüm Aile İçin Tasarlandı",
-        "slide3Desc": "Her aile üyesi için kendi diyet ve alerjen ayarlarıyla ayrı profiller oluştur. Her tarama sonucu, kimin için yapıldıysa ona göre otomatik kişiselleştirilir.",
-        "slide4Title": "Son Bir Adım",
-        "slide4Desc": "PureScan güçlü bir araç - ama en iyi sonucu profesyonel tavsiyeyle birlikte verir. Lütfen aşağıdaki şeffaflık bildirimini inceleyin.",
-        "skipBtn": "Atla",
-        "nextBtn": "Devam Et",
-        "finishBtn": "Kabul Ediyorum ve Başlıyorum",
-        "disclaimer": {
-            "title": "Şeffaflık Bildirimi",
-            "body": "PureScan, gıda etiketlerini analiz etmek için yapay zeka ve optik tanıma teknolojisi kullanır. Doğruluk için çalışsak da sonuçlar etiket kalitesi, veri tabanı kapsamı veya model sınırlamaları nedeniyle değişiklik gösterebilir.",
-            "points": [
-                "Bu içerik tıbbi teşhis, tedavi veya kişiselleştirilmiş tıbbi tavsiye değildir.",
-                "Alerjen ve kritik bileşenleri mutlaka ürünün fiziksel etiketinden doğrulayın.",
-                "Sağlığınızla ilgili kararlar için doktorunuza veya diyetisyeninize danışın.",
-                "Devam ederek bu sınırlamaları kabul etmiş olursunuz."
-            ],
-            "acceptLabel": "Şeffaflık bildirimini okudum ve kabul ediyorum.",
-            "requiredHint": "Devam etmek için lütfen yukarıdaki bildirimi onaylayın."
-        }
     },
     "library": {
         "title": "Gıda Kütüphanesi",
@@ -595,31 +562,12 @@
                 "other": "Diğer"
             }
         },
-        "onboarding": {
-            "slide1Title": "Beslenme Merkezin",
-            "slide1Desc": "PureScan burada kişiselleşiyor. Diyetini belirle, alerjenlerini işaretle - her tarama sonucu sana göre şekillenir, önemli olanları vurgular.",
-            "slide2Title": "Bir Uygulama, Tüm Aile",
-            "slide2Desc": "Çocukların, eşin veya ailen için profiller ekle - her birinin kendi diyet ve alerjen ayarları olsun. Bir kez tara, herkes için sonuç al.",
-            "slide3Title": "Her Detayda Daha Akıllı",
-            "slide3Desc": "Bize ne kadar çok bilgi verirsen, seni o kadar iyi koruruz. Diyet tipini seç, alerjenlerini işaretle, yaş grubunu belirle - gerisini PureScan halleder.",
-            "nextBtn": "İlerle",
-            "finishBtn": "Anladım"
-        },
         "hints": {
             "longPressEdit": "Düzenlemek için basılı tutun"
         },
         "clearDiet": "Seçimi Kaldır"
     },
-    "encyclopedia": {
-        "onboarding": {
-            "slide1Title": "Gıda Bilgi Bankası",
-            "slide1Desc": "300'den fazla katkı maddesini incele, NOVA işleme seviyelerini anla ve Nutri-Score puanlarını çöz - etiketlerin arkasındaki bilimi sade bir dille keşfet.",
-            "slide2Title": "Ara, Filtrele, Öğren",
-            "slide2Desc": "Herhangi bir katkı maddesini E kodu veya isimle ara, risk seviyesine göre filtrele ve kartlara dokunarak tüm detayları gör. Bilgi, en iyi bileşenindir.",
-            "nextBtn": "İlerle",
-            "finishBtn": "Anladım"
-        }
-    },
+    "encyclopedia": {},
     "history": {
         "title": "Geçmiş",
         "empty": "Henüz tarama yok",
@@ -902,10 +850,6 @@
                 "title": "İçindekileri çek",
                 "desc": "İçerik listesini kadraja al. Her maddeyi tek tek okur, katkıları işaretler ve güvenlik puanını hesaplar."
             },
-            "anywhere": {
-                "title": "Her yerden tara",
-                "desc": "Alttaki turuncu düğme, hangi sayfada olursan ol seni doğrudan taramaya götürür."
-            },
             "profile": {
                 "title": "Sana göre puan",
                 "desc": "Beslenme sekmesinde diyetini, alerjenlerini ve aileni ekle. Her ürün sizin için ayrıca puanlanır."
@@ -917,10 +861,6 @@
             "guru": {
                 "title": "Guru'ya sor",
                 "desc": "Bir ürün ya da içerik hakkında merak ettiğini sor. Profiline göre sade bir cevap verir."
-            },
-            "encyclopedia": {
-                "title": "Gıda sözlüğü",
-                "desc": "Katkı maddeleri, NOVA ve Nutri-Score rehberi. Etikette gördüğün bir kodu burada ara."
             }
         },
         "result": {
@@ -936,17 +876,9 @@
                 "title": "Gerçekte ne tüketiyorsun?",
                 "desc": "İçeriklerin yaklaşık oranlarını kavanoz görseliyle gösterir."
             },
-            "family": {
-                "title": "Ailen için",
-                "desc": "Her aile üyesine diyetine ve alerjenlerine göre ayrı puan. Dokununca nedenini görürsün."
-            },
             "details": {
                 "title": "Ayrıntılı analiz",
                 "desc": "İçerikler, katkı maddeleri ve besin değerleri. Kartlara dokunarak ayrıntıyı açabilirsin."
-            },
-            "compare": {
-                "title": "Karşılaştır",
-                "desc": "Bu ürünü geçmişindeki başka bir ürünle yan yana koy, hangisi daha iyi gör."
             },
             "guru": {
                 "title": "Guru'ya sor",
@@ -993,11 +925,39 @@
             "search": {
                 "title": "Kodu ara",
                 "desc": "Etikette gördüğün E kodunu ya da adını yaz, ne olduğunu ve riskini öğren."
-            },
-            "info": {
-                "title": "Tanıtım burada",
-                "desc": "Bu sayfanın tanıtımını yeniden görmek istersen bu simgeye dokun."
             }
         }
+    },
+    "agreement": {
+        "title": "Başlamadan önce",
+        "subtitle": "PureScan Foods'u kullanmadan önce bu kısa bilgilendirmeyi oku.",
+        "sections": {
+            "analysis": {
+                "title": "Yapay zeka ile analiz",
+                "body": "Etiket fotoğraflarını, barkod verisini ve yazdığın içerik listelerini yapay zeka ile analiz ederiz. Sonuçlar etiketin okunaklılığına, ürün veri tabanının kapsamına ve modelin sınırlarına göre değişebilir. Puanlar bilgilendirme amaçlıdır."
+            },
+            "medical": {
+                "title": "Tıbbi tavsiye değildir",
+                "body": "Puanlar, açıklamalar ve Guru'nun cevapları tıbbi teşhis, tedavi ya da kişisel sağlık tavsiyesi yerine geçmez."
+            },
+            "allergens": {
+                "title": "Alerjenleri etiketten doğrula",
+                "body": "Alerjen, diyet ve uyum uyarıları yol gösterir. Alerjin ya da özel bir sağlık durumun varsa ürünün üzerindeki etiketi mutlaka kendin kontrol et."
+            },
+            "experts": {
+                "title": "Önemli kararlarda uzmana danış",
+                "body": "Hamilelik, kronik hastalık ya da çocuk beslenmesi gibi konularda doktorunun veya diyetisyeninin önerisine göre hareket et."
+            },
+            "data": {
+                "title": "Verilerin",
+                "body": "Analiz için gönderdiğin fotoğraf ve metinler sunucumuz üzerinden yapay zeka hizmet sağlayıcımıza iletilir. Tarama geçmişin hesabında saklanır, istediğin zaman Ayarlar'dan silebilirsin. Ayrıntılar Gizlilik Politikası'nda."
+            }
+        },
+        "documents": "Belgeler",
+        "terms": "Kullanım Koşulları",
+        "privacy": "Gizlilik Politikası",
+        "footnote": "Devam ederek Kullanım Koşulları'nı ve Gizlilik Politikası'nı kabul etmiş olursun.",
+        "accept": "Okudum, anladım ve kabul ediyorum.",
+        "cta": "Kabul Et ve Başla"
     }
 }

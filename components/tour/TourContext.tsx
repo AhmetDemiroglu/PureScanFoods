@@ -202,6 +202,19 @@ export function useTour(tourId: string, steps: TourStep[], { ready, delay = 650 
   }, [ctx, ready, gateOpen, busy, tourId]);
 }
 
+/**
+ * Sayfanın info simgesi için: turu, daha önce görülmüş olsa da hemen başlatır.
+ * Karşılama ekranlarının yerini alır (aynı bilgiyi sayfanın kendi üstünde gösterir).
+ */
+export function useTourReplay(tourId: string, steps: TourStep[]) {
+  const ctx = useTourCtx();
+  return useCallback(() => {
+    if (!ctx || ctx.activeTourId) return;
+    ctx.start(tourId, steps);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ctx, tourId]);
+}
+
 /** Ayarlar: tüm turları yeniden göster. */
 export async function resetAllTours() {
   const list: string[] = JSON.parse((await AsyncStorage.getItem(ALL_TOURS_KEY).catch(() => null)) || "[]");

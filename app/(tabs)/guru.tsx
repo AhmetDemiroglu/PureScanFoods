@@ -10,17 +10,14 @@ import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { AppColors } from "../../constants/colors";
 import { useGuru } from "../../context/GuruContext";
-import { useIsFocused } from "@react-navigation/native";
-import { useTour, useTourTarget } from "../../components/tour/TourContext";
+import { useTourReplay, useTourTarget } from "../../components/tour/TourContext";
 import { GURU_TOUR } from "../../components/tour/tours";
 import { ChatBubble } from "../../components/guru/ChatBubble";
 import { ProductContextCard } from "../../components/guru/ProductContextCard";
 import { GuruEmptyState } from "../../components/guru/GuruEmptyState";
-import { GuruOnboarding } from "../../components/guru/GuruOnboarding";
 import { TypingIndicator } from "../../components/guru/TypingIndicator";
 import { ChatInput } from "../../components/guru/ChatInput";
 import { ScanSelector } from "../../components/guru/ScanSelector";
@@ -71,7 +68,6 @@ export default function GuruScreen() {
     const [inputText, setInputText] = useState("");
     const [showLimitModal, setShowLimitModal] = useState(false);
     const [showPaywall, setShowPaywall] = useState(false);
-    const [showOnboarding, setShowOnboarding] = useState(false);
     const { openSidebar } = useShell();
 
     const flatListRef = useRef<FlatList>(null);
@@ -79,12 +75,11 @@ export default function GuruScreen() {
     const isTr = i18n.language === "tr";
     const isEs = i18n.language?.startsWith("es");
 
-    // Karşılama ekranı artık kendiliğinden açılmaz (info simgesinden açılır); ilk girişte kullanım turu çalışır.
-    const isFocused = useIsFocused();
+    // Karşılama ekranı yok: info simgesi bu sayfanın ipuçlarını (vurgulamalı tur) açar.
     const productTarget = useTourTarget("guru.product");
     const suggestionsTarget = useTourTarget("guru.suggestions");
     const inputTarget = useTourTarget("guru.input");
-    useTour("guru", GURU_TOUR, { ready: isFocused && !showOnboarding && !showLimitModal && !showPaywall });
+    const replayTour = useTourReplay("guru", GURU_TOUR);
 
     // --- EFFECTS ---
 
@@ -133,11 +128,6 @@ export default function GuruScreen() {
     );
 
     // --- HANDLERS ---
-    const handleOnboardingFinish = async () => {
-        await AsyncStorage.setItem("@guru_onboarding_shown_v2", "true");
-        setShowOnboarding(false);
-    };
-
     const handleClearHistory = async () => {
         clearHistory();
     };
@@ -217,7 +207,7 @@ export default function GuruScreen() {
                             </Text>
                         </View>
 
-                        <Pressable onPress={() => setShowOnboarding(true)} style={styles.infoButton}>
+                        <Pressable onPress={replayTour} style={styles.infoButton}>
                             <Ionicons name="information-circle-outline" size={18} color="rgba(255,255,255,0.7)" />
                         </Pressable>
                         <Pressable onPress={() => { haptics.impactLight(); openSidebar(); }} style={styles.backButton}>
@@ -292,10 +282,6 @@ export default function GuruScreen() {
                 </View>
             </Animated.View>
 
-            <GuruOnboarding
-                visible={showOnboarding}
-                onFinish={handleOnboardingFinish}
-            />
             
             <LimitWarningModal
                 visible={showLimitModal}

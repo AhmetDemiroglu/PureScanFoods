@@ -9,13 +9,10 @@ import { useTranslation } from "react-i18next";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { AppColors } from "../../constants/colors";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useIsFocused } from "@react-navigation/native";
-import { useTour, useTourTarget } from "../../components/tour/TourContext";
+import { useTourReplay, useTourTarget } from "../../components/tour/TourContext";
 import { ENCYCLOPEDIA_TOUR } from "../../components/tour/tours";
 import { useShell } from "../../context/ShellContext";
 import * as haptics from "../../lib/haptics";
-import { OnboardingModal } from "../../components/ui/OnboardingModal";
 
 import {
     NOVA_GROUPS,
@@ -108,14 +105,12 @@ export default function AdditivesLibraryScreen() {
     const [expandedAdditive, setExpandedAdditive] = useState<string | null>(null);
     const [expandedNova, setExpandedNova] = useState<NovaGroup | null>(null);
     const { openSidebar } = useShell();
-    const [showOnboarding, setShowOnboarding] = useState(false);
 
-    // Karşılama ekranı artık kendiliğinden açılmaz (info simgesinden açılır); ilk girişte kullanım turu çalışır.
-    const isFocused = useIsFocused();
+    // Karşılama ekranı yok: info simgesi bu sayfanın ipuçlarını (vurgulamalı tur) açar.
     const tabsTarget = useTourTarget("encyclopedia.tabs");
     const searchTarget = useTourTarget("encyclopedia.search");
     const infoTarget = useTourTarget("encyclopedia.info");
-    useTour("encyclopedia", ENCYCLOPEDIA_TOUR, { ready: isFocused && !showOnboarding && activeTab === "additives" });
+    const replayTour = useTourReplay("encyclopedia", ENCYCLOPEDIA_TOUR);
 
     // Sonuç ekranındaki E-koduna tıklanınca: additives sekmesine geç, ilgili katkıyı
     // ara ile en üste getir + aç (scrollToIndex kırılganlığından kaçınılır).
@@ -129,28 +124,6 @@ export default function AdditivesLibraryScreen() {
         setExpandedAdditive(norm);
         router.setParams({ additiveCode: undefined } as any);
     }, [params.additiveCode]);
-
-    const handleOnboardingFinish = async () => {
-        await AsyncStorage.setItem("@encyclopedia_onboarding_shown_v1", "true");
-        setShowOnboarding(false);
-    };
-
-    const encyclopediaSlides = useMemo(() => [
-        {
-            title: t("encyclopedia.onboarding.slide1Title"),
-            desc: t("encyclopedia.onboarding.slide1Desc"),
-            icon: "book" as const,
-            iconColor: colors.primary,
-            iconBg: "#FFF7ED",
-        },
-        {
-            title: t("encyclopedia.onboarding.slide2Title"),
-            desc: t("encyclopedia.onboarding.slide2Desc"),
-            icon: "search" as const,
-            iconColor: "#7C3AED",
-            iconBg: "#EDE9FE",
-        },
-    ], [t]);
 
     // Filtered additives
     const filteredAdditives = useMemo(() => {
@@ -401,7 +374,7 @@ export default function AdditivesLibraryScreen() {
                             </Text>
                         </View>
                         <View {...infoTarget}>
-                            <TouchableOpacity style={styles.infoButton} onPress={() => setShowOnboarding(true)}>
+                            <TouchableOpacity style={styles.infoButton} onPress={replayTour}>
                                 <Ionicons name="information-circle-outline" size={18} color="rgba(255,255,255,0.7)" />
                             </TouchableOpacity>
                         </View>
@@ -619,13 +592,6 @@ export default function AdditivesLibraryScreen() {
               </View>
             </GestureDetector>
 
-            <OnboardingModal
-                visible={showOnboarding}
-                onFinish={handleOnboardingFinish}
-                slides={encyclopediaSlides}
-                nextLabel={t("encyclopedia.onboarding.nextBtn")}
-                finishLabel={t("encyclopedia.onboarding.finishBtn")}
-            />
         </View>
     );
 }

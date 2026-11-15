@@ -37,11 +37,8 @@ import { useAuth } from "../../context/AuthContext";
 import LimitWarningModal from "../../components/ui/LimitWarningModal";
 import { useShell } from "../../context/ShellContext";
 import * as haptics from "../../lib/haptics";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useIsFocused } from "@react-navigation/native";
-import { useTour, useTourScroll, useTourTarget } from "../../components/tour/TourContext";
+import { useTourReplay, useTourScroll, useTourTarget } from "../../components/tour/TourContext";
 import { NUTRITION_TOUR } from "../../components/tour/tours";
-import { OnboardingModal } from "../../components/ui/OnboardingModal";
 import PaywallModal from "../../components/ui/PaywallModal";
 import { useTheme } from "../../context/ThemeContext";
 
@@ -159,49 +156,14 @@ export default function NutritionScreen() {
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const { openSidebar } = useShell();
-  const [showOnboarding, setShowOnboarding] = useState(false);
 
-  // Karşılama ekranı artık kendiliğinden açılmaz (info simgesinden açılır); ilk girişte kullanım turu çalışır.
-  const isFocused = useIsFocused();
+  // Karşılama ekranı yok: info simgesi bu sayfanın ipuçlarını (vurgulamalı tur) açar.
   const tourScroll = useTourScroll("nutrition");
   const profileTarget = useTourTarget("nutrition.profile");
   const familyTarget = useTourTarget("nutrition.family");
   const dietTarget = useTourTarget("nutrition.diet");
   const allergensTarget = useTourTarget("nutrition.allergens");
-  useTour("nutrition", NUTRITION_TOUR, {
-    ready:
-      isFocused && !showOnboarding && !showFamilyModal && !showDietModal && !showAllergenModal &&
-      !showAvatarModal && !showLimitModal && !showPaywall,
-  });
-
-  const handleOnboardingFinish = async () => {
-    await AsyncStorage.setItem("@nutrition_onboarding_shown_v1", "true");
-    setShowOnboarding(false);
-  };
-
-  const nutritionSlides = React.useMemo(() => [
-    {
-      title: t("nutrition.onboarding.slide1Title"),
-      desc: t("nutrition.onboarding.slide1Desc"),
-      icon: "heart" as const,
-      iconColor: colors.primary,
-      iconBg: "#FFF7ED",
-    },
-    {
-      title: t("nutrition.onboarding.slide2Title"),
-      desc: t("nutrition.onboarding.slide2Desc"),
-      icon: "people" as const,
-      iconColor: "#0284C7",
-      iconBg: "#E0F2FE",
-    },
-    {
-      title: t("nutrition.onboarding.slide3Title"),
-      desc: t("nutrition.onboarding.slide3Desc"),
-      icon: "shield-checkmark" as const,
-      iconColor: "#16A34A",
-      iconBg: "#F0FDF4",
-    },
-  ], [t]);
+  const replayTour = useTourReplay("nutrition", NUTRITION_TOUR);
 
   React.useEffect(() => {
     if (showFamilyModal || showDietModal || showAllergenModal || showAvatarModal) {
@@ -465,7 +427,7 @@ export default function NutritionScreen() {
               <Text style={styles.headerTitle}>{t("navigation.nutrition")}</Text>
               <Text style={styles.headerSubtitle}>{t("nutrition.subtitle")}</Text>
             </View>
-            <TouchableOpacity style={styles.infoButton} onPress={() => setShowOnboarding(true)}>
+            <TouchableOpacity style={styles.infoButton} onPress={replayTour}>
               <Ionicons name="information-circle-outline" size={18} color="rgba(255,255,255,0.7)" />
             </TouchableOpacity>
             <TouchableOpacity style={[styles.backButton, { marginRight: 0 }]} onPress={() => { haptics.impactLight(); openSidebar(); }}>
@@ -1073,13 +1035,6 @@ export default function NutritionScreen() {
         </View>
       </Modal >
       
-      <OnboardingModal
-        visible={showOnboarding}
-        onFinish={handleOnboardingFinish}
-        slides={nutritionSlides}
-        nextLabel={t("nutrition.onboarding.nextBtn")}
-        finishLabel={t("nutrition.onboarding.finishBtn")}
-      />
       <LimitWarningModal
         visible={showLimitModal}
         onClose={() => setShowLimitModal(false)}

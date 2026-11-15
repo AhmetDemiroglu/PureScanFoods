@@ -132,9 +132,7 @@ export default function ProductResultScreen() {
     const scoreTarget = useTourTarget("result.score");
     const summaryTarget = useTourTarget("result.summary");
     const consumptionTarget = useTourTarget("result.consumption");
-    const familyTarget = useTourTarget("result.family");
     const detailsTarget = useTourTarget("result.details");
-    const compareTarget = useTourTarget("result.compare");
     const guruTarget = useTourTarget("result.guru");
     useTour("result", RESULT_TOUR, {
         ready: isFocused && !(isAdLoading && !isPremium) && !showReviewPrompt && !showResultPaywall && !showComparePicker && !showDetailModal,
@@ -561,11 +559,9 @@ export default function ProductResultScreen() {
                     <TouchableOpacity style={[styles.headerBtn, styles.headerBtnRight]} onPress={handleRescan}>
                         <Ionicons name="scan-outline" size={20} color="#FFF" />
                     </TouchableOpacity>
-                    <View {...compareTarget} style={[styles.headerBtn, styles.headerBtnRight2, styles.tourHeaderSlot]}>
-                        <TouchableOpacity style={styles.tourHeaderFill} onPress={() => setShowComparePicker(true)}>
-                            <Ionicons name="git-compare-outline" size={20} color="#FFF" />
-                        </TouchableOpacity>
-                    </View>
+                    <TouchableOpacity style={[styles.headerBtn, styles.headerBtnRight2]} onPress={() => setShowComparePicker(true)}>
+                        <Ionicons name="git-compare-outline" size={20} color="#FFF" />
+                    </TouchableOpacity>
                 </View>
 
                 {/* Pull-up Sheet Card */}
@@ -683,7 +679,7 @@ export default function ProductResultScreen() {
                 </View>
 
                 {/* Family Compatibility */}
-                <View {...familyTarget} style={styles.familyZone}>
+                <View style={styles.familyZone}>
                     <View style={styles.sectionHeader}>
                         <View style={styles.sectionLine} />
                         <Text upper style={styles.sectionLabel}>{t("results.family.title")}</Text>
@@ -985,15 +981,6 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
         marginTop: -4,
         marginBottom: 16,
         paddingHorizontal: 24,
-    },
-    tourHeaderSlot: {
-        padding: 0,
-    },
-    tourHeaderFill: {
-        flex: 1,
-        alignSelf: "stretch",
-        alignItems: "center",
-        justifyContent: "center",
     },
     askGuruBtn: {
         flexDirection: 'row' as const,

@@ -15,7 +15,7 @@ import { AuthProvider } from "../context/AuthContext";
 import { UserProvider } from "../context/UserContext";
 import { GuruProvider } from "../context/GuruContext";
 import { preloadAds } from "../lib/admob";
-import { AppOnboardingModal } from "../components/ui/AppOnboardingModal";
+import { AgreementScreen } from "../components/ui/AgreementScreen";
 import { ThemeProvider, useTheme } from "../context/ThemeContext";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
@@ -174,7 +174,7 @@ function AppShell() {
               />
             </Stack>
           </AppShellSidebar>
-          <AppOnboardingModal
+          <AgreementScreen
             visible={splashDone && hasAcceptedDisclaimer === false}
             onAccept={handleOnboardingAccept}
           />

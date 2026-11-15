@@ -22,7 +22,17 @@ const GradientText = ({ colors, ...props }: any) => {
   );
 };
 
-export default function Hero() {
+/** Yatay logonun (simge + PureScan | FOODS) en/boy oranı. */
+export const HERO_LOGO_ASPECT = 4.7865;
+
+type HeroProps = {
+  /** Logo genişliği: ana ekran, kalan yüksekliğe göre hesaplar. */
+  logoWidth: number;
+  /** Çok dar ekranda alt başlık gizlenir. */
+  showSubheadline?: boolean;
+};
+
+export default function Hero({ logoWidth, showSubheadline = true }: HeroProps) {
   const { t } = useTranslation();
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
@@ -48,7 +58,7 @@ export default function Hero() {
           },
         ]}
       >
-        <BrandLogo variant="vertical" height={168} />
+        <BrandLogo variant="horizontal" width={logoWidth} />
       </Animated.View>
 
       <View style={styles.sloganContainer}>
@@ -56,9 +66,11 @@ export default function Hero() {
           {t("home.headline", { defaultValue: "Gıdalarınızda Neler Var?" })}
         </GradientText>
 
-        <Text style={styles.sloganSub}>
-          {t("home.subheadline", { defaultValue: "AI destekli analiz ile anında öğren" })}
-        </Text>
+        {showSubheadline ? (
+          <Text style={styles.sloganSub}>
+            {t("home.subheadline", { defaultValue: "AI destekli analiz ile anında öğren" })}
+          </Text>
+        ) : null}
       </View>
     </View>
   );

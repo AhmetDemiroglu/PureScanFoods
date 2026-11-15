@@ -47,14 +47,6 @@
             "¿Qué debería comer si soy alérgico al azúcar?",
             "¿Qué productos son sin gluten?"
         ],
-        "onboarding": {
-            "slide1Title": "Conoce a PureScan Guru",
-            "slide1Desc": "Tu experto en alimentos con IA. Pregunta sobre cualquier ingrediente, compara productos o recibe consejos específicos para tu dieta - todo basado en ciencia, personalizado para ti.",
-            "slide2Title": "Inteligente, No Médico",
-            "slide2Desc": "Guru analiza alimentos y nutrición con precisión científica, pero no reemplaza a tu médico. Las decisiones de salud siempre deben involucrar a un profesional.",
-            "nextBtn": "Siguiente",
-            "finishBtn": "Comenzar"
-        },
         "fixedWarning": "Guru puede cometer errores. No es consejo médico. Consulta a un médico.",
         "limits": {
             "free": "{{count}} mensajes restantes",
@@ -63,31 +55,6 @@
         "premium_subtitle": "Asistente Premium",
         "recentScans": "Escaneos Recientes",
         "activeProduct": "Producto Activo"
-    },
-    "appOnboarding": {
-        "slide1Title": "Conoce Lo Que Comes",
-        "slide1Desc": "Apunta tu cámara a cualquier etiqueta de producto. PureScan identifica cada ingrediente, señala aditivos nocivos y te da una puntuación de seguridad clara - en segundos.",
-        "slide2Title": "Tu Nutricionista IA Personal",
-        "slide2Desc": "Pregunta lo que sea sobre comida y nutrición. PureScan Guru analiza productos basándose en tu dieta, alergenos y objetivos de salud - como tener un científico de alimentos en tu bolsillo.",
-        "slide3Title": "Diseñado Para Toda Tu Familia",
-        "slide3Desc": "Crea perfiles individuales para cada miembro de la familia con sus propias dietas y alergenos. Cada resultado de escaneo se personaliza automáticamente para quien lo necesite.",
-        "slide4Title": "Un Último Detalle",
-        "slide4Desc": "PureScan es una herramienta poderosa - pero funciona mejor junto con consejo profesional. Por favor revisa nuestro aviso de transparencia abajo.",
-        "skipBtn": "Saltar",
-        "nextBtn": "Continuar",
-        "finishBtn": "Acepto y Comenzar",
-        "disclaimer": {
-            "title": "Aviso de Transparencia",
-            "body": "PureScan utiliza IA y reconocimiento óptico para analizar etiquetas de alimentos. Aunque nos esforzamos por la precisión, los resultados pueden variar debido a la calidad de la etiqueta, cobertura de la base de datos o limitaciones del modelo.",
-            "points": [
-                "Esto no es diagnóstico médico, tratamiento ni consejo médico personalizado.",
-                "Siempre verifica alérgenos e ingredientes críticos en la etiqueta física.",
-                "Consulta a tu médico o dietista para decisiones relacionadas con la salud.",
-                "Al continuar, reconoces estas limitaciones."
-            ],
-            "acceptLabel": "He leído y acepto el aviso de transparencia.",
-            "requiredHint": "Por favor acepta el aviso de arriba para continuar."
-        }
     },
     "library": {
         "title": "Biblioteca de Alimentos",
@@ -595,31 +562,12 @@
                 "other": "Otro"
             }
         },
-        "onboarding": {
-            "slide1Title": "Tu Centro de Nutrición",
-            "slide1Desc": "Aquí es donde PureScan se vuelve personal. Configura tu dieta, marca tus alérgenos, y cada resultado de escaneo se adapta a ti - señalando lo que importa, ignorando lo que no.",
-            "slide2Title": "Una App, Toda la Familia",
-            "slide2Desc": "Añade perfiles para tus hijos, pareja o padres - cada uno con sus propios ajustes de dieta y alérgenos. Escanea una vez, obtén resultados de seguridad para todos.",
-            "slide3Title": "Más Inteligente Con Cada Detalle",
-            "slide3Desc": "Cuanto más nos cuentes, mejor te protegeremos. Elige tu tipo de dieta, marca alérgenos y establece tu etapa de vida - PureScan hace el resto.",
-            "nextBtn": "Siguiente",
-            "finishBtn": "Entendido"
-        },
         "hints": {
             "longPressEdit": "Mantén presionado para editar"
         },
         "clearDiet": "Borrar Selección"
     },
-    "encyclopedia": {
-        "onboarding": {
-            "slide1Title": "Tu Base de Conocimiento de Alimentos",
-            "slide1Desc": "Explora más de 300 aditivos alimentarios, entiende los niveles de procesamiento NOVA, y descifra las calificaciones Nutri-Score - toda la ciencia detrás de tus etiquetas de alimentos, en lenguaje sencillo.",
-            "slide2Title": "Busca, Filtra, Aprende",
-            "slide2Desc": "Busca cualquier aditivo por código E o nombre, filtra por nivel de riesgo, y toca cualquier tarjeta para la historia completa. El conocimiento es tu mejor ingrediente.",
-            "nextBtn": "Siguiente",
-            "finishBtn": "Entendido"
-        }
-    },
+    "encyclopedia": {},
     "history": {
         "title": "Historial",
         "empty": "Aún no hay escaneos",
@@ -902,10 +850,6 @@
                 "title": "Fotografía los ingredientes",
                 "desc": "Encuadra la lista de ingredientes. Se lee cada uno, se marcan los aditivos y se calcula la puntuación de seguridad."
             },
-            "anywhere": {
-                "title": "Escanea desde cualquier sitio",
-                "desc": "El botón naranja de abajo te lleva directo a escanear desde cualquier página."
-            },
             "profile": {
                 "title": "Puntuación a tu medida",
                 "desc": "Añade tu dieta, alérgenos y familia en la pestaña Nutrición. Cada producto se puntúa para cada uno."
@@ -917,10 +861,6 @@
             "guru": {
                 "title": "Pregunta a Guru",
                 "desc": "Pregunta lo que quieras sobre un producto o ingrediente. Guru responde de forma sencilla según tu perfil."
-            },
-            "encyclopedia": {
-                "title": "Enciclopedia",
-                "desc": "Guía de aditivos, NOVA y Nutri-Score. Busca un código que viste en una etiqueta."
             }
         },
         "result": {
@@ -936,17 +876,9 @@
                 "title": "¿Qué comes en realidad?",
                 "desc": "Muestra la proporción aproximada de cada ingrediente en un frasco."
             },
-            "family": {
-                "title": "Para tu familia",
-                "desc": "Una puntuación para cada miembro según su dieta y alérgenos. Toca para ver por qué."
-            },
             "details": {
                 "title": "Análisis detallado",
                 "desc": "Ingredientes, aditivos y valores nutricionales. Toca una tarjeta para ver el detalle."
-            },
-            "compare": {
-                "title": "Comparar",
-                "desc": "Pon este producto junto a otro de tu historial y mira cuál es mejor."
             },
             "guru": {
                 "title": "Pregunta a Guru",
@@ -993,11 +925,39 @@
             "search": {
                 "title": "Busca un código",
                 "desc": "Escribe un número E o un nombre de la etiqueta para saber qué es y su riesgo."
-            },
-            "info": {
-                "title": "La introducción está aquí",
-                "desc": "Toca este icono para ver de nuevo la introducción de esta página."
             }
         }
+    },
+    "agreement": {
+        "title": "Antes de empezar",
+        "subtitle": "Lee este breve aviso antes de usar PureScan Foods.",
+        "sections": {
+            "analysis": {
+                "title": "Análisis con IA",
+                "body": "Analizamos con IA las fotos de etiquetas, los datos de códigos de barras y las listas de ingredientes que escribes. Los resultados pueden variar según la legibilidad de la etiqueta, la cobertura de la base de datos y los límites del modelo. Las puntuaciones son solo informativas."
+            },
+            "medical": {
+                "title": "No es consejo médico",
+                "body": "Las puntuaciones, explicaciones y respuestas de Guru no sustituyen un diagnóstico, tratamiento o consejo de salud personal."
+            },
+            "allergens": {
+                "title": "Comprueba los alérgenos en la etiqueta",
+                "body": "Los avisos de alérgenos, dieta y compatibilidad son una guía. Si tienes una alergia o una condición de salud, revisa siempre tú mismo la etiqueta del producto."
+            },
+            "experts": {
+                "title": "Consulta a un experto",
+                "body": "En embarazo, enfermedades crónicas o nutrición infantil, sigue el consejo de tu médico o dietista."
+            },
+            "data": {
+                "title": "Tus datos",
+                "body": "Las fotos y textos que envías para analizar pasan por nuestro servidor hasta nuestro proveedor de IA. Tu historial se guarda en tu cuenta y puedes borrarlo cuando quieras en Ajustes. Más detalles en la Política de privacidad."
+            }
+        },
+        "documents": "Documentos",
+        "terms": "Términos de uso",
+        "privacy": "Política de privacidad",
+        "footnote": "Al continuar aceptas los Términos de uso y la Política de privacidad.",
+        "accept": "He leído, entiendo y acepto.",
+        "cta": "Aceptar y empezar"
     }
 }

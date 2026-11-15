@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { View, Pressable, StyleSheet, Dimensions, TextInput, ActivityIndicator, Modal, TouchableOpacity, Animated, ScrollView, Keyboard, useWindowDimensions } from "react-native";
+import { View, Pressable, StyleSheet, Dimensions, TextInput, ActivityIndicator, Modal, TouchableOpacity, Animated, ScrollView, Keyboard, useWindowDimensions, PixelRatio } from "react-native";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Text } from "../../components/ui/AppText";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -11,7 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { AppColors } from "../../constants/colors";
 import Header from "../../components/ui/Header";
-import Hero from "../../components/ui/Hero";
+import Hero, { HERO_LOGO_ASPECT } from "../../components/ui/Hero";
 import BrandLogo from "../../components/brand/BrandLogo";
 import { callGemini } from "../../lib/api";
 import { TempStore } from "../../lib/tempStore";
@@ -100,6 +100,33 @@ export default function ScanScreen() {
   // İçerik tab bar'da bittiği, keyboard yüksekliği ekran altından ölçüldüğü için
   // tabBarHeight çıkarılır (yoksa tab bar kadar fazla boşluk kalır).
   const scrollRef = useRef<ScrollView>(null);
+
+  // Ana ekran kaymadan sığsın: logo ve boşluklar kalan yüksekliğe göre ayarlanır.
+  // Sıra: önce boşluk daralır, sonra logo küçülür, en son alt başlık gizlenir.
+  // Çok büyük yazı boyutu gibi uç durumlarda içerik yine sığmazsa ScrollView kaymaya başlar.
+  const [viewportH, setViewportH] = useState(0);
+  const [cardH, setCardH] = useState(0);
+  const heroLayout = useMemo(() => {
+    const fontScale = Math.min(PixelRatio.getFontScale(), 1.8);
+    const maxLogoW = Math.min(width - 56, 460);
+    const minLogoW = Math.min(maxLogoW, 190);
+    const headline = 22 * 1.35 * fontScale + 8;
+    const sub = 14 * 1.45 * fontScale + 6;
+    const logoGap = 18;
+    if (!viewportH || !cardH) return { logoW: maxLogoW, gap: 40, showSub: true };
+    const room = viewportH - cardH - 24;
+    const need = (w: number, g: number, s: boolean) => w / HERO_LOGO_ASPECT + logoGap + headline + (s ? sub : 0) + g;
+    let gap = 40;
+    let logoW = maxLogoW;
+    let showSub = true;
+    if (need(logoW, gap, showSub) > room) gap = Math.max(18, gap - (need(logoW, gap, showSub) - room));
+    if (need(logoW, gap, showSub) > room) {
+      const over = need(logoW, gap, showSub) - room;
+      logoW = Math.max(minLogoW, logoW - over * HERO_LOGO_ASPECT);
+    }
+    if (need(logoW, gap, showSub) > room) showSub = false;
+    return { logoW, gap, showSub };
+  }, [width, viewportH, cardH]);
 
   // Kullanım turu: ilk girişte tarama yolları, alt çubuk ve geçmiş vurgulanır.
   const isFocused = useIsFocused();
@@ -479,14 +506,21 @@ export default function ScanScreen() {
           // paddingHorizontal:20'siyle 20px içeride kalır; böylece kartın gölgesi
           // ScrollView'un İÇİNDE render olur ve yanlardan kırpılmaz (bıçak-gölge fix).
           style={{ flex: 1, marginHorizontal: -20 }}
-          contentContainerStyle={[styles.centerContainer, { paddingBottom: kbPad }]}
+          contentContainerStyle={[styles.centerContainer, { paddingBottom: kbPad, gap: heroLayout.gap }]}
+          onLayout={(e) => setViewportH(e.nativeEvent.layout.height)}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Hero />
+          <Hero logoWidth={heroLayout.logoW} showSubheadline={heroLayout.showSub} />
 
           {/* Scan Card */}
-          <View style={styles.scanCard}>
+          <View
+            style={styles.scanCard}
+            onLayout={(e) => {
+              // Ölçü kamera sekmesinde alınır: sekme değişince logo zıplamasın.
+              if (activeTab === "camera") setCardH(e.nativeEvent.layout.height);
+            }}
+          >
             <View style={styles.tabSwitcher} {...tabsTarget}>
               <Pressable
                 style={[styles.tab, activeTab === "camera" && styles.tabActive]}

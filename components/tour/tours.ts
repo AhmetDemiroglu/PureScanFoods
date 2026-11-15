@@ -21,22 +21,20 @@ export type TourStep = {
 // Alt sekme: simge hedef, delik altındaki yazıyı da kapsar.
 const TAB = { padding: 4, grow: { bottom: 17, left: 14, right: 14 } } as const;
 
+// Otomatik turlar yalnız ana ekranda ve ilk sonuçta, kısa tutulur (Ahmet: "eğitime boğmayalım").
+// Guru, Beslenme ve Sözlük turları yalnız o sayfanın info simgesinden açılır.
 export const HOME_TOUR: TourStep[] = [
   { target: "home.tabs", key: "home.modes", icon: "albums-outline", padding: 6 },
   { target: "home.scan", key: "home.scan", icon: "scan-outline", padding: 6 },
-  { target: "tab.scan", key: "home.anywhere", icon: "flash-outline", shape: "circle", padding: 6 },
   { target: "tab.nutrition", key: "home.profile", icon: "people-outline", ...TAB },
   { target: "home.history", key: "home.history", icon: "time-outline", shape: "circle", padding: 6 },
   { target: "tab.guru", key: "home.guru", icon: "sparkles-outline", ...TAB },
-  { target: "tab.encyclopedia", key: "home.encyclopedia", icon: "book-outline", ...TAB },
 ];
 
 export const RESULT_TOUR: TourStep[] = [
   { target: "result.score", key: "result.score", icon: "speedometer-outline", padding: 4 },
   { target: "result.summary", key: "result.summary", icon: "chatbox-ellipses-outline", padding: 6 },
-  { target: "result.compare", key: "result.compare", icon: "git-compare-outline", shape: "circle", padding: 6 },
   { target: "result.consumption", key: "result.consumption", icon: "flask-outline", padding: 6 },
-  { target: "result.family", key: "result.family", icon: "people-outline", padding: 6 },
   { target: "result.details", key: "result.details", icon: "list-outline", padding: 6 },
   { target: "result.guru", key: "result.guru", icon: "sparkles-outline", padding: 6 },
 ];
@@ -57,5 +55,4 @@ export const NUTRITION_TOUR: TourStep[] = [
 export const ENCYCLOPEDIA_TOUR: TourStep[] = [
   { target: "encyclopedia.tabs", key: "encyclopedia.tabs", icon: "library-outline", padding: 6 },
   { target: "encyclopedia.search", key: "encyclopedia.search", icon: "search-outline", padding: 6 },
-  { target: "encyclopedia.info", key: "encyclopedia.info", icon: "information-circle-outline", shape: "circle", padding: 6 },
 ];
