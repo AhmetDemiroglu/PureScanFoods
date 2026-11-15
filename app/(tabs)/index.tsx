@@ -26,6 +26,9 @@ import { useTour, useTourTarget } from "../../components/tour/TourContext";
 import { HOME_TOUR } from "../../components/tour/tours";
 import * as ImagePicker from "expo-image-picker";
 import * as ScreenOrientation from "expo-screen-orientation";
+import * as ImageManipulator from "expo-image-manipulator";
+import CaptureFrame, { TurnSpin } from "../../components/scan/CaptureFrame";
+import { cropToPixels, frameToCrop, type Frame, type Turn } from "../../components/scan/captureGeometry";
 import { useUser } from "../../context/UserContext";
 import { useLocalSearchParams } from "expo-router";
 import { useShell } from '../../context/ShellContext';
@@ -37,6 +40,14 @@ import ProcessingView, { ProcessingMode } from "../../components/ui/ProcessingVi
 import { useTheme } from "../../context/ThemeContext";
 
 type ScanTab = "camera" | "barcode" | "text";
+
+// Kırpılmış fotoğrafın en uzun kenarı. Çerçeveye kırpınca yazı zaten büyür; bu sınır isteği
+// küçük tutar. Tam kareye göre daha az piksel, etiket başına daha çok piksel.
+const SHOT_MAX_EDGE = 1600;
+const SHOT_QUALITY = 0.7;
+
+/** Analize giden kare: isteğe base64, sonuç ekranına dosya yolu. */
+type Shot = { base64: string; uri: string };
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -69,8 +80,7 @@ export default function ScanScreen() {
   const { familyMembers } = useUser();
   const [flashOn, setFlashOn] = useState(false);
 
-  const { width, height } = useWindowDimensions();
-  const isLandscape = width > height;
+  const { width } = useWindowDimensions();
 
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
@@ -84,6 +94,13 @@ export default function ScanScreen() {
   const router = useRouter();
 
   const [showCamera, setShowCamera] = useState(false);
+  // Telefonun fiziksel tutuşu (CaptureFrame yerçekiminden okur). Arayüz dikey kilitli kalır,
+  // çerçeve ve düğme simgeleri buna göre döner.
+  const [camTurn, setCamTurn] = useState<Turn>(0);
+  // Deklanşör anındaki çerçeve: fotoğraf buna göre kırpılır.
+  const captureGeoRef = useRef<Frame | null>(null);
+  // Deklanşöre iki kez basılmasını engelleyen senkron kilit (isScanning async güncellenir).
+  const shootLockRef = useRef(false);
   const scanLineAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -375,7 +392,14 @@ export default function ScanScreen() {
 
   // Fotoğraf: önce 3.8 Flash etiketi madde madde okur, sonra 3.5 Flash-Lite metin olarak analiz eder.
   // Okuma kesilirse (RECITATION/ağ) fotoğraf tek adımda analiz modeline, o da kesilirse eski 3.1 isteğine gider.
-  const analyzeImageWithGemini = async (base64Image: string, imageUri?: string) => {
+  // getWideImage: çerçeveye kırpılmış kare gönderildiyse, kırpılmamış tam kareyi üreten işlev.
+  // Liste çerçeveden taşmışsa okuma kırpılmış karede başarısız olur; o zaman tam kare denenir.
+  // Böylece kırpma hiçbir zaman tek başına sonucu belirlemez.
+  const analyzeImageWithGemini = async (
+    base64Image: string,
+    imageUri?: string,
+    getWideImage?: () => Promise<Shot | null>
+  ) => {
     const currentLang = i18n.language;
     const profileData = getActiveData();
 
@@ -385,9 +409,26 @@ export default function ScanScreen() {
     };
 
     const systemPrompt = generateAnalysisPrompt(currentLang, promptProfile);
-    const imagePart = { inlineData: { mimeType: "image/jpeg", data: base64Image } };
 
-    const label = await readIngredientLabel(base64Image);
+    let label = await readIngredientLabel(base64Image);
+    let wide: Shot | null = null;
+
+    if (label.status !== "ok" && getWideImage) {
+      try {
+        wide = await getWideImage();
+      } catch (err) {
+        console.warn("Tam kare hazırlanamadı:", err);
+      }
+      if (wide) {
+        const second = await readIngredientLabel(wide.base64);
+        if (second.status === "ok" || label.status === "failed") label = second;
+      }
+    }
+
+    // Sonuç ekranında ve geçmişte, analize GİDEN kare görünür: kırpmanın doğru yerden
+    // kesip kesmediği cihazda tek bakışta anlaşılır.
+    const shownUri = wide?.uri ?? imageUri;
+    const imagePart = { inlineData: { mimeType: "image/jpeg", data: wide?.base64 ?? base64Image } };
 
     if (label.status === "notFood") {
       setIsScanning(false);
@@ -400,7 +441,7 @@ export default function ScanScreen() {
         endpointFor("analysis"),
         analysisRequest([{ text: `${systemPrompt}\n\n${labelToAnalysisInput(label)}` }])
       );
-      processGeminiResult(apiResult, imageUri, undefined);
+      processGeminiResult(apiResult, shownUri, undefined);
       return;
     }
 
@@ -411,7 +452,86 @@ export default function ScanScreen() {
         contents: [{ role: "user", parts: [{ text: systemPrompt }, imagePart] }]
       });
     }
-    processGeminiResult(apiResult, imageUri, undefined);
+    processGeminiResult(apiResult, shownUri, undefined);
+  };
+
+  // Çekilen fotoğrafı ekrandaki çerçeveye kırpar, küçültür ve base64 döndürür.
+  // frame=null verilince yalnız küçültür: kırpmanın güvenlik ağı olan tam kare böyle üretilir.
+  //
+  // Kırpma iki gerçeğe dayanır: önizleme ekranı doldurur (kenarlar taşar) ve expo-camera çekimi
+  // telefonun fiziksel yönüne göre düzeltir (iOS videoOrientation, Android targetRotation).
+  // Dönüşüm captureGeometry içinde, sınaması components/scan/__tests__ altında.
+  const cropShot = async (
+    photo: { uri: string; width?: number; height?: number },
+    frame: Frame | null,
+    turn: Turn
+  ): Promise<Shot | null> => {
+    const W = photo.width ?? 0;
+    const H = photo.height ?? 0;
+    const actions: ImageManipulator.Action[] = [];
+    let edgeW = W;
+    let edgeH = H;
+
+    if (frame && W > 0 && H > 0) {
+      const box = cropToPixels(frameToCrop(frame, W, H, turn), W, H);
+      actions.push({ crop: box });
+      edgeW = box.width;
+      edgeH = box.height;
+    }
+    if (Math.max(edgeW, edgeH) > SHOT_MAX_EDGE) {
+      actions.push(edgeW >= edgeH ? { resize: { width: SHOT_MAX_EDGE } } : { resize: { height: SHOT_MAX_EDGE } });
+    }
+
+    const out = await ImageManipulator.manipulateAsync(photo.uri, actions, {
+      compress: SHOT_QUALITY,
+      format: ImageManipulator.SaveFormat.JPEG,
+      base64: true,
+    });
+    return out.base64 ? { base64: out.base64, uri: out.uri } : null;
+  };
+
+  const captureAndAnalyze = async () => {
+    const cam = cameraRef.current;
+    if (!cam || shootLockRef.current || isScanning) return;
+    shootLockRef.current = true;
+
+    const frame = captureGeoRef.current;
+    const turnNow = camTurn;
+
+    try {
+      haptics.impactMedium();
+      // skipProcessing KULLANILMAZ: Android'de yön düzeltmesi piksellere işlenmeden gelir ve
+      // bildirilen en/boy ham sensör ölçüsü olur; kırpma o zaman yanlış yerden keser.
+      const photo = await cam.takePictureAsync({ quality: SHOT_QUALITY, shutterSound: false });
+
+      setProcessingMode("camera");
+      setIsScanning(true);
+      setShowCamera(false);
+
+      let framed: Shot | null = null;
+      try {
+        framed = await cropShot(photo, frame, turnNow);
+      } catch (err) {
+        console.warn("Çerçeveye kırpma başarısız, tam kare kullanılıyor:", err);
+      }
+      if (!framed) framed = await cropShot(photo, null, turnNow);
+      if (!framed) throw new Error("Fotoğraf hazırlanamadı");
+
+      await analyzeImageWithGemini(
+        framed.base64,
+        framed.uri,
+        frame ? () => cropShot(photo, null, turnNow) : undefined
+      );
+    } catch (e) {
+      console.error("Çekim hatası:", e);
+      openErrorModal(
+        t("errors.generic", { defaultValue: "Bir hata oluştu." }),
+        t("scan.invalidScanDesc", { defaultValue: "Görüntüde okunabilir bir gıda içeriği tespit edilemedi veya bu bir gıda ürünü değil." })
+      );
+      setIsScanning(false);
+    } finally {
+      shootLockRef.current = false;
+    }
   };
 
   const handleGalleryPick = async () => {
@@ -480,11 +600,20 @@ export default function ScanScreen() {
     };
   }, [showCamera]);
 
+  // Arayüz HER ZAMAN dikey kilitli. Eskiden kamera açılınca kilit açılıyordu; telefonun kendi
+  // ekran döndürme kilidi kapalıysa hiçbir şey dönmüyor, açıksa arayüz dönüp çerçeve bozuluyordu.
+  // Artık dönen tek şey çekim çerçevesi ve yazılar: telefonun fiziksel tutuşu yerçekiminden okunur,
+  // böylece kilit açık da olsa kapalı da olsa kamera aynı davranır.
   useEffect(() => {
-    if (showCamera) {
-      ScreenOrientation.unlockAsync();
-    } else {
-      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+  }, []);
+
+  // Kamera kapanınca tutuş sıfırlanır: bir sonraki açılışta eski yönden başlamaz.
+  useEffect(() => {
+    if (!showCamera) {
+      setCamTurn(0);
+      captureGeoRef.current = null;
+      shootLockRef.current = false;
     }
   }, [showCamera]);
 
@@ -709,7 +838,7 @@ export default function ScanScreen() {
         <Modal
           visible={showCamera}
           animationType="slide"
-          supportedOrientations={["portrait", "landscape"]}
+          supportedOrientations={["portrait"]}
           onRequestClose={() => setShowCamera(false)}
         >
           <View style={styles.cameraContainer}>
@@ -719,6 +848,9 @@ export default function ScanScreen() {
               facing="back"
               ref={cameraRef}
               enableTorch={flashOn}
+              // iOS: arayüz dikey kilitli olsa da fotoğraf telefonun fiziksel yönüne göre çekilir.
+              // Eşiği (0.75 g) captureGeometry'deki turnFromGravity ile aynı; çerçeve ile fotoğraf ayrışmaz.
+              responsiveOrientationWhenOrientationLocked
               onBarcodeScanned={handleCameraBarcodeScanned}
               barcodeScannerSettings={{
                 barcodeTypes: [
@@ -744,14 +876,16 @@ export default function ScanScreen() {
               style={styles.bottomOverlay}
             />
 
-            {/* Header */}
+            {/* Header. Simgeler yan tutuşta kullanıcıya döner, logo düz kalır. */}
             <View style={[styles.cameraHeaderNew, { paddingTop: insets.top + 8 }]}>
               <TouchableOpacity
                 style={styles.closeButtonNew}
                 onPress={() => setShowCamera(false)}
                 hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               >
-                <Ionicons name="close" size={24} color={colors.white} />
+                <TurnSpin turn={camTurn}>
+                  <Ionicons name="close" size={24} color={colors.white} />
+                </TurnSpin>
               </TouchableOpacity>
               <View style={styles.headerTitle}>
                 <BrandLogo variant="compact" height={22} tone="dark" />
@@ -759,119 +893,91 @@ export default function ScanScreen() {
               <View style={{ width: 40 }} />
             </View>
 
-            {/* Tarama Çerçevesi */}
-            <View
-              pointerEvents="none"
-              style={[
-              styles.scanFrameContainer,
-              {
-                width: isLandscape ? width * 0.75 : width * 0.85,
-                height: isLandscape ? 220 : 180,
-                marginLeft: isLandscape ? -(width * 0.75) / 2 : -(width * 0.85) / 2,
-                marginTop: isLandscape ? -110 : -90,
-              }
-            ]}>
-
-              {/* Köşe İşaretleri */}
-              <View style={[styles.corner, styles.cornerTL]} />
-              <View style={[styles.corner, styles.cornerTR]} />
-              <View style={[styles.corner, styles.cornerBL]} />
-              <View style={[styles.corner, styles.cornerBR]} />
-
-              {/* Animasyonlu Scan Line */}
-              <Animated.View
-                style={[
-                  styles.scanLine,
-                  {
-                    transform: [{
-                      translateY: scanLineAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0, isLandscape ? 200 : 160],
-                      }),
-                    }],
-                  },
-                ]}
+            {activeTab === "camera" ? (
+              /* Fotoğraf: çerçeve telefonun fiziksel tutuşuna göre şekillenir, köşelerinden
+                 boyutlandırılır ve fotoğraf tam o alandan kırpılır. */
+              <CaptureFrame
+                live={!isScanning}
+                topOffset={insets.top + 52}
+                bottomOffset={142}
+                geoRef={captureGeoRef}
+                onTurnChange={setCamTurn}
               />
+            ) : (
+              /* Barkod: barkod her yönde okunduğu için sabit çerçeve yeterli. */
+              <>
+                <View
+                  pointerEvents="none"
+                  style={[
+                    styles.scanFrameContainer,
+                    {
+                      width: width * 0.85,
+                      height: 180,
+                      marginLeft: -(width * 0.85) / 2,
+                      marginTop: -90,
+                    },
+                  ]}
+                >
+                  <View style={[styles.corner, styles.cornerTL]} />
+                  <View style={[styles.corner, styles.cornerTR]} />
+                  <View style={[styles.corner, styles.cornerBL]} />
+                  <View style={[styles.corner, styles.cornerBR]} />
 
-              {/* Merkez İkonu */}
-              <View style={styles.centerIcon}>
-                <Ionicons name="leaf-outline" size={32} color="rgba(255,255,255,0.3)" />
-              </View>
-            </View>
+                  <Animated.View
+                    style={[
+                      styles.scanLine,
+                      {
+                        transform: [
+                          {
+                            translateY: scanLineAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [0, 160],
+                            }),
+                          },
+                        ],
+                      },
+                    ]}
+                  />
 
-            {/* Yönlendirme Metni */}
-            <View pointerEvents="none" style={styles.guidanceContainer}>
-              {!isLandscape && (
-                <View style={styles.rotateWarning}>
-                  <Ionicons name="phone-landscape-outline" size={20} color={colors.primary} />
-                  <Text style={styles.rotateWarningText}>
-                    {t("scan.rotateHint")} {"\n"}
-                    <Text style={styles.rotateWarningSubtext}>
-                      {t("scan.rotationLockHint")}
-                    </Text>
-                  </Text>
+                  <View style={styles.centerIcon}>
+                    <Ionicons name="barcode-outline" size={32} color="rgba(255,255,255,0.3)" />
+                  </View>
                 </View>
-              )}
-              <Text style={styles.guidanceTitle}>
-                {t("scan.frameTitle")}
-              </Text>
-              <Text style={styles.guidanceSubtitle}>
-                {isLandscape ? t("scan.frameSubtitleLandscape") : t("scan.frameSubtitlePortrait")}
-              </Text>
-            </View>
 
-            {/* Alt Kontroller (Modal İçi) */}
+                <View pointerEvents="none" style={styles.guidanceContainer}>
+                  <Text style={styles.guidanceTitle}>{t("scan.barcodeFrameTitle")}</Text>
+                  <Text style={styles.guidanceSubtitle}>{t("scan.barcodeFrameHint")}</Text>
+                </View>
+              </>
+            )}
+
+            {/* Alt Kontroller (Modal İçi). Simgeler yan tutuşta kullanıcıya döner. */}
             <View style={styles.cameraControls}>
               {/* Flash Toggle */}
               <TouchableOpacity
                 style={[styles.controlButton, flashOn && styles.controlButtonActive]}
                 onPress={() => setFlashOn(!flashOn)}
               >
-                <Ionicons
-                  name={flashOn ? "flash" : "flash-off-outline"}
-                  size={24}
-                  color={flashOn ? colors.primary : colors.white}
-                />
+                <TurnSpin turn={camTurn}>
+                  <Ionicons
+                    name={flashOn ? "flash" : "flash-off-outline"}
+                    size={24}
+                    color={flashOn ? colors.primary : colors.white}
+                  />
+                </TurnSpin>
               </TouchableOpacity>
 
               {/* Ana Çekim Butonu */}
               {activeTab === "camera" && (
                 <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-                  <Pressable
-                    style={styles.captureButtonNew}
-                    onPress={async () => {
-                      if (cameraRef.current) {
-                        try {
-                          const photo = await cameraRef.current.takePictureAsync({
-                            base64: true,
-                            quality: 0.3,
-                            skipProcessing: true,
-                            shutterSound: false
-                          });
-
-                          setProcessingMode("camera");
-                          setIsScanning(true);
-                          setShowCamera(false);
-
-                          if (photo.base64) {
-                            await analyzeImageWithGemini(photo.base64, photo.uri);
-                          }
-                        } catch (e) {
-                          console.error("❌ Hata:", e);
-                          openErrorModal(
-                            t("errors.generic", { defaultValue: "Bir hata oluştu." }),
-                            t("scan.invalidScanDesc", { defaultValue: "Görüntüde okunabilir bir gıda içeriği tespit edilemedi veya bu bir gıda ürünü değil." })
-                          );
-                          setIsScanning(false);
-                        }
-                      }
-                    }}
-                  >
+                  <Pressable style={styles.captureButtonNew} onPress={captureAndAnalyze}>
                     {isScanning ? (
                       <ActivityIndicator size="large" color={colors.primary} />
                     ) : (
                       <View style={styles.captureButtonInner}>
-                        <Ionicons name="scan" size={28} color={colors.white} />
+                        <TurnSpin turn={camTurn}>
+                          <Ionicons name="scan" size={28} color={colors.white} />
+                        </TurnSpin>
                       </View>
                     )}
                   </Pressable>
@@ -892,7 +998,9 @@ export default function ScanScreen() {
                 style={styles.controlButton}
                 onPress={handleGalleryPick}
               >
-                <Ionicons name="images-outline" size={24} color={colors.white} />
+                <TurnSpin turn={camTurn}>
+                  <Ionicons name="images-outline" size={24} color={colors.white} />
+                </TurnSpin>
               </TouchableOpacity>
             </View>
           </View>
@@ -1372,40 +1480,6 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
   },
   controlButtonActive: {
     backgroundColor: "rgba(255,255,255,0.3)",
-  },
-  scanFramePortrait: {
-    width: "85%",
-    height: 180,
-    marginLeft: "-42.5%",
-    marginTop: -90,
-  },
-  scanFrameLandscape: {
-    width: "75%",
-    height: 220,
-    marginLeft: "-37.5%",
-    marginTop: -110,
-  },
-  rotateWarning: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "rgba(255, 152, 0, 0.2)",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255, 152, 0, 0.3)",
-  },
-  rotateWarningText: {
-    color: colors.primary,
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  rotateWarningSubtext: {
-    fontSize: 11,
-    fontWeight: "400",
-    color: "rgba(255, 152, 0, 0.8)",
   },
   // Input UX Stilleri
   inputWrapper: {

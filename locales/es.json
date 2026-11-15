@@ -585,11 +585,12 @@
         "daysShort": "{{count}}d"
     },
     "scan": {
-        "rotateHint": "Rota el teléfono para mejores resultados",
-        "rotationLockHint": "¿No rota? Desactiva el bloqueo de rotación en los ajustes del teléfono",
         "frameTitle": "Enmarca la Lista de Ingredientes",
-        "frameSubtitlePortrait": "Sostén el teléfono horizontal para listas largas de ingredientes",
-        "frameSubtitleLandscape": "Posiciona la lista de ingredientes dentro del área de escaneo",
+        "frameTitleShort": "Ajusta la lista de ingredientes al marco",
+        "frameHint": "Solo se captura el área del marco. Arrastra una esquina para ajustarla.",
+        "turnSideways": "Gira el teléfono de lado para listas largas",
+        "barcodeFrameTitle": "Enmarca el Código de Barras",
+        "barcodeFrameHint": "Coloca el código de barras en el área de escaneo",
         "enterValidBarcode": "Por favor introduce un código válido.",
         "productNotFound": "Producto no encontrado en la base de datos.",
         "textTooShort": "Por favor introduce contenido suficiente para el análisis.",

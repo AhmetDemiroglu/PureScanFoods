@@ -585,11 +585,12 @@
         "daysShort": "{{count}}d"
     },
     "scan": {
-        "rotateHint": "Rotate phone for better results",
-        "rotationLockHint": "Not rotating? Disable rotation lock in phone settings",
         "frameTitle": "Frame the Ingredient List",
-        "frameSubtitlePortrait": "Hold phone horizontally for long ingredient lists",
-        "frameSubtitleLandscape": "Position the ingredient list within the scan area",
+        "frameTitleShort": "Fit the ingredient list in the frame",
+        "frameHint": "Only the framed area is captured. Drag a corner to resize.",
+        "turnSideways": "Turn the phone sideways for long lists",
+        "barcodeFrameTitle": "Frame the Barcode",
+        "barcodeFrameHint": "Position the barcode within the scan area",
         "enterValidBarcode": "Please enter a valid barcode.",
         "productNotFound": "Product not found in database.",
         "textTooShort": "Please enter sufficient content for analysis.",

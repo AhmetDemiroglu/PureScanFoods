@@ -585,11 +585,12 @@
         "daysShort": "{{count}} g"
     },
     "scan": {
-        "rotateHint": "Daha iyi sonuç için telefonu yatay çevirin",
-        "rotationLockHint": "Dönmüyorsa: Ayarlar > Ekran döndürme kilidini kapatın",
         "frameTitle": "İçerik Listesini Çerçeveleyin",
-        "frameSubtitlePortrait": "Uzun içerik listeleri için telefonu yatay tutun",
-        "frameSubtitleLandscape": "İçerik listesini tarama alanına yerleştirin",
+        "frameTitleShort": "İçerik listesini çerçeveye alın",
+        "frameHint": "Yalnız çerçevenin içi çekilir, köşelerden büyütün.",
+        "turnSideways": "Uzun listeler için telefonu yan çevirin",
+        "barcodeFrameTitle": "Barkodu Çerçeveleyin",
+        "barcodeFrameHint": "Barkodu tarama alanına yerleştirin",
         "enterValidBarcode": "Lütfen geçerli bir barkod girin.",
         "productNotFound": "Ürün veritabanında bulunamadı.",
         "textTooShort": "Lütfen analiz için yeterli içerik girin.",
