@@ -89,10 +89,10 @@ export default function TypeEntrySheet({
       <View style={[styles.flex, { paddingTop: insets.top + 10 }]}>
         <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: colors.overlay }]} onPress={onClose} />
         {visible ? (
-          <Animated.View
-            entering={SlideInUp.springify().damping(18).stiffness(180)}
-            style={[styles.sheet, { backgroundColor: colors.card }]}
-          >
+          // Giriş animasyonu dıştaki boş sarmalayıcıda: kartın kendisi animasyonlu görünümde olursa hata uyarısı
+          // eklenince yüksekliği güncellenmiyor, düğme kartın altından taşıyordu.
+          <Animated.View entering={SlideInUp.springify().damping(18).stiffness(180)} style={styles.sheetWrap}>
+          <View style={[styles.sheet, { backgroundColor: colors.card }]}>
             <View style={styles.headRow}>
               <Text variant="display" style={[styles.title, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
                 {t("home.typeSheet.title", { defaultValue: "Yazarak analiz et" })}
@@ -175,6 +175,7 @@ export default function TypeEntrySheet({
               </Text>
               <Ionicons name={mode === "text" ? "arrow-forward" : "search"} size={18} color="#FFF" />
             </Pressable>
+          </View>
           </Animated.View>
         ) : null}
       </View>
@@ -184,8 +185,10 @@ export default function TypeEntrySheet({
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  sheet: {
+  sheetWrap: {
     marginHorizontal: 12,
+  },
+  sheet: {
     borderRadius: 28,
     paddingHorizontal: 18,
     paddingTop: 16,
