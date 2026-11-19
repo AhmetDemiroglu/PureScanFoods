@@ -79,7 +79,8 @@
             "fromGallery": "Desde Galería",
             "or": "O",
             "enterBarcode": "Introducir Número de Código",
-            "search": "Buscar"
+            "search": "Buscar",
+            "scanHint": "Encuadra la etiqueta, nosotros leemos el resto"
         },
         "permissions": {
             "request": "Permiso de Cámara"
@@ -87,7 +88,16 @@
         "disclaimer": {
             "off": "El escaneo de códigos usa la base de datos OpenFoodFacts."
         },
-        "lastScan": "Último análisis"
+        "lastScan": "Último análisis",
+        "tiles": {
+            "gallery": "Galería",
+            "type": "Escribir"
+        },
+        "typeSheet": {
+            "title": "Escribe para analizar",
+            "ingredients": "Ingredientes",
+            "barcode": "N.º de código"
+        }
     },
     "tabs": {
         "scan": "Escanear",
@@ -849,8 +859,8 @@
         "replayDone": "Los consejos se mostrarán de nuevo la primera vez que abras cada página.",
         "home": {
             "modes": {
-                "title": "Tres formas de escanear",
-                "desc": "Foto de la etiqueta, código de barras o texto de ingredientes. Elige la que tengas."
+                "title": "Otras formas",
+                "desc": "Escanea un código, elige una foto de la galería o escribe los ingredientes. Un toque cada una."
             },
             "scan": {
                 "title": "Fotografía los ingredientes",

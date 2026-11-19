@@ -79,7 +79,8 @@
             "scanBarcode": "Barkod Tara",
             "analyzeText": "Analiz Et",
             "fromGallery": "Galeriden Seç",
-            "or": "VEYA"
+            "or": "VEYA",
+            "scanHint": "Etiketi kadraja al, gerisini biz okuyalım"
         },
         "permissions": {
             "request": "Kamera İzni Ver"
@@ -87,7 +88,16 @@
         "disclaimer": {
             "off": "Barkod taraması OpenFoodFacts veritabanını kullanır."
         },
-        "lastScan": "Son tarama"
+        "lastScan": "Son tarama",
+        "tiles": {
+            "gallery": "Galeri",
+            "type": "Yazarak"
+        },
+        "typeSheet": {
+            "title": "Yazarak analiz et",
+            "ingredients": "İçindekiler",
+            "barcode": "Barkod no"
+        }
     },
     "tabs": {
         "scan": "Tara",
@@ -849,8 +859,8 @@
         "replayDone": "İpuçları her sayfaya ilk girişinde yeniden gösterilecek.",
         "home": {
             "modes": {
-                "title": "Üç yolla tara",
-                "desc": "Etiket fotoğrafı, barkod ya da içerik metni. Elinde hangisi varsa onu seç."
+                "title": "Başka yollar",
+                "desc": "Barkodu okut, galeriden fotoğraf seç ya da içeriği yazarak gir. Hepsi tek dokunuş."
             },
             "scan": {
                 "title": "İçindekileri çek",

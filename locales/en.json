@@ -79,7 +79,8 @@
             "fromGallery": "From Gallery",
             "or": "OR",
             "enterBarcode": "Enter Barcode No",
-            "search": "Search"
+            "search": "Search",
+            "scanHint": "Frame the label, we'll read the rest"
         },
         "permissions": {
             "request": "Camera Permission"
@@ -87,7 +88,16 @@
         "disclaimer": {
             "off": "Barcode scanning uses OpenFoodFacts database."
         },
-        "lastScan": "Last scan"
+        "lastScan": "Last scan",
+        "tiles": {
+            "gallery": "Gallery",
+            "type": "Type it"
+        },
+        "typeSheet": {
+            "title": "Type to analyze",
+            "ingredients": "Ingredients",
+            "barcode": "Barcode no."
+        }
     },
     "tabs": {
         "scan": "Scan",
@@ -849,8 +859,8 @@
         "replayDone": "Tips will show again the first time you open each page.",
         "home": {
             "modes": {
-                "title": "Three ways to scan",
-                "desc": "Label photo, barcode or ingredient text. Pick whichever you have."
+                "title": "Other ways",
+                "desc": "Scan a barcode, pick a photo from your gallery or type the ingredients. One tap each."
             },
             "scan": {
                 "title": "Snap the ingredients",

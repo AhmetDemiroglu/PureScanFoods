@@ -36,19 +36,28 @@ const GradientText = ({ colors, ...props }: any) => {
 };
 
 type HeroProps = {
+  /** stacked: portakal üstte, yazı altta. inline: küçük ekranda yan yana (yazılı logo hiç gizlenmez). */
+  lockup?: "stacked" | "inline";
+  /** Yan yana düzende logonun genişliği. */
+  inlineWidth?: number;
+  /** Logo ile başlık arası boşluk (ana ekranın blok boşluğu, lib/heroLayout). */
+  gap?: number;
   /** Ortadaki portakal simgesinin ölçüsü: ana ekran, kalan yüksekliğe göre hesaplar. */
   markSize: number;
   /** Altındaki "PureScan | FOODS" yazısının genişliği. */
   wordmarkWidth: number;
   /** Çok dar ekranda alt başlık gizlenir. */
   showSubheadline?: boolean;
-  /** Küçük ekranda yazı logosu gizlenir. */
+  /** Eski ad: yazı logosu artık gizlenmez, küçük ekranda yan yana düzene geçer. */
   showWordmark?: boolean;
   /** En küçük ekranda başlık da gizlenir. */
   showHeadline?: boolean;
 };
 
 export default function Hero({
+  lockup = "stacked",
+  inlineWidth = 260,
+  gap = 20,
   markSize,
   wordmarkWidth,
   showSubheadline = true,
@@ -78,6 +87,11 @@ export default function Hero({
 
   return (
     <View style={styles.container}>
+      {lockup === "inline" ? (
+        <Animated.View entering={reduce ? undefined : FadeInDown.duration(520)} style={styles.logoWrapper}>
+          <BrandLogo variant="horizontal" width={inlineWidth} />
+        </Animated.View>
+      ) : (
       <Animated.View entering={reduce ? undefined : FadeInDown.duration(520)} style={styles.logoWrapper}>
         <View style={{ width: markSize, height: markSize, alignItems: "center", justifyContent: "center" }}>
           <Animated.View
@@ -97,13 +111,12 @@ export default function Hero({
           </Animated.View>
           <BrandLogo variant="mark" size={markSize} />
         </View>
-        {showWordmark ? (
-          <BrandLogo variant="wordmark" width={wordmarkWidth} style={{ marginTop: HERO.markGap }} />
-        ) : null}
+        <BrandLogo variant="wordmark" width={wordmarkWidth} style={{ marginTop: HERO.markGap }} />
       </Animated.View>
+      )}
 
       {showHeadline ? (
-        <View style={styles.sloganContainer}>
+        <View style={[styles.sloganContainer, { marginTop: gap + HERO.sloganTop }]}>
           <GradientText
             colors={colors}
             variant="display"
@@ -134,7 +147,6 @@ const createStyles = (colors: AppColors, isDark: boolean) =>
       alignSelf: "stretch",
     },
     logoWrapper: {
-      marginBottom: HERO.logoBottom,
       alignItems: "center",
     },
     sloganContainer: {

@@ -24,8 +24,8 @@ const TAB = { padding: 2 } as const;
 // Turlar kısa tutulur (Ahmet: "eğitime boğmayalım"), her sayfada ilk girişte bir kez.
 // Guru, Beslenme ve Sözlük turları ilk girişte kendiliğinden açılır; info simgesi yeniden açar.
 export const HOME_TOUR: TourStep[] = [
-  { target: "home.tabs", key: "home.modes", icon: "albums-outline", padding: 6 },
   { target: "home.scan", key: "home.scan", icon: "scan-outline", padding: 6 },
+  { target: "home.tabs", key: "home.modes", icon: "apps-outline", padding: 6 },
   { target: "tab.nutrition", key: "home.profile", icon: "people-outline", ...TAB },
   { target: "home.history", key: "home.history", icon: "time-outline", shape: "circle", padding: 6 },
   { target: "tab.guru", key: "home.guru", icon: "sparkles-outline", ...TAB },

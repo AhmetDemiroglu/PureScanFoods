@@ -1,39 +1,48 @@
-// Ana ekranın kaymadan sığması için hero (logo + başlık) ölçüleri.
+// Ana ekranın kaymadan sığması için yerleşim hesabı (tek dokunuş düzeni).
 // Saf fonksiyon: React ve native API yok, node ile sınanır (lib/__tests__/heroLayout.test.mjs).
-// Sıra: boşluk daralır, simge küçülür, alt başlık gizlenir; küçük ekranda sonra kart sıkışır,
-// yazı logosu gizlenir, başlık gizlenir, simge en küçüğe iner. Hedef: hiçbir telefonda kayma yok.
+//
+// Bloklar (yukarıdan aşağı): logo, başlık (+ alt başlık), tarama kartı, üç küçük kart.
+// Yer daraldıkça sıra: boşluk daralır, simge küçülür, alt başlık gizlenir, kartlar kompaktlaşır,
+// logo yan yana düzene geçer (portakal solda, "PureScan | FOODS" yanında), başlık gizlenir,
+// yan yana logo biraz küçülür. Yazılı logo HİÇBİR ekranda gizlenmez (Ahmet, 2026-11-19).
 
 /** Hero bileşeninin sabit ölçüleri. components/ui/Hero.tsx stilleri buradan okur, hesap da. */
 export const HERO = {
   /** "PureScan | FOODS" yazı logosunun en/boy oranı (brandSvgs wordmark). */
   wordmarkAspect: 8.8693,
-  /** Simge ile yazı logosu arası. */
+  /** Portakal + "PureScan | FOODS" yan yana logonun en/boy oranı (brandSvgs horizontal). */
+  inlineAspect: 4.7865,
+  /** Simge ile yazı logosu arası (alt alta düzen). */
   markGap: 10,
-  /** Logo bloğunun altı. */
-  logoBottom: 18,
   /** Başlık bloğunun üstü. */
-  sloganTop: 8,
+  sloganTop: 6,
   /** Serif başlık (tek satır, sığmazsa küçülür). */
-  headlineSize: 26,
-  headlineLine: 32,
+  headlineSize: 24,
+  headlineLine: 30,
   subSize: 14,
   subLine: 20,
-  subTop: 6,
+  subTop: 4,
 } as const;
 
-/** Son tarama şeridinin kapladığı yükseklik (şerit + üst boşluk). */
-export const LAST_SCAN_STRIP_SPACE = 64;
+export const HOME_CARD = {
+  /** Tarama kartı yüksekliği (tam / kompakt). İçindeki yazı büyüdükçe en az yükseklik artar. */
+  scanFull: 148,
+  scanCompact: 116,
+  /** Küçük eylem kartları. */
+  tileFull: 88,
+  tileCompact: 72,
+  /** Tarama kartıyla küçük kartlar arası (blok arası boşluktan bağımsız, sabit). */
+  innerGap: 10,
+} as const;
 
-/** Kompakt kartın kazandırdığı yükseklik (ana düğme ve kart dolgusu küçülür, index.tsx stilleriyle aynı). */
-export const COMPACT_CARD_SAVING = 70;
+/** Son tarama şeridi yüksekliği. */
+export const LAST_SCAN_STRIP_SPACE = 52;
 
-export type HeroInput = {
+export type HomeInput = {
   /** Ekran genişliği. */
   width: number;
   /** İçerik için kalan yükseklik: kaydırma alanı eksi alt bar boşluğu. */
   available: number;
-  /** Tarama kartının TAM düzendeki ölçülen yüksekliği (0: henüz ölçülmedi). Kompakt düzende ölçülmez. */
-  cardH: number;
   /** Sistem yazı ölçeği (PixelRatio.getFontScale). */
   fontScale: number;
   /** Gövde ve başlık yazılarının büyüme sınırları (AppText ile aynı). */
@@ -41,65 +50,81 @@ export type HeroInput = {
   displayCap: number;
 };
 
-export type HeroLayout = {
+export type HomeLayout = {
+  /** stacked: portakal üstte, yazı altta. inline: yan yana. */
+  lockup: "stacked" | "inline";
+  /** Alt alta düzende simge ölçüsü. */
   mark: number;
+  /** Alt alta düzende yazı logosu genişliği. */
   word: number;
-  gap: number;
-  showSub: boolean;
-  /** Yazı logosu ("PureScan | FOODS") görünür mü. */
-  showWord: boolean;
-  /** Serif başlık görünür mü. */
+  /** Yan yana düzende logonun genişliği. */
+  inlineWidth: number;
   showHeadline: boolean;
-  /** Tarama kartı kompakt mı (küçük ekran). */
-  compactCard: boolean;
-  /** Her şey yerleştikten sonra kalan boş yükseklik. */
+  showSub: boolean;
+  scanCardH: number;
+  tileH: number;
+  /** Bloklar arası boşluk. */
+  gap: number;
+  /** Her şey yerleştikten sonra kalan boş yükseklik (son tarama şeridi bu paya göre gösterilir). */
   spare: number;
 };
 
-const MIN_MARK = 72;
-const TINY_MARK = 56;
-const MAX_GAP = 40;
-const MIN_GAP = 18;
+const MAX_GAP = 28;
+const MIN_GAP = 14;
+const MIN_STACK_MARK = 88;
+const MIN_INLINE_WIDTH = 220;
 /** Kaydırma alanı içindeki üst/alt dolgu payı. */
-const CONTENT_PAD = 24;
+const CONTENT_PAD = 20;
 
-export function computeHeroLayout({ width, available, cardH, fontScale, bodyCap, displayCap }: HeroInput): HeroLayout {
+export function computeHomeLayout({ width, available, fontScale, bodyCap, displayCap }: HomeInput): HomeLayout {
   const bodyScale = Math.min(Math.max(fontScale, 0.8), bodyCap);
   const displayScale = Math.min(Math.max(fontScale, 0.8), displayCap);
-  const maxMark = Math.min(width * 0.46, 210);
+  const maxMark = Math.min(width * 0.42, 190);
   const wordFor = (mark: number) => Math.min(width - 64, 400, Math.max(200, mark * 1.9));
+  const maxInline = Math.min(width - 64, 340);
   const headline = HERO.headlineLine * displayScale + HERO.sloganTop;
   const sub = HERO.subLine * bodyScale + HERO.subTop;
+  // Kart içindeki yazılar büyüdükçe kartın en az yüksekliği de büyür (yazı kesilmesin).
+  const scanMin = 40 + 24 * bodyScale + 36 * bodyScale;
+  const tileMin = 54 + 17 * bodyScale;
 
-  if (!available || !cardH) {
-    const mark = Math.min(maxMark, 150);
-    return { mark, word: wordFor(mark), gap: 32, showSub: true, showWord: true, showHeadline: true, compactCard: false, spare: 0 };
+  let lockup: "stacked" | "inline" = "stacked";
+  let mark = maxMark;
+  let inlineWidth = maxInline;
+  let gap = MAX_GAP;
+  let showSub = true;
+  let showHeadline = true;
+  let compact = false;
+
+  const scanH = () => Math.max(compact ? HOME_CARD.scanCompact : HOME_CARD.scanFull, scanMin);
+  const tileH = () => Math.max(compact ? HOME_CARD.tileCompact : HOME_CARD.tileFull, tileMin);
+  const logoH = () =>
+    lockup === "stacked" ? mark + HERO.markGap + wordFor(mark) / HERO.wordmarkAspect : inlineWidth / HERO.inlineAspect;
+  const textH = () => (showHeadline ? headline + (showSub ? sub : 0) : 0);
+  const need = () => logoH() + textH() + scanH() + HOME_CARD.innerGap + tileH() + gap * (showHeadline ? 2 : 1);
+  const room = available - CONTENT_PAD;
+  const short = () => need() - room;
+
+  if (available > 0) {
+    if (short() > 0) gap = Math.max(MIN_GAP, gap - short() / (showHeadline ? 2 : 1));
+    if (short() > 0) mark = Math.max(MIN_STACK_MARK, mark - short());
+    if (short() > 0) showSub = false;
+    if (short() > 0) compact = true;
+    if (short() > 0) lockup = "inline";
+    if (short() > 0) showHeadline = false;
+    if (short() > 0) inlineWidth = Math.max(MIN_INLINE_WIDTH, inlineWidth - short() * HERO.inlineAspect);
   }
 
-  let gap = MAX_GAP;
-  let mark = maxMark;
-  let showSub = true;
-  let showWord = true;
-  let showHeadline = true;
-  let compactCard = false;
-
-  const room = () => available - (compactCard ? cardH - COMPACT_CARD_SAVING : cardH) - CONTENT_PAD;
-  const need = () =>
-    mark +
-    (showWord ? HERO.markGap + wordFor(mark) / HERO.wordmarkAspect : 0) +
-    HERO.logoBottom +
-    (showHeadline ? headline : 0) +
-    (showHeadline && showSub ? sub : 0) +
-    gap;
-  const short = () => need() - room();
-
-  if (short() > 0) gap = Math.max(MIN_GAP, gap - short());
-  if (short() > 0) mark = Math.max(MIN_MARK, mark - short());
-  if (short() > 0) showSub = false;
-  if (short() > 0) compactCard = true;
-  if (short() > 0) showWord = false;
-  if (short() > 0) showHeadline = false;
-  if (short() > 0) mark = Math.max(TINY_MARK, mark - short());
-
-  return { mark, word: wordFor(mark), gap, showSub, showWord, showHeadline, compactCard, spare: -short() };
+  return {
+    lockup,
+    mark,
+    word: wordFor(mark),
+    inlineWidth,
+    showHeadline,
+    showSub,
+    scanCardH: Math.round(scanH()),
+    tileH: Math.round(tileH()),
+    gap,
+    spare: available > 0 ? -short() : 0,
+  };
 }
