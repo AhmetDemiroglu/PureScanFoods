@@ -670,7 +670,8 @@
         "show_less": "Mostrar Menos",
         "no_diet": "Sin Dieta Seleccionada",
         "no_allergen": "Sin Alérgenos",
-        "edit_profile": "Editar Perfil"
+        "edit_profile": "Editar Perfil",
+        "no_allergen_hint": "Añade un alérgeno y te avisaremos de los productos que lo contengan."
     },
     "diets": {
         "VEGAN": "Vegano",

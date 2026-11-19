@@ -11,11 +11,21 @@ import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../../lib/firebase";
 import PremiumCompareModal from "../ui/PremiumCompareModal";
 import PaywallModal from "../ui/PaywallModal";
-import LottieView from "lottie-react-native";
 import { useTheme } from "../../context/ThemeContext";
 import * as AppleAuthentication from "expo-apple-authentication";
-import { FONT_SCALE_CAP } from "../../constants/design";
+import { LinearGradient } from "expo-linear-gradient";
+import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
+import { FONT_SCALE_CAP, Radii, shadow } from "../../constants/design";
 import UsageRings, { buildWeeklyRights } from "../ui/UsageRings";
+import { PressableScale } from "../ui/PressableScale";
+import AuthStoryArt from "./AuthStoryArt";
+import { AllergenCard, DietCard, ProfileHeader } from "./ProfileSections";
+
+// Giriş görünümünün art hariç yaklaşık yüksekliği (yazı ölçeği 1.0, Apple düğmesi hariç).
+// Animasyon boyu kalan alana göre küçülür: kısa telefonda form kaydırmadan sığsın.
+const AUTH_FIXED_HEIGHT = 470;
+const AUTH_FIXED_HEIGHT_COMPACT = 420;
+const APPLE_BUTTON_HEIGHT = 64;
 
 interface AuthModalProps {
     visible: boolean;
@@ -60,8 +70,10 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
     const { colors, isDark } = useTheme();
     const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const insets = useSafeAreaInsets();
-    const { height: winHeight } = useWindowDimensions();
+    const { width: winWidth, height: winHeight } = useWindowDimensions();
     const maxModalHeight = winHeight - insets.top - insets.bottom - 32;
+    // Kısa ekran (ör. 360x640): animasyon küçük uçta, boşluklar sıkı.
+    const compactAuth = winHeight < 700;
     const { user, userProfile, login, register, loginWithGoogle, loginWithApple, logout, usageStats, isPremium } = useAuth();
     const { familyMembers } = useUser();
     const [isRegister, setIsRegister] = useState(false);
@@ -80,6 +92,14 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
     const [appleAvailable, setAppleAvailable] = useState(false);
 
     const isLoggedIn = user && !user.isAnonymous;
+
+    // Hikâye animasyonunun boyu: ekran boyunun ~%17'si (96-168), kart içi genişliği aşmaz, formun
+    // kaydırmadan sığması için modalda kalan alana göre gerekirse 72'ye kadar küçülür.
+    const appleShown = Platform.OS === "ios" && appleAvailable;
+    const artBase = compactAuth ? 96 : Math.min(168, Math.max(96, winHeight * 0.17));
+    const artRoom =
+        maxModalHeight - 48 - (compactAuth ? AUTH_FIXED_HEIGHT_COMPACT : AUTH_FIXED_HEIGHT) - (appleShown ? APPLE_BUTTON_HEIGHT : 0);
+    const artSize = Math.round(Math.max(72, Math.min(artBase, artRoom, winWidth * 0.88 - 48)));
 
     useEffect(() => {
         if (Platform.OS !== "ios") return;
@@ -224,24 +244,14 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
 
         return (
             <View style={styles.content}>
-                {/* Avatar + Info */}
-                <View style={styles.profileHeader}>
-                    <View style={[styles.avatar, { backgroundColor: userProfile?.color || colors.primary }]}>
-                        <MaterialCommunityIcons name={(userProfile?.avatarIcon || "account") as any} size={32} color="#FFF" />
-                        {isPremium && (
-                            <View style={styles.crownBadge}>
-                                <MaterialCommunityIcons name="crown" size={12} color="#F59E0B" />
-                            </View>
-                        )}
-                    </View>
-                    <Text style={styles.profileName}>{userProfile?.displayName || user?.email?.split("@")[0]}</Text>
-                    <Text style={styles.profileEmail}>{user?.email}</Text>
-                    <View style={[styles.memberBadge, isPremium && styles.memberBadgePremium]}>
-                        <Text style={[styles.memberText, isPremium && styles.memberTextPremium]}>
-                            {isPremium ? t("profile.premium_member") : t("profile.free_member")}
-                        </Text>
-                    </View>
-                </View>
+                {/* Avatar, ad, e-posta, üyelik hapı (Ayarlar profil kartıyla aynı dil) */}
+                <ProfileHeader
+                    name={userProfile?.displayName || user?.email?.split("@")[0]}
+                    email={user?.email}
+                    avatarColor={userProfile?.color || colors.primary}
+                    avatarIcon={userProfile?.avatarIcon || "account"}
+                    isPremium={isPremium}
+                />
 
                 {/* Haftalık haklar: dört küçük halka (Ayarlar ile ortak bileşen) */}
                 <View style={styles.usageSection}>
@@ -249,66 +259,39 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
                     <UsageRings items={weeklyRights} size={46} />
                 </View>
 
-                {/* Diet Plan */}
-                {diet && (
-                    <View style={styles.dietSection}>
-                        <View style={styles.dietIconBox}>
-                            <MaterialCommunityIcons name="silverware-fork-knife" size={16} color={colors.primary} />
-                        </View>
-                        <View style={styles.dietInfo}>
-                            <Text style={styles.dietLabel}>{t("profile.diet_plan")}</Text>
-                            <Text style={styles.dietValue}>{t(`diets.${diet}` as any)}</Text>
-                        </View>
-                    </View>
-                )}
-
-                {/* Allergens - Warm Amber Design */}
-                {allergens.length > 0 && (
-                    <View style={styles.allergensSection}>
-                        <Pressable
-                            style={styles.allergensHeader}
-                            onPress={() => setShowAllAllergens(!showAllAllergens)}
-                        >
-                            <View style={styles.allergensHeaderLeft}>
-                                <View style={styles.allergenIconBox}>
-                                    <Ionicons name="alert-circle-outline" size={14} color="#B45309" />
-                                </View>
-                                <Text style={styles.allergensTitle}>{t("profile.allergens_title")}</Text>
-                                <View style={styles.allergenCount}>
-                                    <Text style={styles.allergenCountText}>{allergens.length}</Text>
-                                </View>
-                            </View>
-                            <Ionicons
-                                name={showAllAllergens ? "chevron-up" : "chevron-down"}
-                                size={18}
-                                color="#92400E"
-                            />
-                        </Pressable>
-
-                        {showAllAllergens && (
-                            <View style={styles.allergensList}>
-                                {allergens.map((a) => (
-                                    <View key={a} style={styles.allergenChip}>
-                                        <Text style={styles.allergenChipText}>{t(`allergens.${a}` as any)}</Text>
-                                    </View>
-                                ))}
-                            </View>
-                        )}
-                    </View>
-                )}
+                {/* Beslenme planı ve alerjenler: beyaz, ince kenarlı kartlar */}
+                <View style={styles.profileCards}>
+                    <DietCard diet={diet} />
+                    <AllergenCard
+                        allergens={allergens}
+                        expanded={showAllAllergens}
+                        onToggle={() => setShowAllAllergens(!showAllAllergens)}
+                    />
+                </View>
 
                 {/* Premium'a Geç (sadece free kullanıcı) — auth modal'ı kapatıp tek modal olarak premium aç (iOS swap yok) */}
                 {!isPremium && (
-                    <Pressable
-                        style={({ pressed }) => [styles.upgradeBtn, pressed && styles.btnPressed]}
+                    <PressableScale
+                        style={styles.upgradeShadow}
+                        scaleTo={0.97}
+                        accessibilityRole="button"
                         onPress={() => {
                             onClose();
                             setTimeout(() => setShowPremiumModal(true), 350);
                         }}
                     >
-                        <MaterialCommunityIcons name="crown" size={18} color="#FFF" />
-                        <Text style={styles.upgradeText}>{t("premium.upgrade_now")}</Text>
-                    </Pressable>
+                        <LinearGradient
+                            colors={[colors.primary, colors.primaryDeep]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.upgradeBtn}
+                        >
+                            <MaterialCommunityIcons name="crown" size={18} color="#FFF" />
+                            <Text style={styles.upgradeText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+                                {t("premium.upgrade_now")}
+                            </Text>
+                        </LinearGradient>
+                    </PressableScale>
                 )}
 
                 {/* Logout */}
@@ -322,23 +305,18 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
 
     // AUTH VIEW
     const renderAuth = () => (
-        <View style={styles.content}>
-            {/* Header */}
-            <View style={styles.authHeader}>
-                <View style={styles.authIcon}>
-                    <LottieView
-                        source={require("../../assets/login-signup.json")}
-                        autoPlay
-                        loop
-                        style={styles.authLottie}
-                    />
+        <View style={[styles.content, compactAuth && styles.contentCompact]}>
+            {/* Header: profil kartının kurulduğu hikâye animasyonu */}
+            <View style={[styles.authHeader, compactAuth && styles.authHeaderCompact]}>
+                <View style={[styles.authArt, compactAuth && styles.authArtCompact]}>
+                    <AuthStoryArt size={artSize} />
                 </View>
                 <Text style={styles.authTitle}>{isRegister ? t("auth.join_us") : t("auth.welcome_back")}</Text>
                 <Text style={styles.authSubtitle}>{isRegister ? t("auth.register_subtitle") : t("auth.login_subtitle")}</Text>
             </View>
 
             {/* Form */}
-            <View style={styles.inputBox}>
+            <View style={[styles.inputBox, compactAuth && styles.inputBoxCompact]}>
                 <Ionicons name="mail-outline" size={18} color={colors.gray[400]} />
                 <TextInput
                   maxFontSizeMultiplier={FONT_SCALE_CAP}
@@ -352,7 +330,7 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
                 />
             </View>
 
-            <View style={styles.inputBox}>
+            <View style={[styles.inputBox, compactAuth && styles.inputBoxCompact]}>
                 <Ionicons name="lock-closed-outline" size={18} color={colors.gray[400]} />
                 <TextInput
                   maxFontSizeMultiplier={FONT_SCALE_CAP}
@@ -394,7 +372,7 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
             </Pressable>
 
             {/* Divider */}
-            <View style={styles.divider}>
+            <View style={[styles.divider, compactAuth && styles.dividerCompact]}>
                 <View style={styles.dividerLine} />
                 <Text style={styles.dividerText}>{t("common.or")}</Text>
                 <View style={styles.dividerLine} />
@@ -426,7 +404,7 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
             )}
 
             {/* Footer */}
-            <View style={styles.footer}>
+            <View style={[styles.footer, compactAuth && styles.footerCompact]}>
                 <Text style={styles.footerText}>{isRegister ? t("auth.has_account") : t("auth.no_account")}</Text>
                 <Pressable onPress={() => setIsRegister(!isRegister)}>
                     <Text style={styles.footerLink}>{isRegister ? t("auth.login_button") : t("auth.register_button")}</Text>
@@ -449,6 +427,20 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
                         style={[styles.keyboardView, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}
                     >
                         <View style={[styles.modal, { maxHeight: maxModalHeight }]}>
+                            {/* Profil görünümü: sağ üstten düşen yumuşak turuncu ışık (Ayarlar profil kartıyla aynı) */}
+                            {isLoggedIn && (
+                                <View pointerEvents="none" style={styles.profileGlow}>
+                                    <Svg width="100%" height="100%">
+                                        <Defs>
+                                            <RadialGradient id="authProfileGlow" cx="100%" cy="0%" r="85%">
+                                                <Stop offset="0" stopColor={colors.primary} stopOpacity={isDark ? 0.16 : 0.09} />
+                                                <Stop offset="1" stopColor={colors.primary} stopOpacity={0} />
+                                            </RadialGradient>
+                                        </Defs>
+                                        <Rect x="0" y="0" width="100%" height="100%" fill="url(#authProfileGlow)" />
+                                    </Svg>
+                                </View>
+                            )}
             <Toast message={toast.message} type={toast.type} visible={toast.visible} styles={styles} />
 
                             <Pressable
@@ -498,44 +490,19 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     closeBtn: { position: "absolute", top: 16, right: 16, zIndex: 10 },
     scrollArea: { flexShrink: 1 },
     content: { paddingTop: 8 },
+    contentCompact: { paddingTop: 0 },
 
     // Toast
     toast: { position: "absolute", top: 0, left: 0, right: 0, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 12, borderTopLeftRadius: 24, borderTopRightRadius: 24, zIndex: 100 },
     toastText: { color: "#FFF", fontSize: 14, fontWeight: "600" },
 
-    // Profile
-    profileHeader: { alignItems: "center", marginBottom: 20 },
-    avatar: { width: 72, height: 72, borderRadius: 36, alignItems: "center", justifyContent: "center", marginBottom: 12 },
-    crownBadge: { position: "absolute", bottom: -2, right: -2, width: 24, height: 24, borderRadius: 12, backgroundColor: colors.card, alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
-    profileName: { fontSize: 20, fontWeight: "700", color: colors.secondary, marginBottom: 2 },
-    profileEmail: { fontSize: 13, color: colors.gray[500], marginBottom: 10 },
-    memberBadge: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, backgroundColor: colors.gray[100] },
-    memberBadgePremium: { backgroundColor: "#FEF3C7" },
-    memberText: { fontSize: 11, fontWeight: "700", color: colors.gray[600] },
-    memberTextPremium: { color: "#D97706" },
+    // Profile (başlık ve kartlar ProfileSections içinde)
+    profileGlow: { position: "absolute", top: 0, left: 0, right: 0, height: 240 },
+    profileCards: { gap: 12, marginTop: 18, marginBottom: 16 },
 
     // Haftalık haklar (halkalar UsageRings içinde)
-    usageSection: { marginBottom: 16, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.gray[200] },
+    usageSection: { marginTop: 16, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.gray[200] },
     usageSectionTitle: { fontSize: 11, fontWeight: "700", color: colors.gray[400], marginBottom: 12, letterSpacing: 0.6 },
-
-    // Diet Section
-    dietSection: { flexDirection: "row", alignItems: "center", backgroundColor: isDark ? "rgba(245,158,11,0.16)" : "#FFFBEB", borderRadius: 12, padding: 12, marginBottom: 12, gap: 12, borderWidth: 1, borderColor: isDark ? "rgba(252,211,77,0.45)" : "#FEF3C7" },
-    dietIconBox: { width: 36, height: 36, borderRadius: 10, backgroundColor: isDark ? "rgba(245,158,11,0.24)" : "#FEF3C7", alignItems: "center", justifyContent: "center" },
-    dietInfo: { flex: 1 },
-    dietLabel: { fontSize: 11, color: isDark ? "#FDE68A" : "#92400E", marginBottom: 2 },
-    dietValue: { fontSize: 14, fontWeight: "700", color: isDark ? "#FCD34D" : "#B45309" },
-
-    // Allergens - Warm Amber Design
-    allergensSection: { backgroundColor: isDark ? "rgba(245,158,11,0.16)" : "#FFFBEB", borderRadius: 14, borderWidth: 1, borderColor: isDark ? "rgba(252,211,77,0.45)" : "#FDE68A", marginBottom: 16, overflow: "hidden" },
-    allergensHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, paddingVertical: 12 },
-    allergensHeaderLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
-    allergenIconBox: { width: 28, height: 28, borderRadius: 8, backgroundColor: isDark ? "rgba(245,158,11,0.24)" : "#FEF3C7", alignItems: "center", justifyContent: "center" },
-    allergensTitle: { fontSize: 14, fontWeight: "600", color: isDark ? "#FDE68A" : "#92400E" },
-    allergenCount: { backgroundColor: isDark ? "rgba(252,211,77,0.30)" : "#FDE68A", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
-    allergenCountText: { fontSize: 12, fontWeight: "700", color: isDark ? "#FCD34D" : "#B45309" },
-    allergensList: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 14, paddingBottom: 14 },
-    allergenChip: { backgroundColor: isDark ? "rgba(245,158,11,0.22)" : "#FEF3C7", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-    allergenChipText: { fontSize: 13, fontWeight: "600", color: isDark ? "#FDE68A" : "#92400E" },
 
     logoutBtn: {
         flexDirection: "row",
@@ -543,32 +510,39 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
         justifyContent: "center",
         gap: 8,
         paddingVertical: 14,
-        borderRadius: 14,
-        borderWidth: 1.5,
-        borderColor: isDark ? "rgba(248,113,113,0.45)" : "#FECACA",
-        backgroundColor: isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2"
+        borderRadius: Radii.control + 2,
+        borderWidth: 1,
+        borderColor: isDark ? "rgba(248,113,113,0.35)" : "#F6D3CE",
+        backgroundColor: isDark ? "rgba(220,38,38,0.12)" : "#FFF6F5"
     },
     logoutText: { fontSize: 15, fontWeight: "600", color: isDark ? "#FCA5A5" : "#EF4444" },
+    upgradeShadow: {
+        marginBottom: 10,
+        borderRadius: Radii.control + 2,
+        backgroundColor: colors.primaryDeep,
+        ...shadow("md", isDark, colors.primaryDeep),
+    },
     upgradeBtn: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
         gap: 8,
-        paddingVertical: 14,
-        borderRadius: 14,
-        marginBottom: 10,
-        backgroundColor: "#F59E0B",
+        height: 52,
+        paddingHorizontal: 16,
+        borderRadius: Radii.control + 2,
     },
-    upgradeText: { fontSize: 15, fontWeight: "700", color: "#FFF" },
+    upgradeText: { fontSize: 15, fontWeight: "700", color: "#FFF", flexShrink: 1 },
 
     // Auth
     authHeader: { alignItems: "center", marginBottom: 24 },
-    authIcon: { height: 82, borderRadius: 16, alignItems: "center", justifyContent: "center", marginBottom: 16 },
-    authLottie: { width: 162, height: 162 },
+    authHeaderCompact: { marginBottom: 12 },
+    authArt: { alignItems: "center", justifyContent: "center", marginBottom: 14 },
+    authArtCompact: { marginBottom: 8 },
     authTitle: { fontSize: 22, fontWeight: "700", color: colors.secondary, marginBottom: 4 },
     authSubtitle: { fontSize: 14, color: colors.gray[500], textAlign: "center" },
 
     inputBox: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: colors.gray[50], borderRadius: 14, paddingHorizontal: 14, height: 52, marginBottom: 12, borderWidth: 1, borderColor: colors.gray[200] },
+    inputBoxCompact: { marginBottom: 8 },
     input: { flex: 1, fontSize: 15, color: colors.secondary },
 
     forgotPasswordBtn: { alignSelf: "flex-end", marginBottom: 8, marginTop: -4 },
@@ -580,6 +554,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     btnDisabled: { opacity: 0.6 },
 
     divider: { flexDirection: "row", alignItems: "center", marginVertical: 20 },
+    dividerCompact: { marginVertical: 10 },
     dividerLine: { flex: 1, height: 1, backgroundColor: colors.gray[200] },
     dividerText: { marginHorizontal: 12, fontSize: 12, fontWeight: "600", color: colors.gray[400] },
 
@@ -588,6 +563,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     appleBtn: { height: 52, marginTop: 12, borderRadius: 14 },
 
     footer: { flexDirection: "row", justifyContent: "center", gap: 6, marginTop: 20 },
+    footerCompact: { marginTop: 12 },
     footerText: { fontSize: 14, color: colors.gray[500] },
     footerLink: { fontSize: 14, fontWeight: "700", color: colors.primary },
 });

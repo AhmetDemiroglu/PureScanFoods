@@ -670,7 +670,8 @@
         "show_less": "Daha Az Göster",
         "no_diet": "Diyet Seçilmedi",
         "no_allergen": "Alerjen Yok",
-        "edit_profile": "Profili Düzenle"
+        "edit_profile": "Profili Düzenle",
+        "no_allergen_hint": "Alerjen eklersen, onu içeren ürünlerde seni uyarırız."
     },
     "diets": {
         "VEGAN": "Vegan",
