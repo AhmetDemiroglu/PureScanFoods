@@ -80,7 +80,7 @@
             "or": "OR",
             "enterBarcode": "Enter Barcode No",
             "search": "Search",
-            "scanHint": "Frame the label, we'll read the rest"
+            "scanHint": "Take a photo of the ingredient list on the pack"
         },
         "permissions": {
             "request": "Camera Permission"

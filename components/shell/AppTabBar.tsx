@@ -9,7 +9,7 @@
 // ekranlar useBottomTabBarHeight ile o kadar alt boşluk bırakır.
 
 import React, { useContext, useEffect, useMemo, useState } from "react";
-import { Keyboard, LayoutChangeEvent, Platform, Pressable, StyleSheet, View } from "react-native";
+import { Keyboard, LayoutChangeEvent, Platform, Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { BottomTabBarHeightCallbackContext, type BottomTabBarProps } from "@react-navigation/bottom-tabs";
@@ -19,7 +19,7 @@ import GlassSurface, { hasNativeGlass } from "../ui/GlassSurface";
 import { useTheme } from "../../context/ThemeContext";
 import { useTourTarget } from "../tour/TourContext";
 import { Springs } from "../../constants/motion";
-import { TabBarGeometry as G, glassTint, tabBarOccupiedHeight } from "../../constants/design";
+import { EDGE_GESTURE_WIDTH, TabBarGeometry as G, glassTint, tabBarOccupiedHeight } from "../../constants/design";
 
 type IconName = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -38,6 +38,7 @@ function TabCell({
   routeName,
   label,
   focused,
+  narrow,
   onPress,
   onLongPress,
   onLayout,
@@ -45,6 +46,7 @@ function TabCell({
   routeName: string;
   label: string;
   focused: boolean;
+  narrow: boolean;
   onPress: () => void;
   onLongPress: () => void;
   onLayout: (e: LayoutChangeEvent) => void;
@@ -83,10 +85,9 @@ function TabCell({
         </Animated.View>
         <Text
           numberOfLines={1}
-          adjustsFontSizeToFit
-          minimumFontScale={0.8}
-          maxFontSizeMultiplier={1.15}
-          style={[styles.label, { color: focused ? colors.primary : colors.textMuted }, focused && styles.labelActive]}
+          // Etiketler birbirinden farklı boyda görünmesin: büyütme sınırı düşük, otomatik küçültme yok.
+          maxFontSizeMultiplier={narrow ? 1 : 1.05}
+          style={[styles.label, narrow && styles.labelNarrow, { color: focused ? colors.primary : colors.textMuted }, focused && styles.labelActive]}
         >
           {label}
         </Text>
@@ -151,6 +152,10 @@ export default function AppTabBar({ state, descriptors, navigation, insets }: Bo
   const tint = glassTint(colors, isDark);
   const reduce = useReducedMotion();
   const reportHeight = useContext(BottomTabBarHeightCallbackContext);
+  // Dar ekranda (ör. 320 pt) sekme hücresi ~45 pt kalıyor, "Beslenme" sığmıyordu: kapsül kenara biraz
+  // yaklaşır (yine kenar şeridinin dışında), orta yuva daralır, etiketler hep aynı küçük boyda.
+  const { width: winW } = useWindowDimensions();
+  const narrow = winW < 360;
   const occupied = tabBarOccupiedHeight(insets.bottom);
   const capsuleBottom = occupied - G.capsuleHeight;
 
@@ -238,6 +243,7 @@ export default function AppTabBar({ state, descriptors, navigation, insets }: Bo
       routeName={it.route.name}
       label={it.label}
       focused={it.focused}
+      narrow={narrow}
       onPress={it.onPress}
       onLongPress={it.onLongPress}
       onLayout={cellLayout(it.route.name)}
@@ -259,13 +265,13 @@ export default function AppTabBar({ state, descriptors, navigation, insets }: Bo
         radius={G.radius}
         elevation="lg"
         dense
-        style={[styles.capsule, { bottom: capsuleBottom }]}
+        style={[styles.capsule, narrow && styles.capsuleNarrow, { bottom: capsuleBottom }]}
         contentStyle={styles.capsuleContent}
       >
         {/* Hap hücrelerle aynı koordinat düzleminde: içerik katmanının ilk çocuğu. */}
         <Animated.View pointerEvents="none" style={[styles.pill, { backgroundColor: tint.activePill }, pillStyle]} />
         {left.map(renderCell)}
-        {scanItem ? <View style={styles.scanSlot} pointerEvents="none" /> : null}
+        {scanItem ? <View style={[styles.scanSlot, narrow && styles.scanSlotNarrow]} pointerEvents="none" /> : null}
         {right.map(renderCell)}
       </GlassSurface>
 
@@ -300,6 +306,10 @@ const styles = StyleSheet.create({
     right: G.capsuleMargin,
     height: G.capsuleHeight,
   },
+  capsuleNarrow: {
+    left: EDGE_GESTURE_WIDTH + 2,
+    right: EDGE_GESTURE_WIDTH + 2,
+  },
   capsuleContent: {
     flex: 1,
     flexDirection: "row",
@@ -333,8 +343,15 @@ const styles = StyleSheet.create({
   labelActive: {
     fontWeight: "700",
   },
+  labelNarrow: {
+    fontSize: 9.5,
+    letterSpacing: -0.1,
+  },
   scanSlot: {
     width: SCAN_SLOT,
+  },
+  scanSlotNarrow: {
+    width: G.scanSize + 4,
   },
   scanLayer: {
     position: "absolute",

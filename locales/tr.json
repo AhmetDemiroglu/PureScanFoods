@@ -80,7 +80,7 @@
             "analyzeText": "Analiz Et",
             "fromGallery": "Galeriden Seç",
             "or": "VEYA",
-            "scanHint": "Etiketi kadraja al, gerisini biz okuyalım"
+            "scanHint": "Paketteki içindekiler listesinin fotoğrafını çek"
         },
         "permissions": {
             "request": "Kamera İzni Ver"

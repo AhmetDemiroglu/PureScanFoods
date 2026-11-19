@@ -2,7 +2,7 @@
 // aşağı yukarı gezen tarama çizgisi) kartın ne yaptığını yazıdan önce anlatır. Üstünden ara ara ışık geçer.
 // Dokununca kamera açılır (akış index.tsx'te, eskisiyle aynı).
 import React, { useEffect } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, {
   Easing,
@@ -97,7 +97,9 @@ export default function ScanActionCard({ height, title, hint, active, onPress }:
   const { colors, isDark } = useTheme();
   const scale = useSharedValue(1);
   const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-  const vf = Math.min(height - 32, 112);
+  const { width } = useWindowDimensions();
+  // Dar ekranda kadraj küçülür: açıklama yazısına yer kalsın.
+  const vf = Math.min(height - 32, 112, Math.round(width * 0.27));
 
   return (
     <Animated.View
@@ -150,7 +152,7 @@ export default function ScanActionCard({ height, title, hint, active, onPress }:
             <Text variant="display" style={styles.title} numberOfLines={2}>
               {title}
             </Text>
-            <Text style={styles.hint} numberOfLines={2} maxFontSizeMultiplier={1.2}>
+            <Text style={styles.hint} numberOfLines={3} maxFontSizeMultiplier={1.15}>
               {hint}
             </Text>
           </View>

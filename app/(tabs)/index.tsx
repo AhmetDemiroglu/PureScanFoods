@@ -708,7 +708,7 @@ export default function ScanScreen() {
               <ScanActionCard
                 height={layout.scanCardH}
                 title={t("home.actions.scanIngredients")}
-                hint={t("home.actions.scanHint", { defaultValue: "Etiketi kadraja al, gerisini biz okuyalım" })}
+                hint={t("home.actions.scanHint", { defaultValue: "Paketteki içindekiler listesinin fotoğrafını çek" })}
                 active={isFocused && !showCamera && !showTypeSheet}
                 onPress={() => openCamera("camera")}
               />

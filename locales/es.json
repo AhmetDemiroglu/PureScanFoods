@@ -80,7 +80,7 @@
             "or": "O",
             "enterBarcode": "Introducir Número de Código",
             "search": "Buscar",
-            "scanHint": "Encuadra la etiqueta, nosotros leemos el resto"
+            "scanHint": "Haz una foto de la lista de ingredientes del envase"
         },
         "permissions": {
             "request": "Permiso de Cámara"
