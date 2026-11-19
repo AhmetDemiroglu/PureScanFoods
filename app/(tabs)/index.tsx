@@ -1245,7 +1245,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     width: "100%",
   },
   mainButtonTextCompact: {
-    width: undefined,
+    width: "auto",
     flexShrink: 1,
   },
   divider: {

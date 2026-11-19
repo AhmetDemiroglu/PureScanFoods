@@ -417,7 +417,6 @@ export default function NutritionScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
       {/* --- HEADER (ortak PageHeader) --- */}
       <PageHeader

@@ -163,7 +163,6 @@ export default function SettingsScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
       {/* Header (ortak PageHeader) */}
       <PageHeader
