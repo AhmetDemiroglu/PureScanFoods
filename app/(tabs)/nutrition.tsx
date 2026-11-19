@@ -42,7 +42,7 @@ import { useTour, useTourReplay, useTourScroll, useTourTarget } from "../../comp
 import { NUTRITION_TOUR } from "../../components/tour/tours";
 import PaywallModal from "../../components/ui/PaywallModal";
 import { useTheme } from "../../context/ThemeContext";
-import { FONT_SCALE_CAP } from "../../constants/design";
+import { FONT_SCALE_CAP, Radii, shadow } from "../../constants/design";
 import PageHeader from "../../components/ui/PageHeader";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 
@@ -57,8 +57,8 @@ if (Platform.OS === 'android' && !(global as any).nativeFabricUIManager) {
 type AvatarIconName = keyof typeof MaterialCommunityIcons.glyphMap;
 
 export default function NutritionScreen() {
-  const { userProfile, user, usageStats } = useAuth();
-  const isPremium = userProfile?.subscriptionStatus === "premium" || false;
+  // isPremium: AuthContext'in birleşik değeri (profil + RevenueCat), ayarlarla aynı kaynak.
+  const { userProfile, user, usageStats, isPremium } = useAuth();
   const router = useRouter();
   // Alt bar içeriğin üstünde yüzer: son kart barın altında kalmasın.
   const tabBarHeight = useBottomTabBarHeight();
@@ -319,12 +319,28 @@ export default function NutritionScreen() {
   };
 
   // --- RENDERERS ---
-  const renderDietCard = () => {
-    if (!selectedDiet) return (
-      <View style={styles.emptyBox}>
-        <Ionicons name="restaurant-outline" size={24} color={colors.gray[400]} style={{ marginBottom: 8 }} />
-        <Text style={styles.emptyText}>{t("nutrition.noDiet")}</Text>
+  /** Boş durum kartı: turuncu tonlu simge dairesi, tek satır metin, başlıktaki düğmeyle aynı işi yapan küçük eylem. */
+  const renderEmptyCard = (icon: React.ComponentProps<typeof Ionicons>["name"], text: string, actionLabel: string, onAction: () => void) => (
+    <View style={styles.emptyCard}>
+      <View style={styles.emptyIcon}>
+        <Ionicons name={icon} size={20} color={colors.primary} />
       </View>
+      <View style={styles.emptyBody}>
+        <Text style={styles.emptyText} numberOfLines={2}>{text}</Text>
+        <TouchableOpacity onPress={onAction} style={styles.emptyAction} activeOpacity={0.75} hitSlop={8}>
+          <Text style={styles.emptyActionText} numberOfLines={1}>{actionLabel}</Text>
+          <Ionicons name="arrow-forward" size={13} color={colors.primary} />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderDietCard = () => {
+    if (!selectedDiet) return renderEmptyCard(
+      "restaurant-outline",
+      t("nutrition.noDiet"),
+      t("nutrition.chooseDiet", { defaultValue: "Choose a diet" }),
+      () => setShowDietModal(true)
     );
 
     const def = getDietDefinition(selectedDiet);
@@ -333,7 +349,7 @@ export default function NutritionScreen() {
 
     return (
       <TouchableOpacity
-        style={[styles.novaCard, { borderLeftColor: colors.primary }]}
+        style={styles.novaCard}
         activeOpacity={0.9}
         onPress={() => {
           LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -341,8 +357,8 @@ export default function NutritionScreen() {
         }}
       >
         <View style={styles.novaHeader}>
-          <View style={[styles.novaGroupBadge, { backgroundColor: colors.primary }]}>
-            <Ionicons name="leaf" size={20} color="#FFF" />
+          <View style={styles.novaGroupBadge}>
+            <Ionicons name="leaf" size={19} color={colors.primary} />
           </View>
           <View style={styles.novaTitleArea}>
             <Text style={styles.novaTitle}>{isTr ? def.nameTr : def.name}</Text>
@@ -382,35 +398,33 @@ export default function NutritionScreen() {
   };
 
   const renderAllergenList = () => {
-    if (userAllergens.length === 0) return (
-      <View style={styles.emptyBox}>
-        <Ionicons name="shield-checkmark-outline" size={24} color={colors.gray[400]} style={{ marginBottom: 8 }} />
-        <Text style={styles.emptyText}>{t("nutrition.noAllergen")}</Text>
-      </View>
+    if (userAllergens.length === 0) return renderEmptyCard(
+      "shield-checkmark-outline",
+      t("nutrition.noAllergen"),
+      t("nutrition.addAllergen", { defaultValue: "Add allergens" }),
+      () => setShowAllergenModal(true)
     );
 
-    return (
-      <View style={{ gap: 12 }}>
-        {userAllergens.map((type) => {
-          const def = getAllergenDefinition(type);
-          if (!def) return null;
+    // Tek kart, satırlar arasında ince çizgi (gruplu liste).
+    const defs = userAllergens
+      .map((type) => ({ type, def: getAllergenDefinition(type) }))
+      .filter((x) => !!x.def);
 
-          return (
-            <View key={type} style={[styles.novaCard, { borderLeftColor: colors.error, paddingVertical: 12 }]}>
-              <View style={styles.novaHeader}>
-                <View style={[styles.novaGroupBadge, { backgroundColor: isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2" }]}>
-                  <Ionicons name="warning" size={20} color={colors.error} />
-                </View>
-                <View style={styles.novaTitleArea}>
-                  <Text style={styles.novaTitle}>{isTr ? def.nameTr : def.name}</Text>
-                  <Text style={styles.novaShortDesc}>
-                    {isTr ? def.descriptionTr : def.description}
-                  </Text>
-                </View>
-              </View>
+    return (
+      <View style={styles.groupCard}>
+        {defs.map(({ type, def }, index) => (
+          <View key={type} style={[styles.allergenRow, index < defs.length - 1 && styles.allergenRowDivider]}>
+            <View style={styles.allergenBadge}>
+              <Ionicons name="warning" size={17} color={colors.error} />
             </View>
-          );
-        })}
+            <View style={styles.novaTitleArea}>
+              <Text style={styles.novaTitle}>{isTr ? def!.nameTr : def!.name}</Text>
+              <Text style={styles.novaShortDesc}>
+                {isTr ? def!.descriptionTr : def!.description}
+              </Text>
+            </View>
+          </View>
+        ))}
       </View>
     );
   };
@@ -473,14 +487,21 @@ export default function NutritionScreen() {
         {/* FAMILY PROFILES */}
         <View {...familyTarget} style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{t("nutrition.family.title")}</Text>
-            <TouchableOpacity onPress={openAddModal} style={styles.actionButton}>
+            <Text variant="display" style={styles.sectionTitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+              {t("nutrition.family.title")}
+            </Text>
+            <TouchableOpacity onPress={openAddModal} style={styles.actionButton} activeOpacity={0.75}>
               <Ionicons name="add" size={16} color={colors.primary} />
-              <Text style={styles.actionButtonText}>{t("nutrition.family.add")}</Text>
+              <Text style={styles.actionButtonText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{t("nutrition.family.add")}</Text>
             </TouchableOpacity>
           </View>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.memberScroll}
+            contentContainerStyle={styles.memberScrollContent}
+          >
             {familyMembers.map((member) => {
               const isActive = activeProfileId === member.id;
               return (
@@ -490,14 +511,15 @@ export default function NutritionScreen() {
                   onPress={() => handleMemberPress(member)}
                   onLongPress={() => handleMemberLongPress(member)}
                   delayLongPress={400}
+                  activeOpacity={0.85}
                 >
-                  <View style={[styles.memberAvatar, { backgroundColor: member.color }]}>
-                    <MaterialCommunityIcons name={member.avatarIcon as AvatarIconName} size={20} color="#FFF" />
+                  <View style={[styles.memberAvatar, { backgroundColor: member.color }, isActive && styles.memberAvatarActive]}>
+                    <MaterialCommunityIcons name={member.avatarIcon as AvatarIconName} size={22} color="#FFF" />
                   </View>
                   <Text style={[styles.memberName, isActive && { color: colors.primary }]} numberOfLines={1}>
                     {member.name}
                   </Text>
-                  <Text style={styles.memberRole}>{t(`nutrition.family.roles.${member.role}`)}</Text>
+                  <Text style={styles.memberRole} numberOfLines={1}>{t(`nutrition.family.roles.${member.role}`)}</Text>
                   {isActive && (
                     <View style={styles.activeIndicator}>
                       <Ionicons name="checkmark" size={10} color="#FFF" />
@@ -518,9 +540,11 @@ export default function NutritionScreen() {
         {/* DIET SECTION */}
         <View {...dietTarget} style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{t("nutrition.dietTitle")}</Text>
-            <TouchableOpacity onPress={() => setShowDietModal(true)} style={styles.actionButton}>
-              <Text style={styles.actionButtonText}>{t("nutrition.change")}</Text>
+            <Text variant="display" style={styles.sectionTitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+              {t("nutrition.dietTitle")}
+            </Text>
+            <TouchableOpacity onPress={() => setShowDietModal(true)} style={styles.actionButton} activeOpacity={0.75}>
+              <Text style={styles.actionButtonText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{t("nutrition.change")}</Text>
             </TouchableOpacity>
           </View>
           {renderDietCard()}
@@ -529,9 +553,11 @@ export default function NutritionScreen() {
         {/* ALLERGENS SECTION */}
         <View {...allergensTarget} style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{t("nutrition.allergenTitle")}</Text>
-            <TouchableOpacity onPress={() => setShowAllergenModal(true)} style={styles.actionButton}>
-              <Text style={styles.actionButtonText}>{t("nutrition.edit")}</Text>
+            <Text variant="display" style={styles.sectionTitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+              {t("nutrition.allergenTitle")}
+            </Text>
+            <TouchableOpacity onPress={() => setShowAllergenModal(true)} style={styles.actionButton} activeOpacity={0.75}>
+              <Text style={styles.actionButtonText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{t("nutrition.edit")}</Text>
             </TouchableOpacity>
           </View>
           {renderAllergenList()}
@@ -1065,32 +1091,115 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
   profileInput: { fontSize: 16, fontWeight: "700", color: "#FFF", borderBottomWidth: 1, borderBottomColor: "#FFF", paddingVertical: 0, height: 24 },
   profileRole: { fontSize: 12, color: "rgba(255,255,255,0.9)" },
   scrollContainer: { flex: 1, marginTop: 20, paddingHorizontal: 20 },
-  section: { marginBottom: 28 },
-  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.secondary },
-  actionButton: { paddingVertical: 6, paddingHorizontal: 12, backgroundColor: colors.gray[100], borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 4 },
-  actionButtonText: { fontSize: 13, fontWeight: "600", color: colors.primary },
+  section: { marginBottom: 26 },
+  sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 12 },
+  sectionTitle: { flex: 1, minWidth: 0, fontSize: 21, lineHeight: 26, color: colors.text },
+  actionButton: {
+    flexShrink: 0,
+    maxWidth: "55%",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: isDark ? "rgba(255,139,61,0.14)" : "rgba(242,96,12,0.09)",
+    borderRadius: Radii.pill,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  actionButtonText: { flexShrink: 1, fontSize: 13, fontWeight: "600", color: colors.primary },
 
-  memberCard: { width: 100, padding: 12, backgroundColor: colors.card, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: colors.gray[200], marginRight: 8 },
-  memberCardActive: { borderColor: colors.primary, backgroundColor: isDark ? "rgba(249, 115, 22, 0.20)" : "#EFF6FF" },
-  memberAvatar: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  memberName: { fontSize: 13, fontWeight: '600', color: colors.secondary, textAlign: 'center' },
-  memberRole: { fontSize: 11, color: colors.gray[500] },
-  activeIndicator: { position: 'absolute', top: 8, right: 8, backgroundColor: colors.primary, width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  hintRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, paddingLeft: 4 },
-  hintText: { fontSize: 11, color: colors.gray[400] },
+  // Aile profilleri: yatay kayan kartlar. Kaydırma alanı sayfa kenarına taşar, gölge kırpılmasın diye dikey boşluk var.
+  memberScroll: { marginHorizontal: -20, marginVertical: -6 },
+  memberScrollContent: { gap: 10, paddingHorizontal: 20, paddingVertical: 6 },
+  memberCard: {
+    width: 104,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    backgroundColor: colors.card,
+    borderRadius: Radii.card,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.gray[200],
+    ...shadow("sm", isDark),
+  },
+  memberCardActive: {
+    borderColor: colors.primary,
+    borderWidth: 1.5,
+    backgroundColor: isDark ? "rgba(255,139,61,0.12)" : "#FFF6EE",
+  },
+  memberAvatar: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  memberAvatarActive: { borderWidth: 2, borderColor: colors.card },
+  memberName: { fontSize: 13.5, fontWeight: '600', color: colors.text, textAlign: 'center', alignSelf: 'stretch' },
+  memberRole: { fontSize: 11, color: colors.textMuted, marginTop: 1, textAlign: 'center', alignSelf: 'stretch' },
+  activeIndicator: { position: 'absolute', top: 8, right: 8, backgroundColor: colors.primary, width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: colors.card },
+  hintRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, paddingLeft: 4 },
+  hintText: { flexShrink: 1, fontSize: 11, color: colors.gray[400] },
   clearDietButton: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 14, paddingHorizontal: 4, borderBottomWidth: 1, borderBottomColor: colors.gray[200] },
   clearDietText: { fontSize: 15, fontWeight: '600', color: colors.error },
 
-  emptyBox: { padding: 24, backgroundColor: colors.card, borderRadius: 16, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: colors.gray[200], borderStyle: "dashed" },
-  emptyText: { color: colors.gray[500], fontSize: 14, fontWeight: "500" },
-  novaCard: { backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.gray[200], borderLeftWidth: 4, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 4, elevation: 2 },
+  // Boş durum kartı
+  emptyCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    padding: 16,
+    backgroundColor: colors.card,
+    borderRadius: Radii.card,
+    borderWidth: 1,
+    borderColor: colors.gray[200],
+    ...shadow("sm", isDark),
+  },
+  emptyIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: isDark ? "rgba(255,139,61,0.14)" : "rgba(242,96,12,0.09)",
+  },
+  emptyBody: { flex: 1, minWidth: 0 },
+  emptyText: { color: colors.textMuted, fontSize: 14, fontWeight: "500" },
+  emptyAction: { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", gap: 4, marginTop: 6, paddingVertical: 2 },
+  emptyActionText: { flexShrink: 1, fontSize: 13.5, fontWeight: "700", color: colors.primary },
+
+  // Diyet kartı ve alerjen listesi: beyaz kart, ince kenarlık, 20 köşe, hafif gölge
+  novaCard: {
+    backgroundColor: colors.card,
+    borderRadius: Radii.card,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.gray[200],
+    ...shadow("sm", isDark),
+  },
   novaHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
-  novaGroupBadge: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  novaTitleArea: { flex: 1 },
-  novaTitle: { fontSize: 15, fontWeight: "700", color: colors.secondary },
-  novaShortDesc: { fontSize: 12, color: colors.gray[500], marginTop: 2 },
-  novaExpandedContent: { marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.gray[200] },
+  novaGroupBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: isDark ? "rgba(255,139,61,0.14)" : "rgba(242,96,12,0.09)",
+  },
+  novaTitleArea: { flex: 1, minWidth: 0 },
+  novaTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
+  novaShortDesc: { fontSize: 12.5, color: colors.textMuted, marginTop: 2 },
+  novaExpandedContent: { marginTop: 14, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.gray[200] },
+  groupCard: {
+    backgroundColor: colors.card,
+    borderRadius: Radii.card,
+    borderWidth: 1,
+    borderColor: colors.gray[200],
+    ...shadow("sm", isDark),
+  },
+  allergenRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 13, paddingHorizontal: 16 },
+  allergenRowDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.gray[200] },
+  allergenBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: isDark ? "rgba(248,113,113,0.16)" : "rgba(239,68,68,0.09)",
+  },
   novaDescription: { fontSize: 13, color: colors.gray[700], lineHeight: 20, marginBottom: 12 },
 
   aiInfoBox: { backgroundColor: colors.gray[50], borderRadius: 12, padding: 12, marginBottom: 12, borderWidth: 1, borderColor: colors.gray[200] },

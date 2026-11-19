@@ -1,15 +1,30 @@
+// Premium satın alma sayfası: alttan açılan sayfa. Telefonda kaymaz: üst alan, plan kartları ve alt
+// blok (düğme + yasal bağlantılar) ölçülür, özellik listesi kalan yere sığan satır sayısına kısaltılır.
+// Yasal metin ve satın alma düğmesi hiçbir zaman kaydırma alanına girmez, kırpılmaz.
+// Satın alma, geri yükleme, paket yükleme ve misafir akışı önceki sürümle aynı.
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { Modal, View, Pressable, StyleSheet, Dimensions, ScrollView, Linking, ActivityIndicator, Platform, useWindowDimensions } from "react-native";
+import {
+  Modal,
+  View,
+  Pressable,
+  StyleSheet,
+  ScrollView,
+  Linking,
+  ActivityIndicator,
+  Platform,
+  useWindowDimensions,
+  LayoutChangeEvent,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "./AppText";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { AppColors } from "../../constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
+import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  withSpring,
   Easing,
   FadeIn,
   FadeInDown,
@@ -21,6 +36,7 @@ import { useTheme } from "../../context/ThemeContext";
 import { useAuth } from "../../context/AuthContext";
 import { getOfferings, purchasePackage, restorePurchases, isRevenueCatAvailable } from "../../lib/revenuecat";
 import { PurchasesPackage } from "react-native-purchases";
+import { FONT_SCALE_CAP, Radii } from "../../constants/design";
 
 const TERMS_URL = "https://purescan-foods.septimuslab.com/terms/";
 const PRIVACY_URL = "https://purescan-foods.septimuslab.com/privacy-policy/";
@@ -37,34 +53,9 @@ interface PaywallModalProps {
 
 type PlanType = "monthly" | "yearly";
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
-
-const FeatureItem = ({
-  icon,
-  iconColor,
-  iconBg,
-  label,
-  index,
-  styles,
-}: {
-  icon: string;
-  iconColor: string;
-  iconBg: string;
-  label: string;
-  index: number;
-  styles: ReturnType<typeof createStyles>;
-}) => (
-  <Animated.View
-    entering={FadeInDown.delay(220 + index * 50).duration(360).springify()}
-    style={styles.featureItem}
-  >
-    <View style={[styles.featureIcon, { backgroundColor: iconBg }]}>
-      <MaterialCommunityIcons name={icon as any} size={17} color={iconColor} />
-    </View>
-    <Text style={styles.featureText}>{label}</Text>
-    <Ionicons name="checkmark-circle" size={18} color="#10B981" />
-  </Animated.View>
-);
+/** Özellik satırı sabit yükseklikte: kaç satır sığacağı ölçümle hesaplanır. */
+const FEATURE_ROW_H = 38;
+const FEATURE_ROW_GAP = 2;
 
 // Başarı ekranı bileşeni
 const SuccessView = ({ onComplete, t, colors }: { onComplete: () => void; t: any; colors: AppColors }) => {
@@ -76,12 +67,12 @@ const SuccessView = ({ onComplete, t, colors }: { onComplete: () => void; t: any
   }, [onComplete]);
 
   return (
-    <Animated.View 
+    <Animated.View
       entering={FadeIn.duration(300)}
       style={styles.successOverlay}
     >
       <View style={[styles.successContainer, { backgroundColor: colors.card }]}>
-        <Animated.View 
+        <Animated.View
           entering={ZoomIn.delay(200).duration(500)}
           style={styles.successIconContainer}
         >
@@ -92,9 +83,9 @@ const SuccessView = ({ onComplete, t, colors }: { onComplete: () => void; t: any
             <Ionicons name="checkmark" size={50} color="#FFF" />
           </LinearGradient>
         </Animated.View>
-        
+
         <Animated.View entering={FadeInDown.delay(400).duration(400)}>
-          <Text style={[styles.successTitle, { color: colors.secondary }]}>
+          <Text variant="display" style={[styles.successTitle, { color: colors.text }]}>
             {t("paywall.successTitle", "Harika!")}
           </Text>
           <Text style={[styles.successSubtitle, { color: colors.gray[500] }]}>
@@ -114,14 +105,32 @@ const SuccessView = ({ onComplete, t, colors }: { onComplete: () => void; t: any
   );
 };
 
+/** Yükseklik ölçümü: yalnız gerçekten değişince state günceller. */
+function useHeight(): [number, (e: LayoutChangeEvent) => void] {
+  const [h, setH] = useState(0);
+  const onLayout = useCallback((e: LayoutChangeEvent) => {
+    const next = Math.ceil(e.nativeEvent.layout.height);
+    setH((prev) => (Math.abs(prev - next) > 1 ? next : prev));
+  }, []);
+  return [h, onLayout];
+}
+
 export default function PaywallModal({ visible, onClose, onAuthRequired }: PaywallModalProps) {
   const { t } = useTranslation();
   const { colors, isDark } = useTheme();
   const { user, refreshPremiumStatus } = useAuth();
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const insets = useSafeAreaInsets();
-  const { height: winHeight } = useWindowDimensions();
-  const maxCardHeight = winHeight - insets.top - insets.bottom - 24;
+  const { height: winHeight, fontScale } = useWindowDimensions();
+  const maxSheetHeight = winHeight - insets.top - 10;
+  const sheetBottomPad = insets.bottom + 10;
+  // Kısa ekran ya da büyük yazı: üst alan küçülür. Yalnız ekran ve yazı ölçeğinden karar verilir
+  // (ölçümden değil), yoksa ölçüm ve düzen birbirini tetikler.
+  //  - compact: taç küçülür, başlık bir boy küçülür.
+  //  - tight (320x568, 360x640, iPhone SE, büyük yazılı kısa ekran): taç başlığın yanına geçer,
+  //    alt başlık gösterilmez (özellik listesi aynı bilgiyi verir), yer özellik satırlarına kalır.
+  const tight = winHeight < 680 || (winHeight < 760 && fontScale > 1.15);
+  const compact = tight || winHeight < 780 || fontScale > 1.15;
 
   const [selectedPlan, setSelectedPlan] = useState<PlanType>("yearly");
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
@@ -131,20 +140,25 @@ export default function PaywallModal({ visible, onClose, onAuthRequired }: Paywa
   const [showSuccess, setShowSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const translateY = useSharedValue(40);
+  const [heroH, onHeroLayout] = useHeight();
+  const [plansH, onPlansLayout] = useHeight();
+  const [bottomH, onBottomLayout] = useHeight();
+
+  const translateY = useSharedValue(60);
   const opacity = useSharedValue(0);
+  const backdrop = useSharedValue(0);
 
   // RevenueCat'ten paketleri çek
   const loadPackages = useCallback(async () => {
     setLoading(true);
     console.log("[Paywall] Paketler yükleniyor...");
-    
+
     try {
       const offerings = await getOfferings();
-      
+
       if (offerings && offerings.availablePackages.length > 0) {
         setPackages(offerings.availablePackages);
-        
+
         // Yıllık paketi varsayılan olarak seç
         const yearly = offerings.availablePackages.find(
           (p) => p.identifier === "$rc_annual" || p.identifier.includes("yearly") || p.identifier.includes("annual")
@@ -171,12 +185,14 @@ export default function PaywallModal({ visible, onClose, onAuthRequired }: Paywa
       setSelectedPlan("yearly");
       translateY.value = withTiming(0, { duration: 420, easing: Easing.out(Easing.cubic) });
       opacity.value = withTiming(1, { duration: 320 });
+      backdrop.value = withTiming(1, { duration: 260 });
       loadPackages();
       setErrorMsg(null);
       setShowSuccess(false);
     } else {
-      translateY.value = 40;
+      translateY.value = 60;
       opacity.value = 0;
+      backdrop.value = 0;
     }
   }, [visible, loadPackages]);
 
@@ -184,6 +200,7 @@ export default function PaywallModal({ visible, onClose, onAuthRequired }: Paywa
     transform: [{ translateY: translateY.value }],
     opacity: opacity.value,
   }));
+  const backdropStyle = useAnimatedStyle(() => ({ opacity: backdrop.value }));
 
   // Paket fiyatını formatla
   const formatPrice = (pkg: PurchasesPackage) => {
@@ -201,6 +218,9 @@ export default function PaywallModal({ visible, onClose, onAuthRequired }: Paywa
     const monthlyPrice = pkg.product.price / 12;
     return `~${pkg.product.currencyCode} ${monthlyPrice.toFixed(2)}`;
   };
+
+  // Mağazanın kendi biçimlediği aylık fiyat varsa o, yoksa eski hesap.
+  const getMonthlyHint = (pkg: PurchasesPackage) => pkg.product.pricePerMonthString || getMonthlyEquivalent(pkg);
 
   // Seçili paketi bul
   const getSelectedPackage = useCallback((): PurchasesPackage | null => {
@@ -294,230 +314,359 @@ export default function PaywallModal({ visible, onClose, onAuthRequired }: Paywa
   if (!visible) return null;
 
   const features = [
-    { icon: "barcode-scan", iconColor: colors.primary, iconBg: isDark ? "rgba(234,88,12,0.20)" : "#FFF7ED", label: t("paywall.feat_unlimited_scan") },
-    { icon: "robot-outline", iconColor: "#7C3AED", iconBg: isDark ? "rgba(124,58,237,0.20)" : "#EDE9FE", label: t("paywall.feat_unlimited_ai") },
-    { icon: "image-multiple", iconColor: "#EA580C", iconBg: isDark ? "rgba(234,88,12,0.20)" : "#FFF7ED", label: t("paywall.feat_weekly_visuals") },
-    { icon: "account-group-outline", iconColor: "#0284C7", iconBg: isDark ? "rgba(2,132,199,0.20)" : "#E0F2FE", label: t("paywall.feat_unlimited_family") },
-    { icon: "advertisements-off", iconColor: "#DC2626", iconBg: isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2", label: t("paywall.feat_no_ads") },
-    { icon: "lightning-bolt", iconColor: "#F59E0B", iconBg: isDark ? "rgba(245,158,11,0.20)" : "#FEF3C7", label: t("paywall.feat_priority") },
+    { icon: "barcode-scan", label: t("paywall.feat_unlimited_scan") },
+    { icon: "robot-outline", label: t("paywall.feat_unlimited_ai") },
+    { icon: "image-multiple", label: t("paywall.feat_weekly_visuals") },
+    { icon: "account-group-outline", label: t("paywall.feat_unlimited_family") },
+    { icon: "advertisements-off", label: t("paywall.feat_no_ads") },
+    { icon: "lightning-bolt", label: t("paywall.feat_priority") },
   ];
 
   const yearlyPkg = packages.find((p) => isYearlyPackage(p));
   const monthlyPkg = packages.find((p) => !isYearlyPackage(p));
 
+  // Gerçek fiyatlardan indirim: yıllık / (aylık x 12). Aynı para birimi değilse ya da sonuç
+  // sıfır veya altındaysa rozet gösterilmez.
+  const discountPercent = (() => {
+    if (!yearlyPkg || !monthlyPkg) return 0;
+    const y = yearlyPkg.product.price;
+    const m = monthlyPkg.product.price;
+    if (!(y > 0) || !(m > 0)) return 0;
+    if (yearlyPkg.product.currencyCode !== monthlyPkg.product.currencyCode) return 0;
+    return Math.round((1 - y / (m * 12)) * 100);
+  })();
+
+  // Özellik listesine kalan yer: sayfa sınırı - alt boşluk - alt blok - üst alan - plan kartları -
+  // liste başlığı (yazı ölçeğiyle) - bölüm üst boşluğu (14) - kaydırma alanı alt boşluğu (4).
+  const featuresTitleH = Math.ceil(14 * Math.min(fontScale, FONT_SCALE_CAP)) + 10;
+  const measured = heroH > 0 && plansH > 0 && bottomH > 0;
+  const featureSpace = maxSheetHeight - sheetBottomPad - bottomH - heroH - plansH - featuresTitleH - 14 - 4;
+  const fitCount = measured
+    ? Math.max(0, Math.min(features.length, Math.floor((featureSpace + FEATURE_ROW_GAP) / (FEATURE_ROW_H + FEATURE_ROW_GAP))))
+    : 0;
+  const visibleFeatures = features.slice(0, fitCount);
+
+  const lottieSize = tight ? 40 : compact ? 60 : 84;
+
   return (
     <Modal transparent visible={visible} animationType="none" onRequestClose={onClose}>
-      <View style={[styles.overlay, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 12 }]}>
-        <Pressable style={styles.backdrop} onPress={onClose} />
+      <View style={styles.root}>
+        <Animated.View style={[styles.backdrop, backdropStyle]}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        </Animated.View>
 
-        <Animated.View style={[styles.container, { maxHeight: maxCardHeight }, animatedStyle]}>
+        <Animated.View
+          style={[styles.sheet, { maxHeight: maxSheetHeight, paddingBottom: sheetBottomPad }, animatedStyle]}
+        >
           {/* Başarı ekranı */}
           {showSuccess && (
-            <SuccessView 
-              onComplete={handleSuccessComplete} 
-              t={t} 
+            <SuccessView
+              onComplete={handleSuccessComplete}
+              t={t}
               colors={colors}
             />
+          )}
+
+          <ScrollView
+            style={styles.scrollArea}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            alwaysBounceVertical={false}
+            bounces={false}
+          >
+            {/* Üst alan: sıcak ışık, taç, serif başlık */}
+            <View onLayout={onHeroLayout} style={[styles.hero, tight && styles.heroTight]}>
+              <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+                <LinearGradient
+                  colors={isDark ? ["rgba(255,139,61,0.16)", "rgba(255,139,61,0)"] : ["#FFEEDF", "rgba(255,255,255,0)"]}
+                  style={StyleSheet.absoluteFill}
+                />
+                <Svg width="100%" height="100%">
+                  <Defs>
+                    <RadialGradient id="paywallGlow" cx="50%" cy="0%" r="70%">
+                      <Stop offset="0" stopColor={colors.primary} stopOpacity={isDark ? 0.22 : 0.14} />
+                      <Stop offset="1" stopColor={colors.primary} stopOpacity={0} />
+                    </RadialGradient>
+                  </Defs>
+                  <Rect x="0" y="0" width="100%" height="100%" fill="url(#paywallGlow)" />
+                </Svg>
+              </View>
+
+              <View style={styles.grabber} />
+
+              <Animated.View entering={FadeIn.delay(90).duration(350)} style={[styles.heroInner, tight && styles.heroInnerTight]}>
+                <LottieView
+                  source={require("../../assets/crown.json")}
+                  autoPlay
+                  loop
+                  style={{ width: lottieSize, height: lottieSize }}
+                />
+                <Text
+                  variant="display"
+                  style={[styles.title, compact && styles.titleCompact, tight && styles.titleTight]}
+                  numberOfLines={2}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.8}
+                >
+                  {t("paywall.title")}
+                </Text>
+                {/* Alt başlık kısaltılmaz: ya tam görünür ya da (tight) hiç görünmez. */}
+                {!tight && (
+                  <Text style={styles.subtitle}>
+                    {t("paywall.subtitle")}
+                  </Text>
+                )}
+              </Animated.View>
+            </View>
+
+            {!isRevenueCatAvailable() ? (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="time-outline" size={48} color={colors.gray[300]} />
+                <Text style={[styles.emptyTitle, { color: colors.gray[500], marginTop: 16 }]}>
+                  {t("paywall.platformUnavailableTitle", "Coming Soon")}
+                </Text>
+                <Text style={[styles.emptySubtitle, { color: colors.gray[400] }]}>
+                  {Platform.OS === "ios"
+                    ? t(
+                        "paywall.iosUnavailable",
+                        "Premium subscriptions are not yet available on iOS. We are finalizing setup. Please check back soon."
+                      )
+                    : t("paywall.comingSoon")}
+                </Text>
+              </View>
+            ) : loading ? (
+              <View style={styles.emptyContainer}>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={[styles.emptyTitle, { color: colors.gray[500] }]}>
+                  {t("paywall.loading")}
+                </Text>
+              </View>
+            ) : packages.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Ionicons name="cart-outline" size={48} color={colors.gray[300]} />
+                <Text style={[styles.emptyTitle, { color: colors.gray[500], marginTop: 16 }]}>
+                  {t("paywall.noPackages")}
+                </Text>
+                <Text style={[styles.emptySubtitle, { color: colors.gray[400] }]}>
+                  {t("paywall.comingSoon")}
+                </Text>
+              </View>
+            ) : (
+              <>
+                <Animated.View
+                  entering={FadeInDown.delay(160).duration(360)}
+                  onLayout={onPlansLayout}
+                  style={styles.planGrid}
+                >
+                  {/* Yıllık Plan */}
+                  {yearlyPkg && (
+                    <Pressable
+                      style={[styles.planCard, selectedPlan === "yearly" && styles.planCardSelected]}
+                      onPress={() => setSelectedPlan("yearly")}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: selectedPlan === "yearly" }}
+                    >
+                      {discountPercent > 0 && (
+                        <View style={styles.badgeWrap} pointerEvents="none">
+                          <LinearGradient
+                            colors={[colors.primary, colors.primaryDeep]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.badge}
+                          >
+                            <Text style={styles.badgeText} numberOfLines={1} maxFontSizeMultiplier={1.1}>
+                              {t("paywall.save_percent_dynamic", {
+                                percent: discountPercent,
+                                defaultValue: "SAVE {{percent}}%",
+                              })}
+                            </Text>
+                          </LinearGradient>
+                        </View>
+                      )}
+
+                      <View style={styles.planTop}>
+                        <View style={[styles.radioOuter, selectedPlan === "yearly" && styles.radioOuterSelected]}>
+                          {selectedPlan === "yearly" && <View style={styles.radioInner} />}
+                        </View>
+                        <Text
+                          style={[styles.planTitle, selectedPlan === "yearly" && styles.planTitleSelected]}
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
+                          minimumFontScale={0.8}
+                        >
+                          {t("paywall.yearly")}
+                        </Text>
+                      </View>
+                      <Text
+                        variant="display"
+                        style={styles.planPrice}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.6}
+                      >
+                        {formatPrice(yearlyPkg)}
+                      </Text>
+                      <Text style={styles.planMeta} numberOfLines={1}>{t("paywall.per_year")}</Text>
+                      <View style={styles.planHint}>
+                        <Text style={styles.planHintText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+                          {getMonthlyHint(yearlyPkg)}{t("paywall.per_month")}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  )}
+
+                  {/* Aylık Plan */}
+                  {monthlyPkg && (
+                    <Pressable
+                      style={[styles.planCard, selectedPlan === "monthly" && styles.planCardSelected]}
+                      onPress={() => setSelectedPlan("monthly")}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: selectedPlan === "monthly" }}
+                    >
+                      <View style={styles.planTop}>
+                        <View style={[styles.radioOuter, selectedPlan === "monthly" && styles.radioOuterSelected]}>
+                          {selectedPlan === "monthly" && <View style={styles.radioInner} />}
+                        </View>
+                        <Text
+                          style={[styles.planTitle, selectedPlan === "monthly" && styles.planTitleSelected]}
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
+                          minimumFontScale={0.8}
+                        >
+                          {t("paywall.monthly")}
+                        </Text>
+                      </View>
+                      <Text
+                        variant="display"
+                        style={styles.planPrice}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.6}
+                      >
+                        {formatPrice(monthlyPkg)}
+                      </Text>
+                      <Text style={styles.planMeta} numberOfLines={1}>{t("paywall.per_month")}</Text>
+                    </Pressable>
+                  )}
+                </Animated.View>
+
+                {/* Özellikler: yalnız sığan satırlar (sayfa kaymasın diye) */}
+                {visibleFeatures.length > 0 && (
+                  <View style={styles.featuresSection}>
+                    <Text upper style={styles.featuresTitle} numberOfLines={1}>{t("paywall.includes")}</Text>
+                    {visibleFeatures.map((f, i) => (
+                      <Animated.View
+                        key={f.icon}
+                        entering={FadeInDown.delay(80 + i * 45).duration(320)}
+                        style={styles.featureItem}
+                      >
+                        <View style={styles.featureIcon}>
+                          <MaterialCommunityIcons name={f.icon as any} size={15} color={colors.primary} />
+                        </View>
+                        <Text style={styles.featureText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+                          {f.label}
+                        </Text>
+                        <Ionicons name="checkmark" size={16} color={colors.primary} />
+                      </Animated.View>
+                    ))}
+                  </View>
+                )}
+              </>
+            )}
+          </ScrollView>
+
+          {/* Alt blok: kaydırma alanının dışında, hep görünür */}
+          {isRevenueCatAvailable() && !loading && packages.length > 0 && (
+            <View onLayout={onBottomLayout} style={styles.bottomBlock}>
+              {/* Hata mesajı */}
+              {errorMsg && (
+                <View style={styles.errorContainer}>
+                  <Ionicons name="alert-circle" size={16} color={colors.error} />
+                  <Text style={styles.errorText}>{errorMsg}</Text>
+                </View>
+              )}
+
+              <Pressable
+                style={({ pressed }) => [styles.ctaButton, pressed && styles.ctaPressed]}
+                onPress={handleSubscribe}
+                disabled={purchasing}
+              >
+                <LinearGradient colors={[colors.primary, colors.primaryDeep]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.ctaGradient}>
+                  {purchasing ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <>
+                      <MaterialCommunityIcons name="crown" size={20} color="#FFF" />
+                      <Text style={styles.ctaText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+                        {t("paywall.subscribe_now")}
+                      </Text>
+                    </>
+                  )}
+                </LinearGradient>
+              </Pressable>
+
+              <Text style={styles.autoRenew}>
+                {t("paywall.auto_renew", {
+                  defaultValue:
+                    "Subscription renews automatically. You can cancel anytime in your store settings at least 24 hours before renewal.",
+                })}
+              </Text>
+
+              <View style={styles.footerLinks}>
+                <Pressable
+                  style={({ pressed }) => [styles.footerLinkHit, pressed && { opacity: 0.6 }]}
+                  onPress={handleRestore}
+                  disabled={restoring}
+                  hitSlop={8}
+                >
+                  <Text style={styles.footerLink}>
+                    {restoring ? t("paywall.restoring", "Yükleniyor...") : t("paywall.restore")}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [styles.footerLinkHit, pressed && { opacity: 0.6 }]}
+                  onPress={() => Linking.openURL(TERMS_URL)}
+                  hitSlop={8}
+                >
+                  <Text style={styles.footerLink}>
+                    {t("paywall.termsOfUse", "Terms of Use")}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [styles.footerLinkHit, pressed && { opacity: 0.6 }]}
+                  onPress={() => Linking.openURL(PRIVACY_URL)}
+                  hitSlop={8}
+                >
+                  <Text style={styles.footerLink}>
+                    {t("paywall.privacyPolicy", "Privacy Policy")}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [styles.footerLinkHit, pressed && { opacity: 0.6 }]}
+                  onPress={() => Linking.openURL(MANAGE_SUBSCRIPTION_URL)}
+                  hitSlop={8}
+                >
+                  <Text style={styles.footerLink}>
+                    {t("paywall.manageSubscription", "Manage Subscription")}
+                  </Text>
+                </Pressable>
+              </View>
+
+              <Pressable style={({ pressed }) => [styles.secondaryClose, pressed && { opacity: 0.6 }]} onPress={onClose}>
+                <Text style={styles.secondaryCloseText}>{t("paywall.maybe_later")}</Text>
+              </Pressable>
+            </View>
           )}
 
           <Pressable
             style={({ pressed }) => [styles.closeBtn, pressed && { opacity: 0.6 }]}
             onPress={onClose}
             hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
           >
-            <Ionicons name="close" size={20} color={colors.gray[500]} />
+            <Ionicons name="close" size={18} color={colors.gray[500]} />
           </Pressable>
-
-          <Animated.View entering={FadeIn.delay(90).duration(350)} style={styles.header}>
-            <LinearGradient colors={isDark ? [colors.gray[100], colors.gray[200]] : ["#FFFFFF", "#FFFFFF"]} style={styles.crownBox}>
-              <LottieView
-                source={require("../../assets/crown.json")}
-                autoPlay
-                loop
-                style={styles.crownLottie}
-              />
-            </LinearGradient>
-            <Text style={styles.title}>{t("paywall.title")}</Text>
-            <Text style={styles.subtitle}>{t("paywall.subtitle")}</Text>
-          </Animated.View>
-
-          {!isRevenueCatAvailable() ? (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="time-outline" size={48} color={colors.gray[300]} />
-              <Text style={[styles.emptyTitle, { color: colors.gray[500], marginTop: 16 }]}>
-                {t("paywall.platformUnavailableTitle", "Coming Soon")}
-              </Text>
-              <Text style={[styles.emptySubtitle, { color: colors.gray[400] }]}>
-                {Platform.OS === "ios"
-                  ? t(
-                      "paywall.iosUnavailable",
-                      "Premium subscriptions are not yet available on iOS. We are finalizing setup. Please check back soon."
-                    )
-                  : t("paywall.comingSoon")}
-              </Text>
-            </View>
-          ) : loading ? (
-            <View style={styles.emptyContainer}>
-              <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={[styles.emptyTitle, { color: colors.gray[500] }]}>
-                {t("paywall.loading")}
-              </Text>
-            </View>
-          ) : packages.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="cart-outline" size={48} color={colors.gray[300]} />
-              <Text style={[styles.emptyTitle, { color: colors.gray[500], marginTop: 16 }]}>
-                {t("paywall.noPackages")}
-              </Text>
-              <Text style={[styles.emptySubtitle, { color: colors.gray[400] }]}>
-                {t("paywall.comingSoon")}
-              </Text>
-            </View>
-          ) : (
-            <>
-              <Animated.View entering={FadeInDown.delay(160).duration(360)} style={styles.planGrid}>
-                {/* Yıllık Plan */}
-                {yearlyPkg && (
-                  <Pressable
-                    style={[styles.planSquare, selectedPlan === "yearly" && styles.planSquareSelected]}
-                    onPress={() => setSelectedPlan("yearly")}
-                  >
-                    <View style={styles.cornerTriangle} />
-                    <Text style={styles.cornerText}>{t("paywall.save_percent")}</Text>
-
-                    <View style={styles.planRadioTop}>
-                      <View style={[styles.radioOuter, selectedPlan === "yearly" && styles.radioOuterSelected]}>
-                        {selectedPlan === "yearly" && <View style={styles.radioInner} />}
-                      </View>
-                    </View>
-
-                    <View style={styles.planCenter}>
-                      <Text style={[styles.squareTitle, selectedPlan === "yearly" && styles.squareTitleSelected]}>
-                        {t("paywall.yearly")}
-                      </Text>
-                      <Text style={styles.squarePrice}>{formatPrice(yearlyPkg)}</Text>
-                      <Text style={styles.squareMeta}>{t("paywall.per_year")}</Text>
-                      <Text style={styles.squareHint}>{getMonthlyEquivalent(yearlyPkg)}{t("paywall.per_month")}</Text>
-                    </View>
-                  </Pressable>
-                )}
-
-                {/* Aylık Plan */}
-                {monthlyPkg && (
-                  <Pressable
-                    style={[styles.planSquare, selectedPlan === "monthly" && styles.planSquareSelected]}
-                    onPress={() => setSelectedPlan("monthly")}
-                  >
-                    <View style={styles.planRadioTop}>
-                      <View style={[styles.radioOuter, selectedPlan === "monthly" && styles.radioOuterSelected]}>
-                        {selectedPlan === "monthly" && <View style={styles.radioInner} />}
-                      </View>
-                    </View>
-
-                    <View style={styles.planCenter}>
-                      <Text style={[styles.squareTitle, selectedPlan === "monthly" && styles.squareTitleSelected]}>
-                        {t("paywall.monthly")}
-                      </Text>
-                      <Text style={styles.squarePrice}>{formatPrice(monthlyPkg)}</Text>
-                      <Text style={styles.squareMeta}>{t("paywall.per_month")}</Text>
-                    </View>
-                  </Pressable>
-                )}
-
-
-              </Animated.View>
-
-              <View style={styles.featuresSection}>
-                <Text upper style={styles.featuresTitle}>{t("paywall.includes")}</Text>
-                <ScrollView
-                  style={styles.featuresScroll}
-                  contentContainerStyle={styles.featuresScrollContent}
-                  showsVerticalScrollIndicator={true}
-                >
-                  {features.map((f, i) => (
-                    <FeatureItem styles={styles} key={f.icon} {...f} index={i} />
-                  ))}
-                </ScrollView>
-              </View>
-
-              {/* Hata mesajı */}
-              {errorMsg && (
-                <View style={styles.errorContainer}>
-                  <Ionicons name="alert-circle" size={16} color="#DC2626" />
-                  <Text style={styles.errorText}>{errorMsg}</Text>
-                </View>
-              )}
-
-              {packages.length > 0 && (
-                <>
-                  <Pressable 
-                    style={({ pressed }) => [styles.ctaButton, pressed && styles.ctaPressed]} 
-                    onPress={handleSubscribe}
-                    disabled={purchasing}
-                  >
-                    <LinearGradient colors={[colors.primary, colors.primaryDeep]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.ctaGradient}>
-                      {purchasing ? (
-                        <ActivityIndicator size="small" color="#FFF" />
-                      ) : (
-                        <>
-                          <MaterialCommunityIcons name="crown" size={20} color="#FFF" />
-                          <Text style={styles.ctaText}>{t("paywall.subscribe_now")}</Text>
-                        </>
-                      )}
-                    </LinearGradient>
-                  </Pressable>
-
-                  <View style={styles.footerLinks}>
-                    <Pressable
-                      style={({ pressed }) => [pressed && { opacity: 0.6 }]}
-                      onPress={handleRestore}
-                      disabled={restoring}
-                      hitSlop={8}
-                    >
-                      <Text style={styles.footerLink}>
-                        {restoring ? t("paywall.restoring", "Yükleniyor...") : t("paywall.restore")}
-                      </Text>
-                    </Pressable>
-                    <Text style={styles.footerDot}>·</Text>
-                    <Pressable
-                      style={({ pressed }) => [pressed && { opacity: 0.6 }]}
-                      onPress={() => Linking.openURL(TERMS_URL)}
-                      hitSlop={8}
-                    >
-                      <Text style={styles.footerLink}>
-                        {t("paywall.termsOfUse", "Terms of Use")}
-                      </Text>
-                    </Pressable>
-                    <Text style={styles.footerDot}>·</Text>
-                    <Pressable
-                      style={({ pressed }) => [pressed && { opacity: 0.6 }]}
-                      onPress={() => Linking.openURL(PRIVACY_URL)}
-                      hitSlop={8}
-                    >
-                      <Text style={styles.footerLink}>
-                        {t("paywall.privacyPolicy", "Privacy Policy")}
-                      </Text>
-                    </Pressable>
-                  </View>
-                  <View style={styles.footerLinks}>
-                    <Pressable
-                      style={({ pressed }) => [pressed && { opacity: 0.6 }]}
-                      onPress={() => Linking.openURL(MANAGE_SUBSCRIPTION_URL)}
-                      hitSlop={8}
-                    >
-                      <Text style={styles.footerLink}>
-                        {t("paywall.manageSubscription", "Manage Subscription")}
-                      </Text>
-                    </Pressable>
-                  </View>
-                </>
-              )}
-
-              <Pressable style={({ pressed }) => [styles.secondaryClose, pressed && { opacity: 0.6 }]} onPress={onClose}>
-                <Text style={styles.secondaryCloseText}>{t("paywall.maybe_later")}</Text>
-              </Pressable>
-            </>
-          )}
         </Animated.View>
       </View>
     </Modal>
@@ -531,14 +680,12 @@ const styles = StyleSheet.create({
     zIndex: 100,
     justifyContent: "center",
     alignItems: "center",
-    borderRadius: 26,
   },
   successContainer: {
     alignItems: "center",
     justifyContent: "center",
     width: "100%",
     height: "100%",
-    borderRadius: 26,
   },
   successIconContainer: {
     marginBottom: 24,
@@ -556,10 +703,10 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   successTitle: {
-    fontSize: 24,
-    fontWeight: "800",
+    fontSize: 30,
+    lineHeight: 36,
     textAlign: "center",
-    marginBottom: 8,
+    marginBottom: 6,
   },
   successSubtitle: {
     fontSize: 14,
@@ -592,201 +739,171 @@ const styles = StyleSheet.create({
     backgroundColor: "#A78BFA",
     transform: [{ scale: 0.9 }],
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 40,
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  loadingSubtext: {
-    marginTop: 8,
-    fontSize: 12,
-    fontWeight: "400",
-  },
-  errorContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(220,38,38,0.15)",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    gap: 8,
-  },
-  errorText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#FCA5A5",
-  },
 });
 
 const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
-  loadingContainer: {
+  root: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: "flex-end",
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.overlay,
+  },
+  sheet: {
+    width: "100%",
+    maxWidth: 560,
+    alignSelf: "center",
+    backgroundColor: colors.card,
+    borderTopLeftRadius: Radii.sheet,
+    borderTopRightRadius: Radii.sheet,
+    overflow: "hidden",
+  },
+  scrollArea: {
+    flexShrink: 1,
+  },
+  scrollContent: {
+    paddingBottom: 4,
+  },
+  closeBtn: {
+    position: "absolute",
+    top: 14,
+    right: 14,
+    zIndex: 20,
+    elevation: 6,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: "center",
-    paddingVertical: 40,
+    justifyContent: "center",
+    backgroundColor: isDark ? colors.gray[200] : "rgba(255,255,255,0.9)",
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.gray[300],
   },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    fontWeight: "500",
-    color: colors.gray[500],
+
+  // Üst alan
+  hero: {
+    alignItems: "center",
+    paddingTop: 10,
+    paddingBottom: 12,
+    paddingHorizontal: 24,
   },
-  loadingSubtext: {
-    marginTop: 8,
-    fontSize: 12,
-    fontWeight: "400",
-    color: colors.gray[400],
+  grabber: {
+    width: 40,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: colors.gray[300],
+    marginBottom: 4,
   },
+  heroTight: {
+    paddingBottom: 6,
+  },
+  heroInner: {
+    alignItems: "center",
+    width: "100%",
+  },
+  heroInnerTight: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
+    // Sağ üstteki kapat düğmesine binmesin.
+    paddingHorizontal: 30,
+  },
+  title: {
+    fontSize: 27,
+    lineHeight: 32,
+    color: colors.text,
+    textAlign: "center",
+    marginTop: 2,
+    maxWidth: "88%",
+  },
+  titleCompact: {
+    fontSize: 23,
+    lineHeight: 28,
+  },
+  titleTight: {
+    flexShrink: 1,
+    maxWidth: undefined,
+    marginTop: 0,
+    textAlign: "left",
+  },
+  subtitle: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.textMuted,
+    textAlign: "center",
+    marginTop: 4,
+    paddingHorizontal: 4,
+  },
+
+  // Boş ve yükleniyor durumları
   emptyContainer: {
-    flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
     paddingVertical: 40,
+    paddingHorizontal: 24,
     minHeight: 180,
   },
   emptyTitle: {
     marginTop: 12,
     fontSize: 14,
     fontWeight: "500",
+    textAlign: "center",
   },
   emptySubtitle: {
     marginTop: 8,
     fontSize: 12,
     fontWeight: "400",
-  },
-  errorContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#FEF2F2",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    gap: 8,
-  },
-  errorText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#DC2626",
-  },
-  overlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(31,22,17, 0.7)",
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  container: {
-    width: SCREEN_WIDTH * 0.92,
-    maxWidth: 410,
-    maxHeight: SCREEN_HEIGHT * 0.9,
-    backgroundColor: colors.card,
-    borderRadius: 26,
-    paddingTop: 24,
-    paddingHorizontal: 18,
-    paddingBottom: 14,
-  },
-  closeBtn: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    zIndex: 20,
-    elevation: 6,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.gray[200],
-  },
-
-  header: {
-    alignItems: "center",
-    marginBottom: 14,
-  },
-  crownBox: {
-    height: 80,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 10,
-  },
-  crownLottie: {
-    width: 80,
-    height: 80,
-  },
-  title: {
-    fontSize: 21,
-    fontWeight: "800",
-    color: colors.secondary,
     textAlign: "center",
   },
-  subtitle: {
-    fontSize: 12,
-    color: colors.gray[500],
-    textAlign: "center",
-    marginTop: 5,
-    lineHeight: 17,
-    paddingHorizontal: 8,
-  },
 
+  // Plan kartları
   planGrid: {
     flexDirection: "row",
     gap: 10,
-    marginBottom: 10,
+    paddingHorizontal: 18,
+    paddingTop: 12,
   },
-  planSquare: {
+  planCard: {
     flex: 1,
-    minHeight: 122,
-    borderRadius: 16,
+    minWidth: 0,
+    borderRadius: 18,
     borderWidth: 2,
-    borderColor: colors.gray[100],
-    backgroundColor: colors.gray[50],
-    overflow: "hidden",
-    position: "relative",
-    padding: 8,
+    borderColor: colors.gray[200],
+    backgroundColor: isDark ? colors.gray[100] : colors.gray[50],
+    paddingHorizontal: 12,
+    paddingTop: 14,
+    paddingBottom: 12,
   },
-  planSquareSelected: {
+  planCardSelected: {
     borderColor: colors.primary,
-    backgroundColor: isDark ? "rgba(249,115,22,0.18)" : "#FFF7ED",
+    backgroundColor: isDark ? "rgba(255,139,61,0.12)" : "#FFF4EA",
   },
-  cornerTriangle: {
+  badgeWrap: {
     position: "absolute",
-    top: 0,
+    top: -11,
+    left: 0,
     right: 0,
-    width: 0,
-    height: 0,
-    borderTopWidth: 38,
-    borderLeftWidth: 38,
-    borderTopColor: "#10B981",
-    borderLeftColor: "transparent",
+    alignItems: "center",
+    zIndex: 2,
   },
-  cornerText: {
-    position: "absolute",
-    top: 5,
-    right: -4,
-    width: 34,
-    textAlign: "center",
-    fontSize: 7,
-    fontWeight: "800",
+  badge: {
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: Radii.pill,
+    maxWidth: "92%",
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: "700",
     color: "#FFF",
-    transform: [{ rotate: "45deg" }],
+    letterSpacing: 0.4,
   },
-  planRadioTop: {
-    alignItems: "flex-start",
+  planTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 6,
   },
   radioOuter: {
     width: 20,
@@ -806,83 +923,104 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     borderRadius: 5,
     backgroundColor: colors.primary,
   },
-  planCenter: {
+  planTitle: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 2,
-  },
-  squareTitle: {
-    fontSize: 12,
+    minWidth: 0,
+    fontSize: 13,
     fontWeight: "700",
     color: colors.gray[600],
-    marginBottom: 2,
   },
-  squareTitleSelected: {
-    color: colors.secondary,
+  planTitleSelected: {
+    color: colors.text,
   },
-  squarePrice: {
-    fontSize: 16,
-    fontWeight: "800",
+  planPrice: {
+    fontSize: 24,
+    lineHeight: 29,
+    color: colors.text,
+  },
+  planMeta: {
+    fontSize: 11,
+    color: colors.textMuted,
+    fontWeight: "600",
+  },
+  planHint: {
+    alignSelf: "flex-start",
+    maxWidth: "100%",
+    marginTop: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radii.pill,
+    backgroundColor: isDark ? "rgba(255,139,61,0.16)" : "rgba(242,96,12,0.10)",
+  },
+  planHintText: {
+    fontSize: 11,
+    fontWeight: "700",
     color: colors.primary,
   },
-  squareMeta: {
-    fontSize: 10,
-    color: colors.gray[500],
-    fontWeight: "600",
-    marginTop: 1,
-  },
-  squareHint: {
-    marginTop: 4,
-    fontSize: 9,
-    color: colors.gray[400],
-    fontWeight: "600",
-  },
 
+  // Özellikler
   featuresSection: {
-    marginBottom: 10,
+    paddingHorizontal: 18,
+    paddingTop: 14,
   },
   featuresTitle: {
     fontSize: 11,
+    lineHeight: 14,
     fontWeight: "700",
     color: colors.gray[400],
-    letterSpacing: 0.5,
-    marginBottom: 8,
-  },
-  featuresScroll: {
-    maxHeight: SCREEN_HEIGHT * 0.27,
-  },
-  featuresScrollContent: {
-    paddingBottom: 4,
+    letterSpacing: 0.6,
+    marginBottom: 6,
   },
   featureItem: {
+    height: FEATURE_ROW_H,
+    marginBottom: FEATURE_ROW_GAP,
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.gray[100],
+    gap: 10,
   },
   featureIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 9,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 10,
+    backgroundColor: isDark ? "rgba(255,139,61,0.16)" : "rgba(242,96,12,0.10)",
   },
   featureText: {
     flex: 1,
-    fontSize: 13,
+    minWidth: 0,
+    fontSize: 14,
     fontWeight: "600",
-    color: colors.secondary,
+    color: colors.text,
   },
 
-  ctaButton: {
-    marginTop: 4,
+  // Alt blok
+  bottomBlock: {
+    paddingHorizontal: 18,
+    paddingTop: 10,
+  },
+  errorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: isDark ? "rgba(248,113,113,0.14)" : "#FEF2F2",
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
     marginBottom: 10,
+    gap: 8,
+  },
+  errorText: {
+    flexShrink: 1,
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.error,
+  },
+  ctaButton: {
+    borderRadius: Radii.control + 2,
   },
   ctaPressed: {
-    opacity: 0.9,
+    opacity: 0.92,
     transform: [{ scale: 0.98 }],
   },
   ctaGradient: {
@@ -890,37 +1028,49 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 15,
-    borderRadius: 15,
+    paddingHorizontal: 16,
+    borderRadius: Radii.control + 2,
     gap: 8,
   },
   ctaText: {
     color: "#FFF",
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "700",
+    flexShrink: 1,
   },
-
+  autoRenew: {
+    fontSize: 10.5,
+    lineHeight: 14,
+    color: colors.gray[400],
+    textAlign: "center",
+    marginTop: 8,
+    paddingHorizontal: 6,
+  },
   footerLinks: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    marginBottom: 4,
+    columnGap: 14,
+    rowGap: 4,
+    marginTop: 6,
+  },
+  footerLinkHit: {
+    paddingVertical: 2,
   },
   footerLink: {
     fontSize: 11,
     fontWeight: "600",
-    color: colors.gray[400],
-  },
-  footerDot: {
-    fontSize: 11,
-    color: colors.gray[300],
+    color: colors.gray[500],
+    textDecorationLine: "underline",
   },
   secondaryClose: {
     alignItems: "center",
-    paddingVertical: 6,
+    paddingTop: 8,
+    paddingBottom: 2,
   },
   secondaryCloseText: {
-    fontSize: 12,
+    fontSize: 12.5,
     fontWeight: "600",
     color: colors.gray[400],
   },

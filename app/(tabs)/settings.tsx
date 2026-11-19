@@ -25,11 +25,13 @@ import AuthModal from "../../components/profile/AuthModal";
 import { useTheme } from "../../context/ThemeContext";
 import { SeptimusSignature } from "../../components/brand/SeptimusSignature";
 import { resetAllTours } from "../../components/tour/TourContext";
-import { FONT_SCALE_CAP } from "../../constants/design";
+import { FONT_SCALE_CAP, Radii } from "../../constants/design";
 import PageHeader from "../../components/ui/PageHeader";
 import ThemeToggle from "../../components/ui/ThemeToggle";
+import UsageRings, { buildWeeklyRights } from "../../components/ui/UsageRings";
 import { APP_LANGUAGES, currentLanguage, setAppLanguage } from "../../lib/language";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 
 
 if (Platform.OS === "android" && !(global as any).nativeFabricUIManager && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -39,6 +41,75 @@ if (Platform.OS === "android" && !(global as any).nativeFabricUIManager && UIMan
 const APP_VERSION = Application.nativeApplicationVersion || "1.0.0";
 const PRIVACY_URL = "https://purescan-foods.septimuslab.com/privacy-policy/";
 const SUPPORT_EMAIL = "info@septimuslab.com";
+
+type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
+type SettingsStyles = ReturnType<typeof createStyles>;
+
+/**
+ * Gruplu listenin tek satırı. Tek vurgu rengi (turuncu); silme satırları kırmızı.
+ * trailing: chevron (alt ekran/onay), external (dış bağlantı), refresh, expand (açılır panel).
+ */
+function MenuRow({
+  styles,
+  colors,
+  isDark,
+  icon,
+  title,
+  subtitle,
+  onPress,
+  trailing = "chevron",
+  expanded,
+  tone = "default",
+}: {
+  styles: SettingsStyles;
+  colors: AppColors;
+  isDark: boolean;
+  icon: IoniconName;
+  title: string;
+  subtitle?: string;
+  onPress: () => void | Promise<void>;
+  trailing?: "chevron" | "external" | "refresh" | "expand";
+  expanded?: boolean;
+  tone?: "default" | "caution" | "danger";
+}) {
+  const destructive = tone !== "default";
+  const tint = destructive ? colors.error : colors.primary;
+  const iconBg = destructive
+    ? isDark ? "rgba(248,113,113,0.16)" : "rgba(239,68,68,0.10)"
+    : isDark ? "rgba(255,139,61,0.16)" : "rgba(242,96,12,0.10)";
+  const trailingIcon: IoniconName =
+    trailing === "expand"
+      ? expanded ? "chevron-up" : "chevron-down"
+      : trailing === "external"
+        ? "open-outline"
+        : trailing === "refresh"
+          ? "refresh"
+          : "chevron-forward";
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+      accessibilityRole="button"
+      accessibilityState={trailing === "expand" ? { expanded: !!expanded } : undefined}
+    >
+      <View style={[styles.rowIcon, { backgroundColor: iconBg }]}>
+        <Ionicons name={icon} size={17} color={tint} />
+      </View>
+      <View style={styles.rowText}>
+        <Text style={[styles.rowTitle, tone === "danger" && { color: colors.error }]}>
+          {title}
+        </Text>
+        {subtitle ? (
+          <Text style={styles.rowSubtitle}>
+            {subtitle}
+          </Text>
+        ) : null}
+      </View>
+      <Ionicons name={trailingIcon} size={trailing === "external" || trailing === "refresh" ? 17 : 18} color={colors.gray[400]} />
+    </Pressable>
+  );
+}
 
 export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
@@ -84,20 +155,18 @@ export default function SettingsScreen() {
     }
   }, [user, isLoggedIn, pendingPaywall]);
 
-  // Usage calculations
-  const unlimited = String.fromCharCode(8734);
-  const scanRemaining = isPremium ? unlimited : Math.max(0, usageStats.scanLimit - usageStats.scanCount);
-  const chatRemaining = isPremium ? unlimited : Math.max(0, usageStats.aiChatLimit - usageStats.aiChatCount);
-  const familyCount = Math.max(0, (familyMembers?.length || 1) - 1);
-  const familyLimitNum = isPremium ? Infinity : 1;
-  const familyLimitDisplay = isPremium ? unlimited : "1";
-
-  // Exhausted limit state
-  const isScanExhausted = !isPremium && scanRemaining === 0;
-  const isChatExhausted = !isPremium && chatRemaining === 0;
-  const isFamilyExhausted = !isPremium && familyCount >= familyLimitNum;
-  const imageRemaining = Math.max(0, usageStats.imageGenLimit - usageStats.imageGenCount);
-  const isImageExhausted = isPremium && imageRemaining === 0;
+  // Haftalık haklar: değer ve tükenme kuralları ortak yardımcıda (UsageRings.buildWeeklyRights), eskisiyle aynı.
+  const weeklyRights = buildWeeklyRights({
+    isPremium,
+    usageStats,
+    familyMembersLength: familyMembers?.length,
+    labels: {
+      scan: t("settings.scan_rights"),
+      chat: t("settings.chat_rights"),
+      family: t("settings.family_slots"),
+      image: t("settings.image_rights"),
+    },
+  });
 
   // Password section toggle
   const togglePasswordSection = () => {
@@ -225,119 +294,75 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* === SECTION 1: Profile Card === */}
+        {/* === SECTION 1: Profil kartı ve haftalık haklar (tek kart) === */}
         <View style={styles.profileCard}>
+          {/* Sağ üstten düşen yumuşak turuncu ışık (başlıktaki ışıkla aynı dil). */}
+          <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+            <Svg width="100%" height="100%">
+              <Defs>
+                <RadialGradient id="settingsProfileGlow" cx="100%" cy="0%" r="85%">
+                  <Stop offset="0" stopColor={colors.primary} stopOpacity={isDark ? 0.16 : 0.09} />
+                  <Stop offset="1" stopColor={colors.primary} stopOpacity={0} />
+                </RadialGradient>
+              </Defs>
+              <Rect x="0" y="0" width="100%" height="100%" fill="url(#settingsProfileGlow)" />
+            </Svg>
+          </View>
+
           <View style={styles.profileHeader}>
             <View style={[styles.avatar, { backgroundColor: userProfile?.color || colors.primary }]}>
               <MaterialCommunityIcons
                 name={(userProfile?.avatarIcon || "account") as any}
-                size={32}
+                size={30}
                 color="#FFF"
               />
               {isPremium && (
                 <View style={styles.crownBadge}>
-                  <MaterialCommunityIcons name="crown" size={12} color="#F59E0B" />
+                  <MaterialCommunityIcons name="crown" size={12} color={colors.primary} />
                 </View>
               )}
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>
+              <Text
+                variant="display"
+                style={styles.profileName}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.75}
+              >
                 {isLoggedIn
                   ? (userProfile?.displayName || user?.email?.split("@")[0])
                   : t("settings.guest_user")}
               </Text>
-              <Text style={styles.profileEmail}>
+              <Text style={styles.profileEmail} numberOfLines={isLoggedIn ? 2 : undefined}>
                 {isLoggedIn ? user?.email : t("settings.guest_desc")}
               </Text>
-              <View style={[styles.memberBadge, isPremium && styles.memberBadgePremium]}>
-                <Text style={[styles.memberText, isPremium && styles.memberTextPremium]}>
-                  {isPremium ? t("settings.premium_member") : t("settings.free_member")}
-                </Text>
-              </View>
+              {isPremium ? (
+                <LinearGradient
+                  colors={[colors.primary, colors.primaryDeep]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.memberPill}
+                >
+                  <MaterialCommunityIcons name="crown" size={11} color="#FFF" />
+                  <Text style={styles.memberTextPremium} numberOfLines={1}>
+                    {t("settings.premium_member")}
+                  </Text>
+                </LinearGradient>
+              ) : (
+                <View style={[styles.memberPill, styles.memberPillFree]}>
+                  <Text style={styles.memberText} numberOfLines={1}>
+                    {t("settings.free_member")}
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
 
-          {/* Usage Grid */}
+          {/* Haftalık haklar: dört küçük halka */}
           <View style={styles.usageSection}>
             <Text style={styles.sectionLabel}>{t("settings.my_rights")}</Text>
-            <View style={styles.usageGrid}>
-              <View style={[styles.usageCard, isScanExhausted && styles.usageCardExhausted]}>
-                <View style={[
-                  styles.usageIconBox,
-                  { backgroundColor: isScanExhausted ? (isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2") : (isDark ? "rgba(234,88,12,0.20)" : "#FFF7ED") }
-                ]}>
-                  <Ionicons
-                    name="scan-outline"
-                    size={18}
-                    color={isScanExhausted ? "#DC2626" : colors.primary}
-                  />
-                </View>
-                <Text style={[styles.usageValue, isScanExhausted && styles.usageValueExhausted]}>
-                  {scanRemaining}
-                </Text>
-                <Text style={[styles.usageLabel, isScanExhausted && styles.usageLabelExhausted]}>
-                  {t("settings.scan_rights")}
-                </Text>
-              </View>
-              <View style={[styles.usageCard, isChatExhausted && styles.usageCardExhausted]}>
-                <View style={[
-                  styles.usageIconBox,
-                  { backgroundColor: isChatExhausted ? (isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2") : (isDark ? "rgba(124,58,237,0.22)" : "#EDE9FE") }
-                ]}>
-                  <MaterialCommunityIcons
-                    name="robot-outline"
-                    size={18}
-                    color={isChatExhausted ? "#DC2626" : "#7C3AED"}
-                  />
-                </View>
-                <Text style={[styles.usageValue, isChatExhausted && styles.usageValueExhausted]}>
-                  {chatRemaining}
-                </Text>
-                <Text style={[styles.usageLabel, isChatExhausted && styles.usageLabelExhausted]}>
-                  {t("settings.chat_rights")}
-                </Text>
-              </View>
-              <View style={[styles.usageCard, isFamilyExhausted && styles.usageCardExhausted]}>
-                <View style={[
-                  styles.usageIconBox,
-                  { backgroundColor: isFamilyExhausted ? (isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2") : (isDark ? "rgba(2,132,199,0.22)" : "#E0F2FE") }
-                ]}>
-                  <MaterialCommunityIcons
-                    name="account-group-outline"
-                    size={18}
-                    color={isFamilyExhausted ? "#DC2626" : "#0284C7"}
-                  />
-                </View>
-                <Text style={[styles.usageValue, isFamilyExhausted && styles.usageValueExhausted]}>
-                  {familyCount}/{familyLimitDisplay}
-                </Text>
-                <Text style={[styles.usageLabel, isFamilyExhausted && styles.usageLabelExhausted]}>
-                  {t("settings.family_slots")}
-                </Text>
-              </View>
-              <View style={[styles.usageCard, isImageExhausted && styles.usageCardExhausted]}>
-                <View style={[
-                  styles.usageIconBox,
-                  { backgroundColor: isImageExhausted ? (isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2") : (isDark ? "rgba(5,150,105,0.22)" : "#D1FAE5") }
-                ]}>
-                  <Ionicons
-                    name="camera-outline"
-                    size={18}
-                    color={isImageExhausted ? "#DC2626" : "#059669"}
-                  />
-                </View>
-                {isPremium ? (
-                  <Text style={[styles.usageValue, isImageExhausted && styles.usageValueExhausted]}>
-                    {imageRemaining}
-                  </Text>
-                ) : (
-                  <Text style={[styles.usageValue, { color: "#059669" }]}>PRO</Text>
-                )}
-                <Text style={[styles.usageLabel, isImageExhausted && styles.usageLabelExhausted]}>
-                  {t("settings.image_rights")}
-                </Text>
-              </View>
-            </View>
+            <UsageRings items={weeklyRights} size={50} />
           </View>
         </View>
 
@@ -345,21 +370,44 @@ export default function SettingsScreen() {
         {!isLoggedIn && (
           <View style={styles.section}>
             <Pressable
-              style={({ pressed }) => [styles.loginCard, pressed && styles.cardPressed]}
+              style={({ pressed }) => [pressed && styles.cardPressed]}
               onPress={() => setShowAuthModal(true)}
             >
               <LinearGradient
                 colors={[colors.primary, colors.primaryDeep]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
                 style={styles.loginGradient}
               >
+                <View pointerEvents="none" style={styles.ctaGlow}>
+                  <Svg width="100%" height="100%">
+                    <Defs>
+                      <RadialGradient id="settingsLoginGlow" cx="92%" cy="0%" r="80%">
+                        <Stop offset="0" stopColor="#FFFFFF" stopOpacity={isDark ? 0.16 : 0.24} />
+                        <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
+                      </RadialGradient>
+                    </Defs>
+                    <Rect x="0" y="0" width="100%" height="100%" fill="url(#settingsLoginGlow)" />
+                  </Svg>
+                </View>
                 <View style={styles.loginIconBox}>
-                  <Ionicons name="log-in-outline" size={24} color={colors.primary} />
+                  <Ionicons name="log-in-outline" size={22} color={colors.primary} />
                 </View>
                 <View style={styles.loginContent}>
-                  <Text style={styles.loginTitle}>{t("settings.login_label")}</Text>
+                  <Text
+                    variant="display"
+                    style={styles.loginTitle}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.8}
+                  >
+                    {t("settings.login_label")}
+                  </Text>
                   <Text style={styles.loginDesc}>{t("settings.login_sublabel")}</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#FFF" style={styles.chevronWhite} />
+                <View style={styles.ctaChevronWhite}>
+                  <Ionicons name="chevron-forward" size={18} color="#FFF" />
+                </View>
               </LinearGradient>
             </Pressable>
           </View>
@@ -367,253 +415,229 @@ export default function SettingsScreen() {
 
         {/* === SECTION 2: Premium CTA === */}
         {!isPremium && (
-          <Pressable
-            style={({ pressed }) => [styles.premiumCard, pressed && styles.cardPressed]}
-            onPress={() => setPremiumModalVisible(true)}
-          >
-            <LinearGradient
-              colors={isDark ? ["rgba(251,191,36,0.15)", "rgba(245,158,11,0.08)"] : ["#FFF7ED", "#FFEDD5"]}
-              style={styles.premiumGradient}
+          <View style={styles.section}>
+            <Pressable
+              style={({ pressed }) => [pressed && styles.cardPressed]}
+              onPress={() => setPremiumModalVisible(true)}
             >
-              <View style={styles.premiumIconBox}>
-                <MaterialCommunityIcons name="crown" size={24} color="#F59E0B" />
-              </View>
-              <View style={styles.premiumContent}>
-                <Text style={styles.premiumTitle}>{t("settings.premium_title")}</Text>
-                <Text style={styles.premiumDesc}>{t("settings.premium_desc")}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#F59E0B" style={styles.chevronRight} />
-            </LinearGradient>
-          </Pressable>
+              <LinearGradient
+                colors={isDark ? ["rgba(255,139,61,0.20)", "rgba(226,85,11,0.08)"] : ["#FFF5EC", "#FFE7D4"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.premiumGradient}
+              >
+                <View style={styles.premiumIconBox}>
+                  <MaterialCommunityIcons name="crown" size={22} color={colors.primary} />
+                </View>
+                <View style={styles.premiumContent}>
+                  <Text
+                    variant="display"
+                    style={styles.premiumTitle}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.8}
+                  >
+                    {t("settings.premium_title")}
+                  </Text>
+                  <Text style={styles.premiumDesc}>{t("settings.premium_desc")}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+              </LinearGradient>
+            </Pressable>
+          </View>
         )}
 
         {/* === SECTION 3: Account Settings (Password) === */}
         {isLoggedIn && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t("settings.account_settings")}</Text>
-
-            <Pressable
-              style={[styles.menuItem, passwordSectionOpen && styles.menuItemActive]}
-              onPress={togglePasswordSection}
-            >
-              <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIconBox, { backgroundColor: isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2" }]}>
-                  <Ionicons name="lock-closed-outline" size={18} color="#EF4444" />
-                </View>
-                <Text style={styles.menuItemText}>{t("settings.change_password")}</Text>
-              </View>
-              <Ionicons
-                name={passwordSectionOpen ? "chevron-up" : "chevron-down"}
-                size={20}
-                color={colors.gray[400]}
+            <View style={styles.group}>
+              <MenuRow
+                styles={styles}
+                colors={colors}
+                isDark={isDark}
+                icon="lock-closed-outline"
+                title={t("settings.change_password")}
+                trailing="expand"
+                expanded={passwordSectionOpen}
+                onPress={togglePasswordSection}
               />
-            </Pressable>
 
-            {passwordSectionOpen && (
-              <View style={styles.passwordForm}>
-                <View style={styles.inputBox}>
-                  <Ionicons name="key-outline" size={18} color={colors.gray[400]} />
-                  <TextInput
-                    maxFontSizeMultiplier={FONT_SCALE_CAP}
-                    style={styles.input}
-                    placeholder={t("settings.current_password")}
-                    placeholderTextColor={colors.gray[400]}
-                    value={currentPassword}
-                    onChangeText={setCurrentPassword}
-                    secureTextEntry={!showCurrentPassword}
-                  />
-                  <Pressable onPress={() => setShowCurrentPassword(!showCurrentPassword)} hitSlop={8}>
-                    <Ionicons name={showCurrentPassword ? "eye-off-outline" : "eye-outline"} size={20} color={colors.gray[400]} />
+              {passwordSectionOpen && (
+                <View style={styles.passwordForm}>
+                  <View style={styles.inputBox}>
+                    <Ionicons name="key-outline" size={18} color={colors.gray[400]} />
+                    <TextInput
+                      maxFontSizeMultiplier={FONT_SCALE_CAP}
+                      style={styles.input}
+                      placeholder={t("settings.current_password")}
+                      placeholderTextColor={colors.gray[400]}
+                      value={currentPassword}
+                      onChangeText={setCurrentPassword}
+                      secureTextEntry={!showCurrentPassword}
+                    />
+                    <Pressable onPress={() => setShowCurrentPassword(!showCurrentPassword)} hitSlop={8}>
+                      <Ionicons name={showCurrentPassword ? "eye-off-outline" : "eye-outline"} size={20} color={colors.gray[400]} />
+                    </Pressable>
+                  </View>
+                  <View style={styles.inputBox}>
+                    <Ionicons name="lock-closed-outline" size={18} color={colors.gray[400]} />
+                    <TextInput
+                      maxFontSizeMultiplier={FONT_SCALE_CAP}
+                      style={styles.input}
+                      placeholder={t("settings.new_password")}
+                      placeholderTextColor={colors.gray[400]}
+                      value={newPassword}
+                      onChangeText={setNewPassword}
+                      secureTextEntry={!showNewPassword}
+                    />
+                    <Pressable onPress={() => setShowNewPassword(!showNewPassword)} hitSlop={8}>
+                      <Ionicons name={showNewPassword ? "eye-off-outline" : "eye-outline"} size={20} color={colors.gray[400]} />
+                    </Pressable>
+                  </View>
+                  <View style={styles.inputBox}>
+                    <Ionicons name="checkmark-circle-outline" size={18} color={colors.gray[400]} />
+                    <TextInput
+                      maxFontSizeMultiplier={FONT_SCALE_CAP}
+                      style={styles.input}
+                      placeholder={t("settings.confirm_password")}
+                      placeholderTextColor={colors.gray[400]}
+                      value={confirmPassword}
+                      onChangeText={setConfirmPassword}
+                      secureTextEntry={!showNewPassword}
+                    />
+                  </View>
+                  <Pressable
+                    style={[styles.changePasswordBtn, passwordLoading && styles.btnDisabled]}
+                    onPress={handleChangePassword}
+                    disabled={passwordLoading}
+                  >
+                    {passwordLoading ? (
+                      <ActivityIndicator color="#FFF" size="small" />
+                    ) : (
+                      <Text style={styles.changePasswordBtnText}>
+                        {t("settings.update_password")}
+                      </Text>
+                    )}
                   </Pressable>
                 </View>
-                <View style={styles.inputBox}>
-                  <Ionicons name="lock-closed-outline" size={18} color={colors.gray[400]} />
-                  <TextInput
-                    maxFontSizeMultiplier={FONT_SCALE_CAP}
-                    style={styles.input}
-                    placeholder={t("settings.new_password")}
-                    placeholderTextColor={colors.gray[400]}
-                    value={newPassword}
-                    onChangeText={setNewPassword}
-                    secureTextEntry={!showNewPassword}
-                  />
-                  <Pressable onPress={() => setShowNewPassword(!showNewPassword)} hitSlop={8}>
-                    <Ionicons name={showNewPassword ? "eye-off-outline" : "eye-outline"} size={20} color={colors.gray[400]} />
-                  </Pressable>
-                </View>
-                <View style={styles.inputBox}>
-                  <Ionicons name="checkmark-circle-outline" size={18} color={colors.gray[400]} />
-                  <TextInput
-                    maxFontSizeMultiplier={FONT_SCALE_CAP}
-                    style={styles.input}
-                    placeholder={t("settings.confirm_password")}
-                    placeholderTextColor={colors.gray[400]}
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
-                    secureTextEntry={!showNewPassword}
-                  />
-                </View>
-                <Pressable
-                  style={[styles.changePasswordBtn, passwordLoading && styles.btnDisabled]}
-                  onPress={handleChangePassword}
-                  disabled={passwordLoading}
-                >
-                  {passwordLoading ? (
-                    <ActivityIndicator color="#FFF" size="small" />
-                  ) : (
-                    <Text style={styles.changePasswordBtnText}>
-                      {t("settings.update_password")}
-                    </Text>
-                  )}
-                </Pressable>
-              </View>
-            )}
+              )}
+            </View>
           </View>
         )}
 
         {/* === SECTION 4: Support & Contact === */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t("settings.support_contact")}</Text>
-
-          <Pressable
-            style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
-            onPress={handleContactSupport}
-          >
-            <View style={styles.menuItemLeft}>
-              <View style={[styles.menuIconBox, { backgroundColor: isDark ? "rgba(2,132,199,0.22)" : "#E0F2FE" }]}>
-                <Ionicons name="mail-outline" size={18} color="#0284C7" />
-              </View>
-              <View>
-                <Text style={styles.menuItemText}>{t("settings.contact_us")}</Text>
-                <Text style={styles.menuItemSubtext}>{SUPPORT_EMAIL}</Text>
-              </View>
-            </View>
-            <Ionicons name="open-outline" size={18} color={colors.gray[400]} style={styles.chevronRight} />
-          </Pressable>
-
-          <Pressable
-            style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
-            onPress={async () => {
-              haptics.selection();
-              await resetAllTours();
-              router.replace("/");
-            }}
-          >
-            <View style={styles.menuItemLeft}>
-              <View style={[styles.menuIconBox, { backgroundColor: isDark ? "rgba(242,96,12,0.20)" : "#FFF3EA" }]}>
-                <Ionicons name="sparkles-outline" size={18} color={colors.primary} />
-              </View>
-              <View style={{ flexShrink: 1 }}>
-                <Text style={styles.menuItemText}>{t("tour.replay")}</Text>
-                <Text style={styles.menuItemSubtext}>{t("tour.replayDone")}</Text>
-              </View>
-            </View>
-            <Ionicons name="refresh" size={18} color={colors.gray[400]} style={styles.chevronRight} />
-          </Pressable>
+          <View style={styles.group}>
+            <MenuRow
+              styles={styles}
+              colors={colors}
+              isDark={isDark}
+              icon="mail-outline"
+              title={t("settings.contact_us")}
+              subtitle={SUPPORT_EMAIL}
+              trailing="external"
+              onPress={handleContactSupport}
+            />
+            <View style={styles.separator} />
+            <MenuRow
+              styles={styles}
+              colors={colors}
+              isDark={isDark}
+              icon="sparkles-outline"
+              title={t("tour.replay")}
+              subtitle={t("tour.replayDone")}
+              trailing="refresh"
+              onPress={async () => {
+                haptics.selection();
+                await resetAllTours();
+                router.replace("/");
+              }}
+            />
+          </View>
         </View>
 
         {/* === SECTION 5: About === */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t("settings.about")}</Text>
-
-          <Pressable
-            style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
-            onPress={handlePrivacyPolicy}
-          >
-            <View style={styles.menuItemLeft}>
-              <View style={[styles.menuIconBox, { backgroundColor: isDark ? "rgba(22,163,74,0.20)" : "#F0FDF4" }]}>
-                <Ionicons name="shield-checkmark-outline" size={18} color="#16A34A" />
-              </View>
-              <View>
-                <Text style={styles.menuItemText}>{t("settings.privacy_policy")}</Text>
-                <Text style={styles.menuItemSubtext}>{t("settings.privacy_policy_desc")}</Text>
-              </View>
-            </View>
-            <Ionicons name="open-outline" size={18} color={colors.gray[400]} style={styles.chevronRight} />
-          </Pressable>
+          <View style={styles.group}>
+            <MenuRow
+              styles={styles}
+              colors={colors}
+              isDark={isDark}
+              icon="shield-checkmark-outline"
+              title={t("settings.privacy_policy")}
+              subtitle={t("settings.privacy_policy_desc")}
+              trailing="external"
+              onPress={handlePrivacyPolicy}
+            />
+          </View>
         </View>
 
         {/* === SECTION 5.5: Data Management === */}
         {user && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{t("settings.data_management")}</Text>
-
-            <Pressable
-              style={[styles.menuItem, dataManagementOpen && styles.menuItemActive]}
-              onPress={toggleDataManagement}
-            >
-              <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIconBox, { backgroundColor: isDark ? "rgba(234,88,12,0.20)" : "#FFF7ED" }]}>
-                  <Ionicons name="server-outline" size={18} color={colors.primary} />
-                </View>
-                <View>
-                  <Text style={[styles.menuItemText, { color: colors.primary }]}>{t("settings.data_management_label")}</Text>
-                  <Text style={styles.menuItemSubtext}>{t("settings.data_management_desc")}</Text>
-                </View>
-              </View>
-              <Ionicons
-                name={dataManagementOpen ? "chevron-up" : "chevron-down"}
-                size={20}
-                color={colors.gray[400]}
+            <View style={styles.group}>
+              <MenuRow
+                styles={styles}
+                colors={colors}
+                isDark={isDark}
+                icon="server-outline"
+                title={t("settings.data_management_label")}
+                subtitle={t("settings.data_management_desc")}
+                trailing="expand"
+                expanded={dataManagementOpen}
+                onPress={toggleDataManagement}
               />
-            </Pressable>
 
-            {dataManagementOpen && (
-              <View style={styles.dataManagementPanel}>
-                {/* Delete Data - Warning */}
-                <Pressable
-                  style={({ pressed }) => [styles.subMenuItem, styles.subMenuItemWarning, pressed && styles.menuItemPressed]}
-                  onPress={() => setDeleteDataModalVisible(true)}
-                >
-                  <View style={styles.menuItemLeft}>
-                    <View style={[styles.menuIconBox, { backgroundColor: isDark ? "rgba(245,158,11,0.22)" : "#FEF3C7" }]}>
-                      <Ionicons name="trash-outline" size={18} color="#D97706" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.menuItemText, { color: isDark ? "#FCD34D" : "#92400E" }]}>{t("settings.delete_data_label")}</Text>
-                      <Text style={styles.menuItemSubtext}>{t("settings.delete_data_sublabel")}</Text>
-                    </View>
-                  </View>
-                  <Ionicons name="chevron-forward" size={18} color={colors.gray[400]} style={styles.chevronRight} />
-                </Pressable>
-
-                {/* Delete Account - Danger */}
-                <Pressable
-                  style={({ pressed }) => [styles.subMenuItem, styles.subMenuItemDanger, pressed && styles.menuItemPressed]}
-                  onPress={() => setDeleteAccountModalVisible(true)}
-                >
-                  <View style={styles.menuItemLeft}>
-                    <View style={[styles.menuIconBox, { backgroundColor: isDark ? "rgba(220,38,38,0.22)" : "#FEE2E2" }]}>
-                      <Ionicons name="person-remove-outline" size={18} color="#DC2626" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.menuItemText, { color: "#DC2626" }]}>{t("settings.delete_account_label")}</Text>
-                      <Text style={styles.menuItemSubtext}>{t("settings.delete_account_sublabel")}</Text>
-                    </View>
-                  </View>
-                  <Ionicons name="chevron-forward" size={18} color={colors.gray[400]} style={styles.chevronRight} />
-                </Pressable>
-
-                {/* Logout (only for non-anonymous users) */}
-                {isLoggedIn && (
-                  <Pressable
-                    style={({ pressed }) => [styles.subMenuItem, styles.subMenuItemLast, pressed && styles.menuItemPressed]}
-                    onPress={logout}
-                  >
-                    <View style={styles.menuItemLeft}>
-                      <View style={[styles.menuIconBox, { backgroundColor: isDark ? "rgba(37,99,235,0.22)" : "#EFF6FF" }]}>
-                        <Ionicons name="log-out-outline" size={18} color="#2563EB" />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.menuItemText}>{t("settings.logout_label")}</Text>
-                        <Text style={styles.menuItemSubtext}>{t("settings.logout_sublabel")}</Text>
-                      </View>
-                    </View>
-                    <Ionicons name="chevron-forward" size={18} color={colors.gray[400]} style={styles.chevronRight} />
-                  </Pressable>
-                )}
-              </View>
-            )}
+              {dataManagementOpen && (
+                <View style={styles.subGroup}>
+                  {/* Delete Data - Warning */}
+                  <MenuRow
+                    styles={styles}
+                    colors={colors}
+                    isDark={isDark}
+                    icon="trash-outline"
+                    tone="caution"
+                    title={t("settings.delete_data_label")}
+                    subtitle={t("settings.delete_data_sublabel")}
+                    trailing="chevron"
+                    onPress={() => setDeleteDataModalVisible(true)}
+                  />
+                  <View style={styles.separator} />
+                  {/* Delete Account - Danger */}
+                  <MenuRow
+                    styles={styles}
+                    colors={colors}
+                    isDark={isDark}
+                    icon="person-remove-outline"
+                    tone="danger"
+                    title={t("settings.delete_account_label")}
+                    subtitle={t("settings.delete_account_sublabel")}
+                    trailing="chevron"
+                    onPress={() => setDeleteAccountModalVisible(true)}
+                  />
+                  {/* Logout (only for non-anonymous users) */}
+                  {isLoggedIn && (
+                    <>
+                      <View style={styles.separator} />
+                      <MenuRow
+                        styles={styles}
+                        colors={colors}
+                        isDark={isDark}
+                        icon="log-out-outline"
+                        title={t("settings.logout_label")}
+                        subtitle={t("settings.logout_sublabel")}
+                        trailing="chevron"
+                        onPress={logout}
+                      />
+                    </>
+                  )}
+                </View>
+              )}
+            </View>
           </View>
         )}
 
@@ -820,22 +844,24 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
   flagLabelActive: {
     color: colors.primary,
   },
+  // Profil kartı: avatar, ad, üyelik hapı ve haftalık halkalar tek kartta
   profileCard: {
     backgroundColor: colors.card,
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: Radii.card,
+    padding: 18,
     marginBottom: 16,
     borderWidth: 1,
     borderColor: colors.gray[200],
+    overflow: "hidden",
   },
   profileHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 20,
+    gap: 14,
   },
   avatar: {
-    width: 64,
-    height: 64,
+    width: 60,
+    height: 60,
     borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
@@ -850,225 +876,228 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     backgroundColor: colors.card,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: colors.gray[200],
   },
   profileInfo: {
     flex: 1,
-    marginLeft: 16,
+    minWidth: 0,
   },
   profileName: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: colors.secondary,
+    fontSize: 22,
+    lineHeight: 27,
+    color: colors.text,
   },
   profileEmail: {
     fontSize: 13,
-    color: colors.gray[500],
-    marginTop: 2,
+    color: colors.textMuted,
+    marginTop: 1,
   },
-  memberBadge: {
+  memberPill: {
     alignSelf: "flex-start",
+    maxWidth: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 10,
-    backgroundColor: colors.gray[100],
+    borderRadius: Radii.pill,
     marginTop: 8,
   },
-  memberBadgePremium: {
-    backgroundColor: isDark ? "rgba(251,191,36,0.20)" : "#FEF3C7",
+  memberPillFree: {
+    backgroundColor: colors.gray[100],
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.gray[200],
   },
   memberText: {
     fontSize: 11,
     fontWeight: "700",
     color: colors.gray[600],
+    letterSpacing: 0.2,
+    flexShrink: 1,
   },
   memberTextPremium: {
-    color: isDark ? "#FBBF24" : "#D97706",
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#FFF",
+    letterSpacing: 0.2,
+    flexShrink: 1,
   },
 
-  // Usage Section
+  // Haftalık haklar
   usageSection: {
-    borderTopWidth: 1,
-    borderTopColor: colors.gray[100],
-    paddingTop: 16,
+    marginTop: 16,
+    paddingTop: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.gray[200],
   },
   sectionLabel: {
     fontSize: 11,
     fontWeight: "700",
     color: colors.gray[400],
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
     marginBottom: 12,
   },
-  usageGrid: {
+
+  // Giriş ve Premium kartları
+  cardPressed: {
+    opacity: 0.92,
+    transform: [{ scale: 0.98 }],
+  },
+  loginGradient: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  usageCard: {
-    flexBasis: "47%",
-    flexGrow: 1,
-    minWidth: 0,
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    padding: 14,
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: colors.gray[200],
+    gap: 14,
+    padding: 16,
+    borderRadius: Radii.card,
   },
-  usageIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
-  },
-  usageValue: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: colors.secondary,
-  },
-  usageLabel: {
-    fontSize: 10,
-    color: colors.gray[500],
-    textAlign: "center",
-    marginTop: 4,
-  },
-
-  // Exhausted states
-  usageCardExhausted: {
-    borderColor: "#FECACA",
-    backgroundColor: isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2",
-  },
-  usageValueExhausted: {
-    color: "#DC2626",
-  },
-  usageLabelExhausted: {
-    color: "#EF4444",
-  },
-
-  // Premium Card
-  premiumCard: {
-    marginBottom: 16,
-    borderRadius: 16,
+  ctaGlow: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: Radii.card,
     overflow: "hidden",
   },
-  cardPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.98 }],
+  loginIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: "#FFF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loginContent: {
+    flex: 1,
+    minWidth: 0,
+  },
+  loginTitle: {
+    fontSize: 19,
+    lineHeight: 24,
+    color: "#FFF",
+  },
+  loginDesc: {
+    fontSize: 12.5,
+    color: "rgba(255,255,255,0.86)",
+    marginTop: 2,
+  },
+  ctaChevronWhite: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   premiumGradient: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 14,
     padding: 16,
-    borderRadius: 16,
+    borderRadius: Radii.card,
     borderWidth: 1,
-    borderColor: "#FED7AA",
+    borderColor: isDark ? "rgba(255,139,61,0.28)" : "rgba(242,96,12,0.16)",
   },
   premiumIconBox: {
-    width: 48,
-    height: 48,
+    width: 44,
+    height: 44,
     borderRadius: 14,
-    backgroundColor: isDark ? "rgba(251,191,36,0.20)" : "#FEF3C7",
+    backgroundColor: isDark ? "rgba(255,139,61,0.18)" : "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
   },
   premiumContent: {
     flex: 1,
-    marginLeft: 14,
+    minWidth: 0,
   },
   premiumTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: isDark ? "#FBBF24" : "#C2410C",
+    fontSize: 19,
+    lineHeight: 24,
+    color: isDark ? colors.text : colors.primaryDeep,
   },
   premiumDesc: {
-    fontSize: 12,
-    color: colors.primary,
+    fontSize: 12.5,
+    color: colors.textMuted,
     marginTop: 2,
   },
 
-  // Sections
+  // Gruplu liste (iOS ayar listesi): yuvarlak grup, satırlar arasında ince çizgi
   section: {
-    marginBottom: 16,
+    marginBottom: 20,
   },
   sectionTitle: {
     fontSize: 11,
     fontWeight: "700",
     color: colors.gray[400],
-    letterSpacing: 0.5,
-    marginBottom: 10,
-    marginLeft: 4,
-  },
-
-  // Menu Items
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: colors.card,
-    paddingVertical: 14,
-    paddingLeft: 14,
-    paddingRight: 22,
-    borderRadius: 14,
+    letterSpacing: 0.6,
     marginBottom: 8,
+    marginLeft: 16,
+  },
+  group: {
+    backgroundColor: colors.card,
+    borderRadius: Radii.card,
     borderWidth: 1,
     borderColor: colors.gray[200],
+    overflow: "hidden",
   },
-  menuItemActive: {
-    borderColor: colors.primary,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-    marginBottom: 0,
+  subGroup: {
+    backgroundColor: isDark ? colors.gray[100] : colors.gray[50],
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.gray[200],
   },
-  menuItemPressed: {
-    backgroundColor: colors.gray[50],
-  },
-  menuItemLeft: {
+  row: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    minHeight: 56,
+    paddingVertical: 12,
+    paddingLeft: 14,
+    paddingRight: 16,
   },
-  menuIconBox: {
-    width: 36,
-    height: 36,
+  rowPressed: {
+    backgroundColor: isDark ? colors.gray[200] : colors.gray[100],
+  },
+  rowIcon: {
+    width: 32,
+    height: 32,
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
   },
-  menuItemText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: colors.secondary,
+  rowText: {
+    flex: 1,
+    minWidth: 0,
   },
-  menuItemSubtext: {
-    fontSize: 11,
-    color: colors.gray[500],
+  rowTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.text,
+  },
+  rowSubtitle: {
+    fontSize: 12,
+    color: colors.textMuted,
     marginTop: 2,
+  },
+  separator: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.gray[200],
+    marginLeft: 58,
   },
 
   // Password Form
   passwordForm: {
-    backgroundColor: colors.card,
-    padding: 16,
-    borderWidth: 1,
-    borderTopWidth: 0,
-    borderColor: colors.primary,
-    borderBottomLeftRadius: 14,
-    borderBottomRightRadius: 14,
-    marginBottom: 8,
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 14,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.gray[200],
+    backgroundColor: isDark ? colors.gray[100] : colors.gray[50],
   },
   inputBox: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: colors.gray[50],
-    borderRadius: 12,
+    backgroundColor: colors.card,
+    borderRadius: Radii.control,
     paddingHorizontal: 14,
-    height: 48,
+    minHeight: 48,
     marginBottom: 10,
     borderWidth: 1,
     borderColor: colors.gray[200],
@@ -1076,11 +1105,12 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 14,
-    color: colors.secondary,
+    paddingVertical: 10,
+    color: colors.text,
   },
   changePasswordBtn: {
-    height: 48,
-    borderRadius: 12,
+    minHeight: 48,
+    borderRadius: Radii.control,
     backgroundColor: colors.primary,
     alignItems: "center",
     justifyContent: "center",
@@ -1116,88 +1146,10 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     color: colors.gray[500],
   },
 
-  // Data Management Panel
-  dataManagementPanel: {
-    backgroundColor: colors.card,
-    padding: 12,
-    borderWidth: 1,
-    borderTopWidth: 0,
-    borderColor: colors.primary,
-    borderBottomLeftRadius: 14,
-    borderBottomRightRadius: 14,
-    marginBottom: 8,
-    gap: 8,
-  },
-  subMenuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: colors.card,
-    paddingVertical: 14,
-    paddingLeft: 14,
-    paddingRight: 22,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.gray[200],
-  },
-  subMenuItemWarning: {
-    borderColor: "#FCD34D",
-    backgroundColor: isDark ? "rgba(245, 158, 11, 0.14)" : "#FFFBEB",
-  },
-  subMenuItemDanger: {
-    borderColor: "#FCA5A5",
-    backgroundColor: isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2",
-  },
-  subMenuItemLast: {
-    borderColor: colors.gray[200],
-    backgroundColor: colors.card,
-  },
-  chevronRight: {
-    marginRight: 6,
-  },
-  chevronWhite: {
-    marginRight: 8,
-    marginLeft: 8,
-  },
-
-  // Login Card (Guest)
-  loginCard: {
-    borderRadius: 16,
-    overflow: "hidden",
-  },
-  loginGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    borderRadius: 16,
-  },
-  loginIconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: colors.card,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  loginContent: {
-    flex: 1,
-    marginLeft: 14,
-  },
-  loginTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#FFF",
-  },
-  loginDesc: {
-    fontSize: 12,
-    color: "rgba(255,255,255,0.85)",
-    marginTop: 2,
-  },
-
   // Disclaimer Card
   disclaimerCard: {
     backgroundColor: isDark ? "rgba(245, 158, 11, 0.14)" : "#FFFBEB",
-    borderRadius: 16,
+    borderRadius: Radii.card,
     padding: 16,
     borderWidth: 1,
     borderColor: "#FDE68A",

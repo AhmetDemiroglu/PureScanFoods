@@ -300,7 +300,8 @@
             "unknown": "Bilinmiyor",
             "alertTitle": "Uyum Analizi",
             "reasons": "Tespit edilenler:",
-            "profile_settings": "Profil Tercihleri"
+            "profile_settings": "Profil Tercihleri",
+            "heading": "Aile uyumu"
         },
         "diet_card": {
             "keto_title": "KETO KARNESİ",
@@ -512,7 +513,16 @@
             "source_off": "Kaynak: OpenFoodFacts",
             "source_pack": "Etiketten okundu"
         },
-        "ask_guru": "Guru'ya Sor"
+        "ask_guru": "Guru'ya Sor",
+        "ring": {
+            "safety": "Güvenlik Skoru",
+            "compat": "Uyum Skoru"
+        },
+        "actions": {
+            "compare": "Karşılaştır",
+            "rescan": "Tekrar Çek"
+        },
+        "detailedHeading": "Detaylı analiz"
     },
     "common": {
         "suitable": "UYGUN",
@@ -576,7 +586,9 @@
         "hints": {
             "longPressEdit": "Düzenlemek için basılı tutun"
         },
-        "clearDiet": "Seçimi Kaldır"
+        "clearDiet": "Seçimi Kaldır",
+        "chooseDiet": "Diyet seç",
+        "addAllergen": "Alerjen ekle"
     },
     "encyclopedia": {},
     "history": {
@@ -724,7 +736,9 @@
         "renewal_desc": "Premium'a geçmezseniz yeni haklarınız {{date}} tarihinde tanımlanacaktır.",
         "go_premium_caps": "SINIRLARI KALDIR & PREMIUM OL",
         "maybe_later": "Şimdilik İdare Et",
-        "watch_ad": "İzle (+1)"
+        "watch_ad": "İzle (+1)",
+        "premium_advantage": "PREMIUM AVANTAJI",
+        "family_premium_desc": "Premium planda dilediğiniz kadar aile üyesi profili oluşturabilirsiniz."
     },
     "settings": {
         "title": "Ayarlar",
@@ -809,7 +823,7 @@
     },
     "paywall": {
         "title": "Premium'a Yükselt",
-        "subtitle": "Sınırsız tarama, AI sohbet ve aile profilleri - daha sağlıklı seçimler için ihtiyacın olan her şey.",
+        "subtitle": "Sınırsız tarama, AI sohbet ve aile profilleri. Daha sağlıklı seçimler için ihtiyacın olan her şey.",
         "yearly": "Yıllık",
         "monthly": "Aylık",
         "per_month": "/ay",
@@ -835,7 +849,13 @@
         "noRestore": "Geri yüklenecek satın alma bulunamadı.",
         "successTitle": "Harika!",
         "successSubtitle": "Premium Özellikler Aktif",
-        "iosUnavailable": "Premium abonelikler iOS'ta henüz aktif değil. Kurulumu tamamlıyoruz, yakında tekrar kontrol edin."
+        "iosUnavailable": "Premium abonelikler iOS'ta henüz aktif değil. Kurulumu tamamlıyoruz, yakında tekrar kontrol edin.",
+        "save_percent_dynamic": "%{{percent}} TASARRUF",
+        "auto_renew": "Abonelik otomatik olarak yenilenir. Yenilemeden en az 24 saat önce mağaza ayarlarından istediğin zaman iptal edebilirsin.",
+        "termsOfUse": "Kullanım Koşulları",
+        "privacyPolicy": "Gizlilik Politikası",
+        "manageSubscription": "Aboneliği Yönet",
+        "platformUnavailableTitle": "Yakında"
     },
     "compare": {
         "title": "Karşılaştırma",
@@ -899,6 +919,19 @@
             "guru": {
                 "title": "Guru'ya sor",
                 "desc": "Bu ürünle ilgili aklına takılanı sor. Guru ürünün analizini bilerek cevaplar."
+            },
+            "family": {
+                "title": "Ailen için puan",
+                "desc": "Her aile üyesinin uyum puanı burada. Birine dokun, neden o puanı aldığını gör."
+            },
+            "actions": {
+                "title": "Sonra ne yapabilirsin?",
+                "desc": "Bu çubuk ekranın altında hep hazır durur.",
+                "items": {
+                    "guru": "Guru'ya Sor: bu ürünü sor, profiline göre cevap versin.",
+                    "compare": "Karşılaştır: başka bir taramayla yan yana koy.",
+                    "rescan": "Tekrar Çek: etiket net çıkmadıysa yeniden tara."
+                }
             }
         },
         "guru": {

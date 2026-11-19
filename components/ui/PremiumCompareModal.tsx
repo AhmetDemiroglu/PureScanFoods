@@ -1,19 +1,24 @@
-﻿import React, { useEffect, useMemo } from "react";
+﻿// "Premium Avantajları": alttan açılan sayfa. Turuncu geçişli üst alan (taç, serif başlık), altında
+// Ücretsiz ve Premium sütunlu karşılaştırma; Premium sütunu vurgulu. Değerler ve geri çağrılar önceki
+// sürümle aynı (onSubscribe, onClose).
+import React, { useEffect, useMemo } from "react";
 import { Modal, View, Pressable, StyleSheet, ScrollView, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "./AppText";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { AppColors } from "../../constants/colors";
 import { LinearGradient } from "expo-linear-gradient";
+import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
     withTiming,
     Easing,
-    FadeIn,
+    FadeInDown,
 } from "react-native-reanimated";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../context/ThemeContext";
+import { Radii } from "../../constants/design";
 
 interface PremiumCompareModalProps {
     visible: boolean;
@@ -21,51 +26,55 @@ interface PremiumCompareModalProps {
     onSubscribe?: () => void;
 }
 
+const UNLIMITED = "∞";
+const CHECK = "✓";
+const CROSS = "✗";
 
-interface FeatureRowProps {
-    icon: string;
-    iconColor: string;
-    iconBg: string;
-    label: string;
-    freeValue: React.ReactNode;
-    premiumValue: React.ReactNode;
-    premiumHighlight?: boolean;
-    index: number;
+/** Sütun genişlikleri tablo genişliğine oranla: dar ekranda da etiketler sığar. */
+const FREE_COL = "22%";
+const PREMIUM_COL = "27%";
+
+type Styles = ReturnType<typeof createStyles>;
+
+function FreeCell({ value, styles, colors }: { value: string; styles: Styles; colors: AppColors }) {
+    if (value === CROSS) {
+        return <Ionicons name="close" size={16} color={colors.gray[400]} accessibilityLabel={CROSS} />;
+    }
+    const isNumber = value === UNLIMITED || /^\d+$/.test(value);
+    return (
+        <Text
+            variant={isNumber ? "display" : "body"}
+            style={isNumber ? styles.freeNumber : styles.freeText}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
+        >
+            {value}
+        </Text>
+    );
 }
 
-const UNLIMITED = "\u221E";
-const CHECK = "\u2713";
-const CROSS = "\u2717";
-
-const FeatureRow = ({ icon, iconColor, iconBg, label, freeValue, premiumValue, premiumHighlight = false, index, styles }: FeatureRowProps & { styles: ReturnType<typeof createStyles> }) => {
-    const isPremiumBetter = premiumHighlight;
-
+function PremiumCell({ value, styles }: { value: string; styles: Styles }) {
+    if (value === CHECK) {
+        return (
+            <View style={styles.checkDot} accessibilityLabel={CHECK}>
+                <Ionicons name="checkmark" size={13} color="#FFF" />
+            </View>
+        );
+    }
+    const isNumber = value === UNLIMITED || /^\d+$/.test(value);
     return (
-        <Animated.View
-            entering={FadeIn.delay(200 + index * 80).duration(400)}
-            style={styles.featureRow}
+        <Text
+            variant={isNumber ? "display" : "body"}
+            style={isNumber ? (value === UNLIMITED ? styles.premiumInfinity : styles.premiumNumber) : styles.premiumText}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
         >
-            <View style={styles.featureLeft}>
-                <View style={[styles.featureIconBox, { backgroundColor: iconBg }]}>
-                    <MaterialCommunityIcons name={icon as any} size={18} color={iconColor} />
-                </View>
-                <Text style={styles.featureLabel}>{label}</Text>
-            </View>
-            <View style={styles.featureValues}>
-                <View style={styles.freeValueBox}>
-                    {typeof freeValue === "string" ? <Text style={styles.freeValue}>{freeValue}</Text> : freeValue}
-                </View>
-                <View style={[styles.premiumValueBox, isPremiumBetter && styles.premiumValueBoxHighlight]}>
-                    {typeof premiumValue === "string" ? (
-                        <Text style={[styles.premiumValue, isPremiumBetter && styles.premiumValueHighlight]}>
-                            {premiumValue}
-                        </Text>
-                    ) : premiumValue}
-                </View>
-            </View>
-        </Animated.View>
+            {value}
+        </Text>
     );
-};
+}
 
 export default function PremiumCompareModal({ visible, onClose, onSubscribe }: PremiumCompareModalProps) {
     const { t } = useTranslation();
@@ -73,28 +82,31 @@ export default function PremiumCompareModal({ visible, onClose, onSubscribe }: P
     const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const insets = useSafeAreaInsets();
     const { height: winHeight } = useWindowDimensions();
-    const maxCardHeight = winHeight - insets.top - insets.bottom - 32;
+    const maxSheetHeight = winHeight - insets.top - 12;
+    // Kısa ekranda üst alan küçülür, tablo daha çok yer bulur.
+    const compact = winHeight < 700;
 
-    const translateY = useSharedValue(30);
-    const opacity = useSharedValue(0);
+    const translateY = useSharedValue(60);
+    const sheetOpacity = useSharedValue(0);
+    const backdrop = useSharedValue(0);
 
     useEffect(() => {
         if (visible) {
-            translateY.value = withTiming(0, {
-                duration: 450,
-                easing: Easing.out(Easing.cubic),
-            });
-            opacity.value = withTiming(1, { duration: 350 });
+            translateY.value = withTiming(0, { duration: 420, easing: Easing.out(Easing.cubic) });
+            sheetOpacity.value = withTiming(1, { duration: 260 });
+            backdrop.value = withTiming(1, { duration: 260 });
         } else {
-            translateY.value = 30;
-            opacity.value = 0;
+            translateY.value = 60;
+            sheetOpacity.value = 0;
+            backdrop.value = 0;
         }
     }, [visible]);
 
-    const animatedStyle = useAnimatedStyle(() => ({
+    const sheetStyle = useAnimatedStyle(() => ({
         transform: [{ translateY: translateY.value }],
-        opacity: opacity.value,
+        opacity: sheetOpacity.value,
     }));
+    const backdropStyle = useAnimatedStyle(() => ({ opacity: backdrop.value }));
 
     const handleSubscribe = () => {
         onSubscribe?.();
@@ -102,15 +114,77 @@ export default function PremiumCompareModal({ visible, onClose, onSubscribe }: P
 
     if (!visible) return null;
 
+    const rows: { icon: string; label: string; free: string; premium: string }[] = [
+        { icon: "barcode-scan", label: t("premium.feat_scan"), free: "3", premium: UNLIMITED },
+        { icon: "robot-outline", label: t("premium.feat_ai_chat"), free: "5", premium: UNLIMITED },
+        {
+            icon: "camera-outline",
+            label: t("premium.feat_visuals"),
+            free: CROSS,
+            premium: t("premium.feat_visuals_value", { defaultValue: "5/hafta" }),
+        },
+        { icon: "account-group-outline", label: t("premium.feat_family"), free: "1", premium: UNLIMITED },
+        { icon: "advertisements-off", label: t("premium.feat_ads"), free: CROSS, premium: CHECK },
+        { icon: "lightning-bolt", label: t("premium.feat_priority"), free: CROSS, premium: CHECK },
+    ];
+
     return (
         <Modal transparent visible={visible} animationType="none" onRequestClose={onClose}>
-            <View style={[styles.overlay, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}>
-                <Pressable style={styles.backdrop} onPress={onClose} />
-                <Animated.View style={[styles.container, { maxHeight: maxCardHeight }, animatedStyle]}>
-                    {/* Close Button */}
-                    <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={12}>
-                        <Ionicons name="close" size={22} color={colors.gray[400]} />
-                    </Pressable>
+            <View style={styles.root}>
+                <Animated.View style={[styles.backdrop, backdropStyle]}>
+                    <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+                </Animated.View>
+
+                <Animated.View
+                    style={[styles.sheet, { maxHeight: maxSheetHeight, paddingBottom: insets.bottom + 12 }, sheetStyle]}
+                >
+                    {/* Üst alan: turuncu geçiş, sağ üstten yumuşak ışık */}
+                    <LinearGradient
+                        colors={[colors.primary, colors.primaryDeep]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={[styles.hero, compact && styles.heroCompact]}
+                    >
+                        <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+                            <Svg width="100%" height="100%">
+                                <Defs>
+                                    <RadialGradient id="premiumCompareLight" cx="85%" cy="0%" r="80%">
+                                        <Stop offset="0" stopColor="#FFFFFF" stopOpacity={isDark ? 0.16 : 0.26} />
+                                        <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
+                                    </RadialGradient>
+                                </Defs>
+                                <Rect x="0" y="0" width="100%" height="100%" fill="url(#premiumCompareLight)" />
+                            </Svg>
+                        </View>
+
+                        <View style={styles.grabber} />
+
+                        <Pressable
+                            style={({ pressed }) => [styles.closeBtn, pressed && { opacity: 0.7 }]}
+                            onPress={onClose}
+                            hitSlop={12}
+                            accessibilityRole="button"
+                            accessibilityLabel="Close"
+                        >
+                            <Ionicons name="close" size={18} color="#FFF" />
+                        </Pressable>
+
+                        <View style={[styles.crownCircle, compact && styles.crownCircleCompact]}>
+                            <MaterialCommunityIcons name="crown" size={compact ? 24 : 30} color="#FFF" />
+                        </View>
+                        <Text
+                            variant="display"
+                            style={[styles.title, compact && styles.titleCompact]}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.75}
+                        >
+                            {t("premium.compare_title")}
+                        </Text>
+                        <Text style={styles.subtitle}>
+                            {t("premium.compare_subtitle")}
+                        </Text>
+                    </LinearGradient>
 
                     <ScrollView
                         style={styles.scrollArea}
@@ -118,120 +192,78 @@ export default function PremiumCompareModal({ visible, onClose, onSubscribe }: P
                         showsVerticalScrollIndicator={false}
                         bounces={false}
                     >
-                    {/* Header */}
-                    <View style={styles.headerSection}>
-                        <LinearGradient
-                            colors={["#FEF3C7", "#FDE68A"]}
-                            style={styles.crownContainer}
-                        >
-                            <MaterialCommunityIcons name="crown" size={32} color="#F59E0B" />
-                        </LinearGradient>
-                        <Text style={styles.title}>{t("premium.compare_title")}</Text>
-                        <Text style={styles.subtitle}>{t("premium.compare_subtitle")}</Text>
-                    </View>
+                        <View style={styles.table}>
+                            {/* Premium sütununun vurgulu zemini: tüm satırların arkasında tek parça */}
+                            <View pointerEvents="none" style={styles.premiumColumnBg} />
 
-                    {/* Table Header */}
-                    <View style={styles.tableHeader}>
-                        <View style={styles.tableHeaderLeft} />
-                        <View style={styles.tableHeaderValues}>
-                            <View style={styles.freeHeader}>
-                                <Text style={styles.freeHeaderText}>{t("premium.free")}</Text>
+                            {/* Sütun başlıkları */}
+                            <View style={styles.headerRow}>
+                                <View style={styles.labelCell} />
+                                <View style={styles.freeCell}>
+                                    <Text upper style={styles.freeHeaderText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                                        {t("premium.free")}
+                                    </Text>
+                                </View>
+                                <View style={styles.premiumCell}>
+                                    <View style={styles.premiumHeaderInner}>
+                                        <MaterialCommunityIcons name="crown" size={12} color={colors.primary} />
+                                        <Text upper style={styles.premiumHeaderText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+                                            {t("premium.premium")}
+                                        </Text>
+                                    </View>
+                                </View>
                             </View>
-                            <View style={styles.premiumHeader}>
-                                <MaterialCommunityIcons name="crown" size={12} color="#FFF" />
-                                <Text style={styles.premiumHeaderText}>{t("premium.premium")}</Text>
-                            </View>
+
+                            {rows.map((row, index) => (
+                                <Animated.View
+                                    key={row.icon}
+                                    entering={FadeInDown.delay(140 + index * 60).duration(340)}
+                                    style={[styles.row, index < rows.length - 1 && styles.rowDivider]}
+                                >
+                                    <View style={styles.labelCell}>
+                                        <View style={styles.featureIcon}>
+                                            <MaterialCommunityIcons name={row.icon as any} size={16} color={colors.primary} />
+                                        </View>
+                                        <Text style={styles.featureLabel} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>
+                                            {row.label}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.freeCell}>
+                                        <FreeCell value={row.free} styles={styles} colors={colors} />
+                                    </View>
+                                    <View style={styles.premiumCell}>
+                                        <PremiumCell value={row.premium} styles={styles} />
+                                    </View>
+                                </Animated.View>
+                            ))}
                         </View>
-                    </View>
-
-                    {/* Features List */}
-                    <View style={styles.featuresList}>
-                        <FeatureRow
-                            icon="barcode-scan"
-                            iconColor={colors.primary}
-                            iconBg="#FFF7ED"
-                            label={t("premium.feat_scan")}
-                            freeValue="3"
-                            premiumValue={UNLIMITED}
-                            premiumHighlight
-                            index={0}
-                         styles={styles} />
-                        <FeatureRow
-                            icon="robot-outline"
-                            iconColor="#7C3AED"
-                            iconBg="#EDE9FE"
-                            label={t("premium.feat_ai_chat")}
-                            freeValue="5"
-                            premiumValue={UNLIMITED}
-                            premiumHighlight
-                            index={1}
-                         styles={styles} />
-                        <FeatureRow
-                            icon="camera-outline"
-                            iconColor="#059669"
-                            iconBg="#D1FAE5"
-                            label={t("premium.feat_visuals")}
-                            freeValue={CROSS}
-                            premiumValue={t("premium.feat_visuals_value", { defaultValue: "5/hafta" })}
-                            premiumHighlight
-                            index={2}
-                         styles={styles} />
-                        <FeatureRow
-                            icon="account-group-outline"
-                            iconColor="#0284C7"
-                            iconBg="#E0F2FE"
-                            label={t("premium.feat_family")}
-                            freeValue="1"
-                            premiumValue={UNLIMITED}
-                            premiumHighlight
-                            index={3}
-                         styles={styles} />
-                        <FeatureRow
-                            icon="advertisements-off"
-                            iconColor="#DC2626"
-                            iconBg="#FEF2F2"
-                            label={t("premium.feat_ads")}
-                            freeValue={CROSS}
-                            premiumValue={CHECK}
-                            premiumHighlight
-                            index={4}
-                         styles={styles} />
-                        <FeatureRow
-                            icon="lightning-bolt"
-                            iconColor="#F59E0B"
-                            iconBg="#FEF3C7"
-                            label={t("premium.feat_priority")}
-                            freeValue={CROSS}
-                            premiumValue={CHECK}
-                            premiumHighlight
-                            index={5}
-                         styles={styles} />
-                    </View>
-
-                    {/* CTA Button */}
-                    <Pressable
-                        style={({ pressed }) => [styles.ctaButton, pressed && styles.ctaPressed]}
-                        onPress={handleSubscribe}
-                    >
-                        <LinearGradient
-                            colors={[colors.primary, colors.primaryDeep]}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                            style={styles.ctaGradient}
-                        >
-                            <MaterialCommunityIcons name="crown" size={20} color="#FFF" />
-                            <Text style={styles.ctaText}>{t("premium.upgrade_now")}</Text>
-                        </LinearGradient>
-                    </Pressable>
-
-                    {/* Secondary Action */}
-                    <Pressable
-                        style={({ pressed }) => [styles.secondaryButton, pressed && styles.secondaryPressed]}
-                        onPress={onClose}
-                    >
-                        <Text style={styles.secondaryText}>{t("premium.maybe_later")}</Text>
-                    </Pressable>
                     </ScrollView>
+
+                    <View style={styles.footer}>
+                        <Pressable
+                            style={({ pressed }) => [styles.ctaButton, pressed && styles.ctaPressed]}
+                            onPress={handleSubscribe}
+                        >
+                            <LinearGradient
+                                colors={[colors.primary, colors.primaryDeep]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={styles.ctaGradient}
+                            >
+                                <MaterialCommunityIcons name="crown" size={20} color="#FFF" />
+                                <Text style={styles.ctaText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+                                    {t("premium.upgrade_now")}
+                                </Text>
+                            </LinearGradient>
+                        </Pressable>
+
+                        <Pressable
+                            style={({ pressed }) => [styles.secondaryButton, pressed && styles.secondaryPressed]}
+                            onPress={onClose}
+                        >
+                            <Text style={styles.secondaryText}>{t("premium.maybe_later")}</Text>
+                        </Pressable>
+                    </View>
                 </Animated.View>
             </View>
         </Modal>
@@ -239,192 +271,243 @@ export default function PremiumCompareModal({ visible, onClose, onSubscribe }: P
 }
 
 const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
-    overlay: {
+    root: {
         flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "rgba(31,22,17, 0.6)",
+        justifyContent: "flex-end",
     },
     backdrop: {
         ...StyleSheet.absoluteFillObject,
+        backgroundColor: colors.overlay,
     },
-    container: {
-        width: "90%",
-        maxWidth: 400,
+    sheet: {
+        width: "100%",
+        maxWidth: 560,
+        alignSelf: "center",
         backgroundColor: colors.card,
-        borderRadius: 24,
-        paddingTop: 28,
-        paddingHorizontal: 20,
-        paddingBottom: 20,
+        borderTopLeftRadius: Radii.sheet,
+        borderTopRightRadius: Radii.sheet,
+        overflow: "hidden",
+    },
+
+    // Üst alan
+    hero: {
+        alignItems: "center",
+        paddingTop: 10,
+        paddingBottom: 22,
+        paddingHorizontal: 24,
+    },
+    heroCompact: {
+        paddingBottom: 16,
+    },
+    grabber: {
+        width: 40,
+        height: 5,
+        borderRadius: 2.5,
+        backgroundColor: "rgba(255,255,255,0.45)",
+        marginBottom: 14,
     },
     closeBtn: {
         position: "absolute",
         top: 14,
         right: 14,
-        zIndex: 10,
-        padding: 4,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "rgba(255,255,255,0.2)",
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: "rgba(255,255,255,0.35)",
     },
+    crownCircle: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "rgba(255,255,255,0.2)",
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: "rgba(255,255,255,0.4)",
+        marginBottom: 12,
+    },
+    crownCircleCompact: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        marginBottom: 8,
+    },
+    title: {
+        fontSize: 28,
+        lineHeight: 34,
+        color: "#FFF",
+        textAlign: "center",
+        maxWidth: "88%",
+    },
+    titleCompact: {
+        fontSize: 24,
+        lineHeight: 29,
+    },
+    subtitle: {
+        fontSize: 13,
+        lineHeight: 18,
+        color: "rgba(255,255,255,0.86)",
+        textAlign: "center",
+        marginTop: 4,
+        paddingHorizontal: 8,
+    },
+
+    // Tablo
     scrollArea: {
         flexShrink: 1,
     },
     scrollContent: {
-        paddingBottom: 4,
+        paddingHorizontal: 16,
+        paddingTop: 14,
+        paddingBottom: 6,
     },
-
-    // Header
-    headerSection: {
+    table: {
+        position: "relative",
+    },
+    premiumColumnBg: {
+        position: "absolute",
+        top: 0,
+        bottom: 0,
+        right: 0,
+        width: PREMIUM_COL,
+        borderRadius: 16,
+        backgroundColor: isDark ? "rgba(255,139,61,0.12)" : "rgba(242,96,12,0.07)",
+        borderWidth: 1,
+        borderColor: isDark ? "rgba(255,139,61,0.30)" : "rgba(242,96,12,0.20)",
+    },
+    headerRow: {
+        flexDirection: "row",
         alignItems: "center",
-        marginBottom: 20,
+        minHeight: 38,
     },
-    crownContainer: {
-        width: 60,
-        height: 60,
-        borderRadius: 18,
+    row: {
+        flexDirection: "row",
+        alignItems: "center",
+        minHeight: 50,
+        paddingVertical: 6,
+    },
+    rowDivider: {
+        borderBottomWidth: StyleSheet.hairlineWidth,
+        borderBottomColor: colors.gray[200],
+    },
+    labelCell: {
+        flex: 1,
+        minWidth: 0,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        paddingRight: 6,
+    },
+    freeCell: {
+        width: FREE_COL,
         alignItems: "center",
         justifyContent: "center",
-        marginBottom: 14,
+        paddingHorizontal: 4,
     },
-    title: {
-        fontSize: 19,
-        fontWeight: "800",
-        color: colors.secondary,
-        textAlign: "center",
-    },
-    subtitle: {
-        fontSize: 13,
-        color: colors.gray[500],
-        textAlign: "center",
-        marginTop: 6,
-        lineHeight: 18,
-    },
-
-    // Table Header
-    tableHeader: {
-        flexDirection: "row",
+    premiumCell: {
+        width: PREMIUM_COL,
         alignItems: "center",
-        marginBottom: 8,
-    },
-    tableHeaderLeft: {
-        flex: 1,
-    },
-    tableHeaderValues: {
-        flexDirection: "row",
-        gap: 8,
-    },
-    freeHeader: {
-        width: 50,
-        paddingVertical: 5,
-        borderRadius: 6,
-        backgroundColor: colors.gray[100],
-        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 6,
     },
     freeHeaderText: {
-        fontSize: 10,
+        fontSize: 10.5,
         fontWeight: "700",
         color: colors.gray[500],
+        letterSpacing: 0.5,
     },
-    premiumHeader: {
-        width: 70,
-        paddingVertical: 5,
-        borderRadius: 6,
-        backgroundColor: "#F59E0B",
+    premiumHeaderInner: {
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "center",
         gap: 3,
+        maxWidth: "100%",
     },
     premiumHeaderText: {
-        fontSize: 10,
+        fontSize: 10.5,
         fontWeight: "700",
-        color: "#FFF",
+        color: colors.primary,
+        letterSpacing: 0.5,
+        flexShrink: 1,
     },
-
-    // Features List
-    featuresList: {
-        marginBottom: 16,
-    },
-    featureRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        paddingVertical: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: colors.gray[100],
-    },
-    featureLeft: {
-        flexDirection: "row",
-        alignItems: "center",
-        flex: 1,
-        gap: 10,
-    },
-    featureIconBox: {
-        width: 32,
-        height: 32,
+    featureIcon: {
+        width: 30,
+        height: 30,
         borderRadius: 10,
         alignItems: "center",
         justifyContent: "center",
+        backgroundColor: isDark ? "rgba(255,139,61,0.16)" : "rgba(242,96,12,0.10)",
     },
     featureLabel: {
-        fontSize: 13,
-        fontWeight: "600",
-        color: colors.secondary,
         flex: 1,
+        minWidth: 0,
+        fontSize: 13.5,
+        fontWeight: "600",
+        color: colors.text,
     },
-    featureValues: {
-        flexDirection: "row",
-        gap: 8,
-    },
-    freeValueBox: {
-        width: 50,
-        paddingVertical: 5,
-        borderRadius: 6,
-        backgroundColor: colors.gray[50],
-        alignItems: "center",
-    },
-    freeValue: {
-        fontSize: 12,
-        fontWeight: "700",
+    freeNumber: {
+        fontSize: 18,
+        lineHeight: 22,
         color: colors.gray[500],
     },
-    premiumValueBox: {
-        width: 70,
-        paddingVertical: 5,
-        borderRadius: 6,
-        backgroundColor: colors.gray[50],
-        alignItems: "center",
+    freeText: {
+        fontSize: 12.5,
+        fontWeight: "600",
+        color: colors.gray[500],
     },
-    premiumValueBoxHighlight: {
-        backgroundColor: "#FEF3C7",
+    premiumNumber: {
+        fontSize: 18,
+        lineHeight: 22,
+        color: colors.primary,
     },
-    premiumValue: {
-        fontSize: 12,
+    premiumInfinity: {
+        fontSize: 24,
+        lineHeight: 26,
+        color: colors.primary,
+    },
+    premiumText: {
+        fontSize: 12.5,
         fontWeight: "700",
-        color: colors.gray[600],
+        color: colors.primary,
     },
-    premiumValueHighlight: {
-        color: "#D97706",
+    checkDot: {
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: colors.primary,
     },
 
-    // CTA
+    // Alt düğmeler
+    footer: {
+        paddingHorizontal: 16,
+        paddingTop: 12,
+    },
     ctaButton: {
-        marginTop: 4,
+        borderRadius: Radii.control + 2,
     },
     ctaPressed: {
-        opacity: 0.9,
+        opacity: 0.92,
         transform: [{ scale: 0.98 }],
     },
     ctaGradient: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        paddingVertical: 14,
-        borderRadius: 14,
+        paddingVertical: 15,
+        paddingHorizontal: 16,
+        borderRadius: Radii.control + 2,
         gap: 8,
     },
     ctaText: {
         color: "#FFF",
-        fontSize: 15,
+        fontSize: 16,
         fontWeight: "700",
+        flexShrink: 1,
     },
     secondaryButton: {
         alignItems: "center",
@@ -436,9 +519,6 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     secondaryText: {
         fontSize: 13,
         fontWeight: "600",
-        color: colors.gray[400],
+        color: colors.gray[500],
     },
 });
-
-
-

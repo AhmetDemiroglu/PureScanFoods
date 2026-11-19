@@ -307,7 +307,8 @@
             "unknown": "Unknown",
             "alertTitle": "Compatibility Analysis",
             "reasons": "Detected issues:",
-            "profile_settings": "Profile Settings"
+            "profile_settings": "Profile Settings",
+            "heading": "Family compatibility"
         },
         "badges": {
             "food": "Food Product",
@@ -512,7 +513,16 @@
             "source_off": "Source: OpenFoodFacts",
             "source_pack": "Read from the label"
         },
-        "ask_guru": "Ask Guru"
+        "ask_guru": "Ask Guru",
+        "ring": {
+            "safety": "Safety Score",
+            "compat": "Compatibility"
+        },
+        "actions": {
+            "compare": "Compare",
+            "rescan": "Rescan"
+        },
+        "detailedHeading": "Detailed analysis"
     },
     "common": {
         "suitable": "SUITABLE",
@@ -576,7 +586,9 @@
         "hints": {
             "longPressEdit": "Long press to edit"
         },
-        "clearDiet": "Clear Selection"
+        "clearDiet": "Clear Selection",
+        "chooseDiet": "Choose a diet",
+        "addAllergen": "Add allergens"
     },
     "encyclopedia": {},
     "history": {
@@ -724,7 +736,9 @@
         "renewal_desc": "If you don't switch to Premium, your new limits will be available on {{date}}.",
         "go_premium_caps": "REMOVE LIMITS & GO PREMIUM",
         "maybe_later": "Manage for Now",
-        "watch_ad": "Watch (+1)"
+        "watch_ad": "Watch (+1)",
+        "premium_advantage": "PREMIUM BENEFIT",
+        "family_premium_desc": "With Premium you can create as many family member profiles as you like."
     },
     "settings": {
         "title": "Settings",
@@ -809,7 +823,7 @@
     },
     "paywall": {
         "title": "Upgrade to Premium",
-        "subtitle": "Unlock unlimited scans, AI chat, and family profiles - everything you need for healthier choices.",
+        "subtitle": "Unlock unlimited scans, AI chat and family profiles. Everything you need for healthier choices.",
         "yearly": "Yearly",
         "monthly": "Monthly",
         "per_month": "/mo",
@@ -835,7 +849,13 @@
         "noRestore": "No purchases found to restore.",
         "successTitle": "Awesome!",
         "successSubtitle": "Premium Features Active",
-        "iosUnavailable": "Premium subscriptions are not yet available on iOS. We are finalizing setup. Please check back soon."
+        "iosUnavailable": "Premium subscriptions are not yet available on iOS. We are finalizing setup. Please check back soon.",
+        "save_percent_dynamic": "SAVE {{percent}}%",
+        "auto_renew": "Subscription renews automatically. You can cancel anytime in your store settings at least 24 hours before renewal.",
+        "termsOfUse": "Terms of Use",
+        "privacyPolicy": "Privacy Policy",
+        "manageSubscription": "Manage Subscription",
+        "platformUnavailableTitle": "Coming Soon"
     },
     "compare": {
         "title": "Comparison",
@@ -899,6 +919,19 @@
             "guru": {
                 "title": "Ask Guru",
                 "desc": "Ask anything about this product. Guru answers knowing its analysis."
+            },
+            "family": {
+                "title": "Scores for your family",
+                "desc": "Each family member's compatibility score is here. Tap one to see why."
+            },
+            "actions": {
+                "title": "What next?",
+                "desc": "This bar always stays ready at the bottom of the screen.",
+                "items": {
+                    "guru": "Ask Guru: ask about this product, answered for your profile.",
+                    "compare": "Compare: put it side by side with another scan.",
+                    "rescan": "Rescan: scan again if the label wasn't clear."
+                }
             }
         },
         "guru": {

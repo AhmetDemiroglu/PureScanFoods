@@ -15,6 +15,7 @@ import LottieView from "lottie-react-native";
 import { useTheme } from "../../context/ThemeContext";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { FONT_SCALE_CAP } from "../../constants/design";
+import UsageRings, { buildWeeklyRights } from "../ui/UsageRings";
 
 interface AuthModalProps {
     visible: boolean;
@@ -203,19 +204,18 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
         setShowPremiumModal(false);
     };
 
-    // Usage calculations
-    const unlimited = String.fromCharCode(8734);
-    const scanRemaining = isPremium ? unlimited : Math.max(0, usageStats.scanLimit - usageStats.scanCount);
-    const chatRemaining = isPremium ? unlimited : Math.max(0, usageStats.aiChatLimit - usageStats.aiChatCount);
-    const familyCount = Math.max(0, (familyMembers?.length || 1) - 1);
-    const familyLimit = isPremium ? unlimited : 1;
-
-    // Exhausted state
-    const isScanExhausted = !isPremium && scanRemaining === 0;
-    const isChatExhausted = !isPremium && chatRemaining === 0;
-    const isFamilyExhausted = !isPremium && familyCount >= 1;
-    const imageRemaining = Math.max(0, usageStats.imageGenLimit - usageStats.imageGenCount);
-    const isImageExhausted = isPremium && imageRemaining === 0;
+    // Haftalık haklar: değer ve tükenme kuralları ortak yardımcıda (UsageRings.buildWeeklyRights), eskisiyle aynı.
+    const weeklyRights = buildWeeklyRights({
+        isPremium,
+        usageStats,
+        familyMembersLength: familyMembers?.length,
+        labels: {
+            scan: t("profile.scan_rights"),
+            chat: t("profile.chat_rights"),
+            family: t("profile.family_slots"),
+            image: t("profile.image_rights"),
+        },
+    });
 
     // PROFILE VIEW
     const renderProfile = () => {
@@ -243,92 +243,10 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
                     </View>
                 </View>
 
-                {/* Usage Stats - 3 Column */}
+                {/* Haftalık haklar: dört küçük halka (Ayarlar ile ortak bileşen) */}
                 <View style={styles.usageSection}>
                     <Text style={styles.usageSectionTitle}>{t("profile.weekly_usage")}</Text>
-                    <View style={styles.usageGrid}>
-                        {/* Scan */}
-                        <View style={[styles.usageCard, isScanExhausted && styles.usageCardExhausted]}>
-                        <View style={[
-                                styles.usageIconBox,
-                                { backgroundColor: isScanExhausted ? (isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2") : (isDark ? "rgba(234,88,12,0.20)" : "#FFF7ED") }
-                            ]}>
-                                <Ionicons
-                                    name="scan-outline"
-                                    size={18}
-                                    color={isScanExhausted ? "#DC2626" : colors.primary}
-                                />
-                            </View>
-                            <Text style={[styles.usageValue, isScanExhausted && styles.usageValueExhausted]}>
-                                {scanRemaining}
-                            </Text>
-                            <Text style={[styles.usageLabel, isScanExhausted && styles.usageLabelExhausted]}>
-                                {t("profile.scan_rights")}
-                            </Text>
-                        </View>
-
-                        {/* AI Chat */}
-                        <View style={[styles.usageCard, isChatExhausted && styles.usageCardExhausted]}>
-                        <View style={[
-                                styles.usageIconBox,
-                                { backgroundColor: isChatExhausted ? (isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2") : (isDark ? "rgba(124,58,237,0.22)" : "#EDE9FE") }
-                            ]}>
-                                <MaterialCommunityIcons
-                                    name="robot-outline"
-                                    size={18}
-                                    color={isChatExhausted ? "#DC2626" : "#7C3AED"}
-                                />
-                            </View>
-                            <Text style={[styles.usageValue, isChatExhausted && styles.usageValueExhausted]}>
-                                {chatRemaining}
-                            </Text>
-                            <Text style={[styles.usageLabel, isChatExhausted && styles.usageLabelExhausted]}>
-                                {t("profile.chat_rights")}
-                            </Text>
-                        </View>
-
-                        {/* Family */}
-                        <View style={[styles.usageCard, isFamilyExhausted && styles.usageCardExhausted]}>
-                        <View style={[
-                                styles.usageIconBox,
-                                { backgroundColor: isFamilyExhausted ? (isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2") : (isDark ? "rgba(2,132,199,0.22)" : "#E0F2FE") }
-                            ]}>
-                                <MaterialCommunityIcons
-                                    name="account-group-outline"
-                                    size={18}
-                                    color={isFamilyExhausted ? "#DC2626" : "#0284C7"}
-                                />
-                            </View>
-                            <Text style={[styles.usageValue, isFamilyExhausted && styles.usageValueExhausted]}>
-                                {familyCount}/{familyLimit}
-                            </Text>
-                            <Text style={[styles.usageLabel, isFamilyExhausted && styles.usageLabelExhausted]}>
-                                {t("profile.family_slots")}
-                            </Text>
-                        </View>
-                        <View style={[styles.usageCard, isImageExhausted && styles.usageCardExhausted]}>
-                            <View style={[
-                                styles.usageIconBox,
-                                { backgroundColor: isImageExhausted ? (isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2") : (isDark ? "rgba(5,150,105,0.22)" : "#D1FAE5") }
-                            ]}>
-                                <Ionicons
-                                    name="camera-outline"
-                                    size={18}
-                                    color={isImageExhausted ? "#DC2626" : "#059669"}
-                                />
-                            </View>
-                            {isPremium ? (
-                                <Text style={[styles.usageValue, isImageExhausted && styles.usageValueExhausted]}>
-                                    {imageRemaining}
-                                </Text>
-                            ) : (
-                                <Text style={[styles.usageValue, { color: "#059669" }]}>PRO</Text>
-                            )}
-                            <Text style={[styles.usageLabel, isImageExhausted && styles.usageLabelExhausted]}>
-                                {t("profile.image_rights")}
-                            </Text>
-                        </View>
-                    </View>
+                    <UsageRings items={weeklyRights} size={46} />
                 </View>
 
                 {/* Diet Plan */}
@@ -596,17 +514,9 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     memberText: { fontSize: 11, fontWeight: "700", color: colors.gray[600] },
     memberTextPremium: { color: "#D97706" },
 
-    // Usage Section - 3 Column Grid
-    usageSection: { marginBottom: 16 },
-    usageSectionTitle: { fontSize: 11, fontWeight: "700", color: colors.gray[400], marginBottom: 10, letterSpacing: 0.5 },
-    usageGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-    usageCard: { flexBasis: "47%", flexGrow: 1, minWidth: 0, backgroundColor: colors.card, borderRadius: 14, padding: 14, alignItems: "center", borderWidth: 1, borderColor: colors.gray[200], gap: 8 },
-    usageCardExhausted: { borderColor: "#FECACA", backgroundColor: isDark ? "rgba(220,38,38,0.20)" : "#FEF2F2" },
-    usageIconBox: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
-    usageValue: { fontSize: 20, fontWeight: "800", color: colors.secondary },
-    usageValueExhausted: { color: "#DC2626" },
-    usageLabel: { fontSize: 10, color: colors.gray[500], textAlign: "center" },
-    usageLabelExhausted: { color: "#EF4444" },
+    // Haftalık haklar (halkalar UsageRings içinde)
+    usageSection: { marginBottom: 16, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.gray[200] },
+    usageSectionTitle: { fontSize: 11, fontWeight: "700", color: colors.gray[400], marginBottom: 12, letterSpacing: 0.6 },
 
     // Diet Section
     dietSection: { flexDirection: "row", alignItems: "center", backgroundColor: isDark ? "rgba(245,158,11,0.16)" : "#FFFBEB", borderRadius: 12, padding: 12, marginBottom: 12, gap: 12, borderWidth: 1, borderColor: isDark ? "rgba(252,211,77,0.45)" : "#FEF3C7" },
