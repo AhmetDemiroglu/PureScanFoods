@@ -29,6 +29,9 @@ import {
 import { NutriScoreGraphic } from "../../components/ui/NutriScoreAssets";
 import { useTheme } from "../../context/ThemeContext";
 import { FONT_SCALE_CAP } from "../../constants/design";
+import PageHeader from "../../components/ui/PageHeader";
+import SegmentedControl from "../../components/ui/SegmentedControl";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -70,6 +73,8 @@ export default function AdditivesLibraryScreen() {
     const { colors, isDark } = useTheme();
     const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
     const router = useRouter();
+    // Alt bar içeriğin üstünde yüzer: son kart barın altında kalmasın.
+    const tabBarHeight = useBottomTabBarHeight();
     const params = useLocalSearchParams<{ additiveCode?: string }>();
     const isTr = i18n.language === "tr";
     const isEs = i18n.language?.startsWith("es");
@@ -356,95 +361,29 @@ export default function AdditivesLibraryScreen() {
         <View style={styles.container}>
             <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-            {/* Header */}
-            <LinearGradient
-                colors={[colors.primary, colors.primaryDeep]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.header}
+            {/* Header (ortak PageHeader) */}
+            <PageHeader
+                title={isTr ? "Gıda Sözlüğü" : isEs ? "Enciclopedia de Alimentos" : "Food Encyclopedia"}
+                subtitle={isTr ? "Katkı maddeleri ve NOVA rehberi" : isEs ? "Guía de aditivos y NOVA" : "Additives & NOVA guide"}
+                onBack={() => router.replace("/")}
+                onInfo={replayTour}
+                infoTarget={infoTarget}
+                onHistory={openSidebar}
             >
-                <SafeAreaView edges={["top"]}>
-                    <View style={styles.headerContent}>
-                        <TouchableOpacity style={styles.backButton} onPress={() => router.replace("/")}>
-                            <Ionicons name="arrow-back" size={24} color="#FFF" />
-                        </TouchableOpacity>
-                        <View style={styles.headerTitleArea}>
-                            <Text style={styles.headerTitle}>
-                                {isTr ? "Gıda Sözlüğü" : isEs ? "Enciclopedia de Alimentos" : "Food Encyclopedia"}
-                            </Text>
-                            <Text style={styles.headerSubtitle}>
-                                {isTr ? "Katkı maddeleri ve NOVA rehberi" : isEs ? "Guía de aditivos y NOVA" : "Additives & NOVA guide"}
-                            </Text>
-                        </View>
-                        <View {...infoTarget}>
-                            <TouchableOpacity style={styles.infoButton} onPress={replayTour}>
-                                <Ionicons name="information-circle-outline" size={18} color="rgba(255,255,255,0.7)" />
-                            </TouchableOpacity>
-                        </View>
-                        <TouchableOpacity style={[styles.backButton, { marginRight: 0 }]} onPress={() => { haptics.impactLight(); openSidebar(); }}>
-                            <MaterialCommunityIcons name="history" size={22} color="#FFF" />
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Tab Switcher */}
-                    <View {...tabsTarget} style={styles.tabContainer}>
-                        <TouchableOpacity
-                            style={[styles.tab, activeTab === "additives" && styles.tabActive]}
-                            onPress={() => { haptics.selection(); setActiveTab("additives"); }}
-                        >
-                            <Ionicons
-                                name="flask"
-                                size={16}
-                                color={activeTab === "additives" ? colors.primary : "#FFF"}
-                            />
-                            <Text
-                                style={[styles.tabText, activeTab === "additives" && styles.tabTextActive]}
-                                numberOfLines={2}
-                                adjustsFontSizeToFit
-                                minimumFontScale={0.85}
-                            >
-                                {isTr ? "Katkı Maddeleri" : isEs ? "Aditivos" : "Additives"}
-                            </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.tab, activeTab === "nova" && styles.tabActive]}
-                            onPress={() => { haptics.selection(); setActiveTab("nova"); }}
-                        >
-                            <Ionicons
-                                name="nutrition"
-                                size={16}
-                                color={activeTab === "nova" ? colors.primary : "#FFF"}
-                            />
-                            <Text
-                                style={[styles.tabText, activeTab === "nova" && styles.tabTextActive]}
-                                numberOfLines={2}
-                                adjustsFontSizeToFit
-                                minimumFontScale={0.85}
-                            >
-                                {isTr ? "NOVA Rehberi" : isEs ? "Guía NOVA" : "NOVA Guide"}
-                            </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.tab, activeTab === "nutriscore" && styles.tabActive]}
-                            onPress={() => { haptics.selection(); setActiveTab("nutriscore"); }}
-                        >
-                            <Ionicons
-                                name="stats-chart"
-                                size={16}
-                                color={activeTab === "nutriscore" ? colors.primary : "#FFF"}
-                            />
-                            <Text
-                                style={[styles.tabText, activeTab === "nutriscore" && styles.tabTextActive]}
-                                numberOfLines={2}
-                                adjustsFontSizeToFit
-                                minimumFontScale={0.85}
-                            >
-                                Nutri-Score
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                </SafeAreaView>
-            </LinearGradient>
+                <View {...tabsTarget}>
+                    <SegmentedControl
+                        tone="onPrimary"
+                        layout="stacked"
+                        value={activeTab}
+                        onChange={(k) => setActiveTab(k)}
+                        items={[
+                            { key: "additives", label: isTr ? "Katkı Maddeleri" : isEs ? "Aditivos" : "Additives", icon: "flask-outline", iconActive: "flask" },
+                            { key: "nova", label: isTr ? "NOVA Rehberi" : isEs ? "Guía NOVA" : "NOVA Guide", icon: "nutrition-outline", iconActive: "nutrition" },
+                            { key: "nutriscore", label: "Nutri-Score", icon: "stats-chart-outline", iconActive: "stats-chart" },
+                        ]}
+                    />
+                </View>
+            </PageHeader>
 
             {/* Content — yatay swipe ile tab değişimi */}
             <GestureDetector gesture={tabSwipe}>
@@ -532,7 +471,7 @@ export default function AdditivesLibraryScreen() {
                             </Text>
                         </>
                     }
-                    ListFooterComponent={<View style={{ height: 40 }} />}
+                    ListFooterComponent={<View style={{ height: tabBarHeight + 24 }} />}
                 />
             ) : (
                 <ScrollView
@@ -590,7 +529,7 @@ export default function AdditivesLibraryScreen() {
                         </>
                     )}
 
-                    <View style={{ height: 40 }} />
+                    <View style={{ height: tabBarHeight + 24 }} />
                 </ScrollView>
             )}
               </View>

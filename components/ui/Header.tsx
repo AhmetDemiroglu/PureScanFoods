@@ -1,126 +1,77 @@
-import { View, Pressable, StyleSheet, Image } from "react-native";
+// Ana ekran üst barı: profil ve geçmiş tek cam kapsülde. Dil ve tema Ayarlar'a taşındı
+// ("Görünüm ve dil" kartı); güneş/ay anahtarı ve bayraklar orada aynen duruyor.
+import { View, Pressable, StyleSheet } from "react-native";
 import { Text } from "./AppText";
 import { useMemo, useState } from "react";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useTranslation } from "react-i18next";
 import { AppColors } from "../../constants/colors";
 import { useAuth } from "../../context/AuthContext";
 import AuthModal from "../profile/AuthModal";
 import { useTourTarget } from "../tour/TourContext";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { LANGUAGE_STORAGE_KEY } from "../../lib/i18n";
 import { useTheme } from "../../context/ThemeContext";
-import ThemeToggle from "../ui/ThemeToggle";
 import AnimatedDiamond from "../ui/AnimatedDiamond";
+import GlassSurface from "./GlassSurface";
 
 interface HeaderProps {
   onHistoryPress?: () => void;
 }
 
 export default function Header({ onHistoryPress }: HeaderProps) {
-  const { i18n } = useTranslation();
   const { isPremium, user, userProfile } = useAuth();
-  const { colors, isDark, toggleTheme } = useTheme();
+  const { colors, isDark } = useTheme();
   const [showAuth, setShowAuth] = useState(false);
   const historyTarget = useTourTarget("home.history");
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
-
-  const toggleLanguage = () => {
-    const current = i18n.language?.startsWith("tr")
-      ? "tr"
-      : i18n.language?.startsWith("es")
-        ? "es"
-        : "en";
-    const order = ["en", "tr", "es"] as const;
-    const nextIndex = (order.indexOf(current as any) + 1) % order.length;
-    const newLang = order[nextIndex];
-    AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, newLang).catch(() => { });
-    i18n.changeLanguage(newLang);
-  };
 
   const isLoggedIn = user && !user.isAnonymous;
 
   return (
     <View style={styles.header}>
-      <View style={styles.headerLeft} />
-
-      <View style={styles.headerRight}>
+      <GlassSurface radius={26} elevation="sm" contentStyle={styles.capsule}>
         {isPremium && (
           <View style={styles.premiumBadge}>
-            <AnimatedDiamond size={20} />
+            <AnimatedDiamond size={18} />
           </View>
         )}
 
         <Pressable
-          style={({ pressed }) => [
-            styles.profileButton,
-            isLoggedIn && styles.profileButtonExpanded,
-            pressed && styles.buttonPressed,
-          ]}
+          style={({ pressed }) => [styles.profileButton, isLoggedIn && styles.profileButtonExpanded, pressed && styles.pressed]}
           onPress={() => setShowAuth(true)}
+          accessibilityRole="button"
+          accessibilityLabel={isLoggedIn ? userProfile?.displayName || user?.email || "Profile" : "Profile"}
         >
           {isLoggedIn ? (
-            <View style={styles.profileContent}>
-              <View style={styles.profileTextContainer}>
-                <Text style={styles.profileName} numberOfLines={1}>
+            <>
+              <View style={styles.profileText}>
+                <Text style={styles.profileName} numberOfLines={1} maxFontSizeMultiplier={1.15}>
                   {userProfile?.displayName || user.email?.split("@")[0]}
                 </Text>
-                <Text style={[styles.profileRole, isPremium && styles.profileRolePremium]}>
+                <Text style={[styles.profileRole, isPremium && styles.profileRolePremium]} maxFontSizeMultiplier={1.15}>
                   {isPremium ? "Premium" : "Free"}
                 </Text>
               </View>
               <View style={[styles.avatarMini, { backgroundColor: userProfile?.color || colors.primary }]}>
-                <MaterialCommunityIcons
-                  name={(userProfile?.avatarIcon || "account") as any}
-                  size={14}
-                  color="#FFF"
-                />
+                <MaterialCommunityIcons name={(userProfile?.avatarIcon || "account") as any} size={16} color="#FFF" />
               </View>
-            </View>
+            </>
           ) : (
-            <Ionicons name="person-outline" size={18} color={colors.secondary} />
+            <Ionicons name="person-outline" size={19} color={colors.secondary} />
           )}
         </Pressable>
 
+        <View style={styles.divider} />
+
         <View {...historyTarget}>
           <Pressable
-            style={({ pressed }) => [styles.iconButton, pressed && styles.buttonPressed]}
+            style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}
             onPress={onHistoryPress}
+            accessibilityRole="button"
+            accessibilityLabel="History"
           >
             <MaterialCommunityIcons name="history" size={22} color={colors.secondary} />
           </Pressable>
         </View>
-
-        <Pressable
-          style={({ pressed }) => [styles.langButton, pressed && styles.buttonPressed]}
-          onPress={toggleLanguage}
-        >
-          {i18n.language.startsWith("tr") ? (
-            <Image
-              source={require("../../assets/turkey-flag-round.png")}
-              style={styles.flagImage}
-            />
-          ) : i18n.language.startsWith("es") ? (
-            <Image
-              source={require("../../assets/spain-flag-round.png")}
-              style={styles.flagImage}
-            />
-          ) : (
-            <Image
-              source={require("../../assets/us-flag-round.png")}
-              style={styles.flagImage}
-            />
-          )}
-        </Pressable>
-
-        {/* YENİ ThemeToggle Bileşeni */}
-        <ThemeToggle
-          isDark={isDark}
-          onToggle={toggleTheme}
-          primaryColor={colors.primary}
-          warningColor={colors.warning}
-        />
-      </View>
+      </GlassSurface>
 
       <AuthModal visible={showAuth} onClose={() => setShowAuth(false)} />
     </View>
@@ -131,119 +82,80 @@ const createStyles = (colors: AppColors, isDark: boolean) =>
   StyleSheet.create({
     header: {
       flexDirection: "row",
-      justifyContent: "space-between",
+      justifyContent: "flex-end",
       alignItems: "center",
       paddingHorizontal: 20,
       marginTop: 10,
       zIndex: 10,
     },
-    headerLeft: {
-      flex: 1,
-    },
-    headerRight: {
+    capsule: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 10,
+      padding: 4,
+      gap: 2,
     },
-
-    iconButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: colors.card,
-      alignItems: "center",
-      justifyContent: "center",
-      shadowColor: "#1F1611",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: isDark ? 0 : 0.06,
-      shadowRadius: 8,
-      elevation: isDark ? 0 : 3,
-      borderWidth: isDark ? 1 : 0,
-      borderColor: colors.border,
+    pressed: {
+      opacity: 0.8,
+      transform: [{ scale: 0.95 }],
     },
-    buttonPressed: {
-      opacity: 0.85,
-      transform: [{ scale: 0.96 }],
-    },
-
     premiumBadge: {
       width: 40,
       height: 40,
       borderRadius: 20,
-      backgroundColor: isDark ? "rgba(251,191,36,0.15)" : "#FFFBEB",
       alignItems: "center",
       justifyContent: "center",
-      borderWidth: 1,
-      borderColor: isDark ? "rgba(251,191,36,0.35)" : "#FDE68A",
+      backgroundColor: isDark ? "rgba(251,191,36,0.14)" : "rgba(253,230,138,0.45)",
     },
-
     profileButton: {
+      height: 40,
+      minWidth: 40,
+      borderRadius: 20,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    profileButtonExpanded: {
+      flexDirection: "row",
+      paddingLeft: 10,
+      paddingRight: 4,
+      gap: 8,
+    },
+    profileText: {
+      alignItems: "flex-end",
+      maxWidth: 96,
+    },
+    profileName: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: colors.text,
+      lineHeight: 15,
+    },
+    profileRole: {
+      fontSize: 10,
+      fontWeight: "600",
+      color: colors.textMuted,
+      lineHeight: 13,
+    },
+    profileRolePremium: {
+      color: isDark ? "#FBBF24" : "#D97706",
+    },
+    avatarMini: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    divider: {
+      width: StyleSheet.hairlineWidth,
+      height: 22,
+      backgroundColor: isDark ? "rgba(255,255,255,0.14)" : "rgba(42,31,24,0.14)",
+      marginHorizontal: 2,
+    },
+    iconButton: {
       width: 40,
       height: 40,
       borderRadius: 20,
-      backgroundColor: colors.card,
       alignItems: "center",
       justifyContent: "center",
-      shadowColor: "#1F1611",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: isDark ? 0 : 0.06,
-      shadowRadius: 8,
-      elevation: isDark ? 0 : 3,
-      borderWidth: isDark ? 1 : 0,
-      borderColor: colors.border,
-    },
-    profileButtonExpanded: {
-      width: "auto",
-      paddingLeft: 10,
-      paddingRight: 6,
-      borderRadius: 24,
-      flexDirection: "row",
-    },
-    profileContent: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-    },
-    profileTextContainer: {
-      alignItems: "flex-end",
-      maxWidth: 72,
-    },
-    profileName: {
-      fontSize: 11,
-      fontWeight: "700",
-      color: colors.text,
-      lineHeight: 14,
-    },
-    profileRole: {
-      fontSize: 9,
-      fontWeight: "600",
-      color: colors.textMuted,
-      lineHeight: 12,
-    },
-    profileRolePremium: {
-      color: isDark ? "#FBBF24" : "#F59E0B",
-    },
-    avatarMini: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-
-    langButton: {
-      width: 30,
-      height: 30,
-      borderRadius: 15,
-      overflow: "hidden",
-      borderWidth: isDark ? 1 : 0,
-      borderColor: colors.border,
-    },
-    flagImage: {
-      width: 30,
-      height: 30,
-      borderRadius: 15,
     },
   });
-
-

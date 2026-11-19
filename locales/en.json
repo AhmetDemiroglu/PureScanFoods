@@ -86,7 +86,8 @@
         },
         "disclaimer": {
             "off": "Barcode scanning uses OpenFoodFacts database."
-        }
+        },
+        "lastScan": "Last scan"
     },
     "tabs": {
         "scan": "Scan",
@@ -775,7 +776,11 @@
         "logout_label": "Log Out",
         "logout_sublabel": "Sign out from your account",
         "login_label": "Log In",
-        "login_sublabel": "Sign in to manage your data"
+        "login_sublabel": "Sign in to manage your data",
+        "theme": "Theme",
+        "theme_light": "Light",
+        "theme_dark": "Dark",
+        "language": "Language"
     },
     "premium": {
         "compare_title": "Premium Benefits",

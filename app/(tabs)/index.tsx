@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { View, Pressable, StyleSheet, TextInput, ActivityIndicator, Modal, TouchableOpacity, Animated, ScrollView, Keyboard, useWindowDimensions, PixelRatio } from "react-native";
+import { View, Pressable, StyleSheet, TextInput, ActivityIndicator, Modal, TouchableOpacity, Animated, ScrollView, Keyboard, useWindowDimensions } from "react-native";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Text } from "../../components/ui/AppText";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -11,7 +11,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { AppColors } from "../../constants/colors";
 import Header from "../../components/ui/Header";
-import Hero, { HERO_MARK_GAP, HERO_WORDMARK_ASPECT } from "../../components/ui/Hero";
+import Hero from "../../components/ui/Hero";
+import SegmentedControl from "../../components/ui/SegmentedControl";
+import ScanSweep from "../../components/ui/ScanSweep";
+import LastScanStrip, { LAST_SCAN_STRIP_HEIGHT } from "../../components/home/LastScanStrip";
+import { getScanHistoryFromDB, type ScanResult } from "../../lib/firestore";
+import { scanToResultData } from "../../lib/scanHistory";
+import { computeHeroLayout, COMPACT_CARD_SAVING } from "../../lib/heroLayout";
 import BrandLogo from "../../components/brand/BrandLogo";
 import { callGemini } from "../../lib/api";
 import { TempStore } from "../../lib/tempStore";
@@ -38,7 +44,7 @@ import { ScanFailGraphic } from "../../components/ui/ScanFailGraphic";
 import PaywallModal from "../../components/ui/PaywallModal";
 import ProcessingView, { ProcessingMode } from "../../components/ui/ProcessingView";
 import { useTheme } from "../../context/ThemeContext";
-import { FONT_SCALE_CAP } from "../../constants/design";
+import { DISPLAY_FONT_SCALE_CAP, FONT_SCALE_CAP, Radii, shadow } from "../../constants/design";
 
 type ScanTab = "camera" | "barcode" | "text";
 
@@ -76,11 +82,11 @@ export default function ScanScreen() {
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const [activeTab, setActiveTab] = useState<ScanTab>("camera");
-  const { userProfile, usageStats, isPremium } = useAuth();
+  const { user, userProfile, usageStats, isPremium } = useAuth();
   const { familyMembers } = useUser();
   const [flashOn, setFlashOn] = useState(false);
 
-  const { width } = useWindowDimensions();
+  const { width, fontScale } = useWindowDimensions();
 
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
@@ -118,39 +124,65 @@ export default function ScanScreen() {
   // tabBarHeight çıkarılır (yoksa tab bar kadar fazla boşluk kalır).
   const scrollRef = useRef<ScrollView>(null);
 
-  // Ana ekran kaymadan sığsın: logo ve boşluklar kalan yüksekliğe göre ayarlanır.
-  // Sıra: önce boşluk daralır, sonra simge küçülür, en son alt başlık gizlenir.
-  // Çok büyük yazı boyutu gibi uç durumlarda içerik yine sığmazsa ScrollView kaymaya başlar.
+  // Ana ekran kaymadan sığsın: logo, başlık ve kart kalan yüksekliğe göre ayarlanır (lib/heroLayout.ts).
+  // Hesap klavye kapalıykenki yüksekliğe göre yapılır: klavye açılınca logo zıplamaz.
+  // Kart yalnız TAM düzende ölçülür; kompakt düzenin kazancı sabit (COMPACT_CARD_SAVING), salınım olmaz.
   const [viewportH, setViewportH] = useState(0);
   const [cardH, setCardH] = useState(0);
-  const heroLayout = useMemo(() => {
-    const fontScale = Math.min(PixelRatio.getFontScale(), 1.8);
-    // Simge ortada büyük, altında "PureScan | FOODS" yazısı (genişliği simgeye bağlı).
-    const maxMark = Math.min(width * 0.46, 210);
-    const minMark = 72;
-    const wordFor = (mark: number) => Math.min(width - 64, 400, Math.max(200, mark * 1.9));
-    const headline = 22 * 1.35 * fontScale + 8;
-    const sub = 14 * 1.45 * fontScale + 6;
-    const logoGap = 18;
-    const fallback = { mark: Math.min(maxMark, 150), word: wordFor(Math.min(maxMark, 150)), gap: 32, showSub: true };
-    if (!viewportH || !cardH) return fallback;
-    const room = viewportH - cardH - 24;
-    const need = (m: number, g: number, s: boolean) =>
-      m + HERO_MARK_GAP + wordFor(m) / HERO_WORDMARK_ASPECT + logoGap + headline + (s ? sub : 0) + g;
-    let gap = 40;
-    let mark = maxMark;
-    let showSub = true;
-    if (need(mark, gap, showSub) > room) gap = Math.max(18, gap - (need(mark, gap, showSub) - room));
-    if (need(mark, gap, showSub) > room) mark = Math.max(minMark, mark - (need(mark, gap, showSub) - room));
-    if (need(mark, gap, showSub) > room) showSub = false;
-    return { mark, word: wordFor(mark), gap, showSub };
-  }, [width, viewportH, cardH]);
+  // Alt bar içeriğin üstünde yüzer: klavye kapalıyken içerik bar kadar (+ taşan tarama düğmesi payı) boşluk bırakır.
+  const homeBottomPad = tabBarHeight + 16;
+  // Klavye kapalıykenki kaydırma alanı yüksekliği (Android'de klavye pencereyi küçültebilir).
+  const [baseViewportH, setBaseViewportH] = useState(0);
+  const heroLayout = useMemo(
+    () =>
+      computeHeroLayout({
+        width,
+        available: (baseViewportH || viewportH) - homeBottomPad,
+        cardH,
+        fontScale,
+        bodyCap: FONT_SCALE_CAP,
+        displayCap: DISPLAY_FONT_SCALE_CAP,
+      }),
+    [width, baseViewportH, viewportH, homeBottomPad, cardH, fontScale],
+  );
+  const compact = heroLayout.compactCard;
+
+  // Son tarama şeridi: ana ekran odaklandığında en fazla 30 sn'de bir tek kayıt okunur (tarama dönüşünde
+  // de güncellenir). Hata olursa şerit görünmez. Yalnız kamera sekmesinde ve yer varsa çizilir.
+  const [lastScan, setLastScan] = useState<ScanResult | null>(null);
+  const lastScanLoadedAt = useRef(0);
 
   // Kullanım turu: ilk girişte tarama yolları, alt çubuk ve geçmiş vurgulanır.
   const isFocused = useIsFocused();
   const tabsTarget = useTourTarget("home.tabs");
   const scanTarget = useTourTarget("home.scan");
   useTour("home", HOME_TOUR, { ready: isFocused && !showCamera && !isScanning, delay: 500 });
+  useEffect(() => {
+    if (!isFocused || !user?.uid) return;
+    if (Date.now() - lastScanLoadedAt.current < 30_000) return;
+    lastScanLoadedAt.current = Date.now();
+    let alive = true;
+    getScanHistoryFromDB(user.uid, null, 1)
+      .then(({ data }) => {
+        if (alive) setLastScan(data[0] ?? null);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [isFocused, user?.uid]);
+  // Yeni tarama başladıysa dönüşte şerit beklemeden yenilensin.
+  useEffect(() => {
+    if (isScanning) lastScanLoadedAt.current = 0;
+  }, [isScanning]);
+  const openLastScan = useCallback(() => {
+    if (!lastScan) return;
+    try {
+      TempStore.setResult(scanToResultData(lastScan), lastScan.imageUrl || "");
+      haptics.impactLight();
+      router.push({ pathname: "/product-result", params: { viewMode: "history" } });
+    } catch {}
+  }, [lastScan, router]);
   const [kbHeight, setKbHeight] = useState(0);
   useEffect(() => {
     const s = Keyboard.addListener("keyboardDidShow", (e) =>
@@ -168,7 +200,14 @@ export default function ScanScreen() {
   useEffect(() => {
     if (showCamera) scanLockRef.current = false;
   }, [showCamera]);
-  const kbPad = Math.max(20, kbHeight - tabBarHeight);
+  // Klavye açıkken: iOS'ta klavye içeriğin üstüne biner (pencere küçülmez); Android'de pencere küçülebilir.
+  // Pencere ne kadar küçüldüyse o kadar düşülür, yalnız klavyenin gerçekten örttüğü kısım kadar boşluk açılır.
+  useEffect(() => {
+    if (kbHeight === 0 && viewportH > 0) setBaseViewportH(viewportH);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kbHeight, viewportH]);
+  const kbOverlap = kbHeight > 0 ? Math.max(0, kbHeight - Math.max(0, baseViewportH - viewportH)) : 0;
+  const kbPad = kbHeight > 0 ? kbOverlap + 16 : homeBottomPad;
   const onInputFocus = useCallback(() => {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 220);
   }, []);
@@ -641,70 +680,45 @@ export default function ScanScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Hero markSize={heroLayout.mark} wordmarkWidth={heroLayout.word} showSubheadline={heroLayout.showSub} />
+          <Hero
+            markSize={heroLayout.mark}
+            wordmarkWidth={heroLayout.word}
+            showSubheadline={heroLayout.showSub}
+            showWordmark={heroLayout.showWord}
+            showHeadline={heroLayout.showHeadline}
+          />
 
           {/* Scan Card */}
           <View
-            style={styles.scanCard}
+            style={[styles.scanCard, compact && styles.scanCardCompact]}
             onLayout={(e) => {
-              // Ölçü kamera sekmesinde alınır: sekme değişince logo zıplamasın.
-              if (activeTab === "camera") setCardH(e.nativeEvent.layout.height);
+              // Ölçü kamera sekmesinde ve TAM düzende alınır: sekme ya da düzen değişince logo zıplamasın.
+              if (activeTab === "camera" && !compact) setCardH(e.nativeEvent.layout.height);
             }}
           >
-            <View style={styles.tabSwitcher} {...tabsTarget}>
-              <Pressable
-                style={[styles.tab, activeTab === "camera" && styles.tabActive]}
-                onPress={() => setActiveTab("camera")}
-              >
-                <Ionicons
-                  name={activeTab === "camera" ? "camera" : "camera-outline"}
-                  size={18}
-                  color={activeTab === "camera" ? colors.secondary : colors.gray[400]}
-                />
-                <Text style={[styles.tabText, activeTab === "camera" && styles.tabTextActive]}>
-                  {t("home.tabs.camera")}
-                </Text>
-              </Pressable>
-
-              <Pressable
-                style={[styles.tab, activeTab === "barcode" && styles.tabActive]}
-                onPress={() => setActiveTab("barcode")}
-              >
-                <Ionicons
-                  name="barcode-outline"
-                  size={18}
-                  color={activeTab === "barcode" ? colors.secondary : colors.gray[400]}
-                />
-                <Text style={[styles.tabText, activeTab === "barcode" && styles.tabTextActive]}>
-                  {t("home.tabs.barcode")}
-                </Text>
-              </Pressable>
-
-              <Pressable
-                style={[styles.tab, activeTab === "text" && styles.tabActive]}
-                onPress={() => setActiveTab("text")}
-              >
-                <Ionicons
-                  name="document-text-outline"
-                  size={18}
-                  color={activeTab === "text" ? colors.secondary : colors.gray[400]}
-                />
-                <Text style={[styles.tabText, activeTab === "text" && styles.tabTextActive]}>
-                  {t("home.tabs.text")}
-                </Text>
-              </Pressable>
+            <View {...tabsTarget}>
+              <SegmentedControl
+                value={activeTab}
+                onChange={(k) => setActiveTab(k)}
+                items={[
+                  { key: "camera", label: t("home.tabs.camera"), icon: "camera-outline", iconActive: "camera" },
+                  { key: "barcode", label: t("home.tabs.barcode"), icon: "barcode-outline", iconActive: "barcode" },
+                  { key: "text", label: t("home.tabs.text"), icon: "document-text-outline", iconActive: "document-text" },
+                ]}
+              />
             </View>
 
             {/* DİNAMİK İÇERİK ALANI */}
-            <View style={styles.dynamicContent}>
+            <View style={[styles.dynamicContent, compact && styles.dynamicContentCompact]}>
 
               {/* DURUM 1: KAMERA MODU (Düzeltilmiş) */}
               {activeTab === "camera" && (
                 <>
                   {/* 1. Ana Sayfa Büyük Tara Butonu */}
-                  <View {...scanTarget}>
+                  {/* Üst boşluk tur hedefinin DIŞINDA: vurgu düğmenin kendisine otursun. */}
+                  <View {...scanTarget} style={compact ? styles.mainButtonWrapperCompact : styles.mainButtonSlot}>
                   <Pressable
-                    style={styles.mainButtonWrapper}
+                    style={({ pressed }) => [styles.mainButtonWrapper, styles.mainButtonNoMargin, pressed && styles.mainButtonPressed]}
                     onPress={() => {
                       if (!checkLimit()) return;
 
@@ -714,29 +728,33 @@ export default function ScanScreen() {
                         setShowCamera(true);
                       }
                     }}
+                    accessibilityRole="button"
                   >
                     <LinearGradient
-                      colors={[colors.primary, colors.primaryDeep]}
+                      colors={["#FF7A2B", colors.primary, colors.primaryDeep]}
+                      locations={[0, 0.45, 1]}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
-                      style={styles.mainButton}
+                      style={[styles.mainButton, compact && styles.mainButtonCompact]}
                     >
-                      <Ionicons name="scan" size={32} color={colors.white} />
-                      <Text style={styles.mainButtonText}>
-                        {permission?.granted ? t("home.actions.scanIngredients") : t("home.permissions.request", { defaultValue: "Kamera İzni Ver" })}
+                      <ScanSweep active={isFocused && !showCamera} />
+                      <Ionicons name="scan" size={compact ? 24 : 32} color={colors.white} />
+                      {/* İzin yoksa düğme yine "Tara" der; izin basınca istenir (akış aynı). */}
+                      <Text style={[styles.mainButtonText, compact && styles.mainButtonTextCompact]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+                        {t("home.actions.scanIngredients")}
                       </Text>
                     </LinearGradient>
                   </Pressable>
                   </View>
 
                   {/* 2. Galeri Seçeneği */}
-                  <View style={styles.divider}>
+                  <View style={[styles.divider, compact && styles.dividerCompact]}>
                     <View style={styles.dividerLine} />
                     <Text style={styles.dividerText}>{t("home.actions.or")}</Text>
                     <View style={styles.dividerLine} />
                   </View>
 
-                  <Pressable style={styles.secondaryButton} onPress={handleGalleryPick}>
+                  <Pressable style={({ pressed }) => [styles.secondaryButton, pressed && styles.secondaryPressed]} onPress={handleGalleryPick}>
                     <Ionicons name="images-outline" size={20} color={colors.gray[500]} />
                     <Text style={styles.secondaryButtonText}>{t("home.actions.fromGallery")}</Text>
                   </Pressable>
@@ -748,7 +766,7 @@ export default function ScanScreen() {
                 <>
                   {/* 1. Büyük Tarama Butonu (Kamera ile aynı stilde) */}
                   <Pressable
-                    style={styles.mainButtonWrapper}
+                    style={({ pressed }) => [styles.mainButtonWrapper, compact && styles.mainButtonWrapperCompact, pressed && styles.mainButtonPressed]}
                     onPress={() => {
                       if (!checkLimit()) return;
 
@@ -758,15 +776,18 @@ export default function ScanScreen() {
                         setShowCamera(true);
                       }
                     }}
+                    accessibilityRole="button"
                   >
                     <LinearGradient
-                      colors={isDark ? ["#3A2C22", "#1A130E"] : [colors.secondary, "#140E0A"]}
+                      colors={isDark ? [colors.gray[300], colors.gray[200]] : [colors.secondary, colors.gray[900]]}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
-                      style={styles.mainButton}
+                      style={[styles.mainButton, compact && styles.mainButtonCompact]}
                     >
-                      <Ionicons name="barcode-outline" size={32} color={colors.white} />
-                      <Text style={styles.mainButtonText}>{t("home.actions.scanBarcode")}</Text>
+                      <Ionicons name="barcode-outline" size={compact ? 24 : 32} color={colors.white} />
+                      <Text style={[styles.mainButtonText, compact && styles.mainButtonTextCompact]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+                        {t("home.actions.scanBarcode")}
+                      </Text>
                     </LinearGradient>
                   </Pressable>
 
@@ -835,6 +856,10 @@ export default function ScanScreen() {
               )}
             </View>
           </View>
+
+          {lastScan && activeTab === "camera" && heroLayout.spare >= heroLayout.gap + LAST_SCAN_STRIP_HEIGHT ? (
+            <LastScanStrip item={lastScan} onPress={openLastScan} />
+          ) : null}
         </ScrollView>
         {/* 2. Kamera Modalı */}
         <Modal
@@ -1165,53 +1190,52 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
   },
   scanCard: {
     backgroundColor: colors.card,
-    borderRadius: 24,
+    borderRadius: Radii.sheet - 2,
     padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    elevation: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: isDark ? colors.border : "rgba(42,31,24,0.06)",
+    ...shadow("md", isDark),
     width: "100%",
   },
-  tabSwitcher: {
-    flexDirection: "row",
-    backgroundColor: isDark ? colors.gray[200] : colors.gray[100],
-    borderRadius: 12,
-    padding: 4,
+  // Kompakt düzen (küçük ekran). Kazanç lib/heroLayout.ts COMPACT_CARD_SAVING ile uyumlu:
+  // kart dolgusu 4 + içerik üstü 6 + düğme üstü 8 + düğme (yan yana simge) ~50 + ayraç 8 = ~76.
+  scanCardCompact: {
+    padding: 14,
   },
-  tab: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 5,
-    paddingVertical: 10,
-    borderRadius: 10,
+  dynamicContentCompact: {
+    marginTop: 10,
   },
-  tabActive: {
-    backgroundColor: isDark ? "rgba(249, 115, 22, 0.25)" : colors.card,
-    borderWidth: isDark ? 1 : 0,
-    borderColor: isDark ? "rgba(251, 146, 60, 0.45)" : "transparent",
-  },
-  tabText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: colors.gray[400],
-  },
-  tabTextActive: {
-    color: isDark ? "#FDE68A" : colors.secondary,
-  },
+  // Gölge dış katmanda, kırpma içteki geçişte (iOS'ta overflow:hidden gölgeyi de keser).
   mainButtonWrapper: {
     marginTop: 16,
-    borderRadius: 16,
-    overflow: "hidden",
+    borderRadius: Radii.card - 2,
+    ...(isDark ? null : { shadowColor: colors.primaryDeep, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.22, shadowRadius: 14 }),
+  },
+  mainButtonWrapperCompact: {
+    marginTop: 8,
+  },
+  mainButtonSlot: {
+    marginTop: 16,
+  },
+  mainButtonNoMargin: {
+    marginTop: 0,
+  },
+  mainButtonPressed: {
+    transform: [{ scale: 0.98 }],
   },
   mainButton: {
+    borderRadius: Radii.card - 2,
+    overflow: "hidden",
     paddingVertical: 22,
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
+  },
+  mainButtonCompact: {
+    flexDirection: "row",
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    gap: 10,
   },
   mainButtonText: {
     fontSize: 17,
@@ -1220,10 +1244,20 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     textAlign: "center",
     width: "100%",
   },
+  mainButtonTextCompact: {
+    width: undefined,
+    flexShrink: 1,
+  },
   divider: {
     flexDirection: "row",
     alignItems: "center",
     marginVertical: 14,
+  },
+  dividerCompact: {
+    marginVertical: 10,
+  },
+  secondaryPressed: {
+    opacity: 0.85,
   },
   dividerLine: {
     flex: 1,

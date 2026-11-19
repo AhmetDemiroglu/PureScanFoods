@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../../context/ThemeContext";
 import BrandLogo from "../brand/BrandLogo";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 
 const { width, height } = Dimensions.get("window");
 const STEP_ADVANCE_MS = 1800;
@@ -52,6 +53,8 @@ export default function ProcessingView({ mode = "camera" }: ProcessingViewProps)
   const { t } = useTranslation();
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
+  // Alt bar içeriğin üstünde yüzer: alttaki bilgi kartı barın altında kalmasın.
+  const tabBarHeight = useBottomTabBarHeight();
 
   const titleKeyByMode: Record<ProcessingMode, string> = {
     camera: "processing.titles.camera",
@@ -197,7 +200,7 @@ export default function ProcessingView({ mode = "camera" }: ProcessingViewProps)
   const progressWidth = stepProgressAnim.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] });
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: tabBarHeight + 12 }]}>
       <LinearGradient colors={isDark ? [colors.surface, "#0B1220"] : [colors.surface, "#FFF8E1"]} style={StyleSheet.absoluteFill} />
 
       <View style={styles.topSection}>

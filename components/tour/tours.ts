@@ -18,8 +18,8 @@ export type TourStep = {
   grow?: { top?: number; bottom?: number; left?: number; right?: number };
 };
 
-// Alt sekme: simge hedef, delik altındaki yazıyı da kapsar.
-const TAB = { padding: 4, grow: { bottom: 17, left: 14, right: 14 } } as const;
+// Alt sekme: hedef sekme hücresinin tamamı (simge + yazı, AppTabBar), delik hücreye oturur.
+const TAB = { padding: 2 } as const;
 
 // Turlar kısa tutulur (Ahmet: "eğitime boğmayalım"), her sayfada ilk girişte bir kez.
 // Guru, Beslenme ve Sözlük turları ilk girişte kendiliğinden açılır; info simgesi yeniden açar.

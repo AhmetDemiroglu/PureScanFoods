@@ -27,6 +27,7 @@ import { useShell } from "../../context/ShellContext";
 import * as haptics from "../../lib/haptics";
 import PaywallModal from "../../components/ui/PaywallModal";
 import { useTheme } from "../../context/ThemeContext";
+import PageHeader from "../../components/ui/PageHeader";
 
 
 
@@ -39,11 +40,11 @@ export default function GuruScreen() {
     const insets = useSafeAreaInsets();
     const tabBarHeight = useBottomTabBarHeight();
     const keyboard = useAnimatedKeyboard();
-    // Guru içeriği tab bar'ın ÜSTÜNDE biter; keyboard.height ise ekranın altından
-    // ölçülür → tabBarHeight çıkarılmazsa input klavyeden tabBar kadar yukarıda kalır
-    // (kocaman boşluk). Kapalıyken 28px: merkez tarama butonu input'u kapatmasın.
+    // Alt bar içeriğin üstünde yüzer ve içerik ekranın altına kadar uzanır. Klavye kapalıyken giriş
+    // kutusu barın üstünde durur (+18: ortadaki tarama düğmesi kapsülden taşar, kutuya binmesin).
+    // Klavye açıkken keyboard.height ekranın altından ölçülür, giriş kutusu klavyenin hemen üstüne çıkar.
     const inputAreaStyle = useAnimatedStyle(() => ({
-        paddingBottom: Math.max(28, keyboard.height.value - tabBarHeight),
+        paddingBottom: Math.max(tabBarHeight + 18, keyboard.height.value + 8),
     }));
     const { user } = useAuth();
     const [recentScans, setRecentScans] = useState<any[]>([]);
@@ -186,41 +187,15 @@ export default function GuruScreen() {
 
     return (
         <View style={{ flex: 1, backgroundColor: colors.surface }}>
-            {/* --- HEADER --- */}
-            <View style={{ backgroundColor: colors.surface }}>
-                {/* SafeArea Üstü */}
-                <LinearGradient
-                    colors={[colors.primary, colors.primaryDeep]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={{ paddingTop: insets.top }}
-                >
-                    <View style={styles.headerContent}>
-                        <Pressable onPress={() => router.replace("/")} style={styles.backButton}>
-                            <Ionicons name="arrow-back" size={24} color={colors.white} />
-                        </Pressable>
-
-                        <View style={styles.headerTitleArea}>
-                            <Text style={styles.headerTitle}>{t("guru.title")}</Text>
-                            <Text style={styles.headerSubtitle}>
-                                {isPremium
-                                    ? t("guru.premium_subtitle")
-                                    : t("guru.limits.free", { count: remainingMessages })}
-                            </Text>
-                        </View>
-
-                        <Pressable onPress={replayTour} style={styles.infoButton}>
-                            <Ionicons name="information-circle-outline" size={18} color="rgba(255,255,255,0.7)" />
-                        </Pressable>
-                        <Pressable onPress={() => { haptics.impactLight(); openSidebar(); }} style={styles.backButton}>
-                            <MaterialCommunityIcons name="history" size={22} color={colors.white} />
-                        </Pressable>
-                        <Pressable onPress={handleClearHistory} style={[styles.backButton, { marginRight: 0 }]}>
-                            <Ionicons name="trash-outline" size={22} color={colors.white} />
-                        </Pressable>
-                    </View>
-                </LinearGradient>
-            </View>
+            {/* --- HEADER (ortak PageHeader) --- */}
+            <PageHeader
+                title={t("guru.title")}
+                subtitle={isPremium ? t("guru.premium_subtitle") : t("guru.limits.free", { count: remainingMessages })}
+                onBack={() => router.replace("/")}
+                onInfo={replayTour}
+                onHistory={openSidebar}
+                actions={[{ icon: "trash-outline", onPress: handleClearHistory, label: "Clear" }]}
+            />
 
             {/* --- CONTENT & INPUT --- */}
             <Animated.View style={[{ flex: 1 }, inputAreaStyle]}>

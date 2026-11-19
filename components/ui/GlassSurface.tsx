@@ -35,6 +35,11 @@ type Props = {
   elevation?: "sm" | "md" | "lg" | "none";
   /** Koyu zemin üstünde (fotoğraf, turuncu başlık) duran küçük düğmeler için koyu cam. */
   tone?: "auto" | "dark";
+  /**
+   * Yazısı doğrudan camın üstünde duran ve altından yazı geçen yüzeyler (alt bar, eylem çubuğu).
+   * Cam biraz daha yoğun boyanır: etiketler alttan geçen yazıyla karışmaz. Kenar kırılması aynı.
+   */
+  dense?: boolean;
   pointerEvents?: "auto" | "none" | "box-none" | "box-only";
   children?: React.ReactNode;
 };
@@ -45,6 +50,7 @@ export default function GlassSurface({
   contentStyle,
   elevation = "md",
   tone = "auto",
+  dense = false,
   pointerEvents,
   children,
 }: Props) {
@@ -59,6 +65,7 @@ export default function GlassSurface({
           pointerEvents="none"
           glassEffectStyle="regular"
           colorScheme={dark ? "dark" : "light"}
+          tintColor={dense ? (dark ? "rgba(21,16,12,0.42)" : "rgba(255,250,245,0.46)") : undefined}
           style={[StyleSheet.absoluteFill, { borderRadius: radius }]}
         />
         <View style={contentStyle}>{children}</View>

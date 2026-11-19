@@ -1,140 +1,32 @@
-import React, { useMemo } from "react";
+import React from "react";
 import { Tabs } from "expo-router";
-import { View, StyleSheet } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import { AppColors } from "../../constants/colors";
-import { useTheme } from "../../context/ThemeContext";
 import * as haptics from "../../lib/haptics";
-import { useTourTarget } from "../../components/tour/TourContext";
+import AppTabBar from "../../components/shell/AppTabBar";
+import { tabBarOccupiedHeight } from "../../constants/design";
 
-// Sekme simgesini tur hedefi yapar (alt çubuktaki düğmeler turda vurgulanır).
-function TourIcon({ id, children, style }: { id: string; children: React.ReactNode; style?: any }) {
-  const target = useTourTarget(id);
-  return (
-    <View {...target} style={style}>
-      {children}
-    </View>
-  );
-}
-
+// Alt bar components/shell/AppTabBar.tsx: içeriğin üstünde yüzen cam kapsül. Sekmelerin sırası ve
+// adları değişmedi; tur hedefleri (tab.nutrition, tab.guru, tab.scan, tab.encyclopedia) barın içinde.
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
-  const { colors, isDark } = useTheme();
-  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
-  const bottomPadding = Math.max(insets.bottom, 10);
 
   return (
     <Tabs
+      tabBar={(props) => <AppTabBar {...props} />}
       screenListeners={{ tabPress: () => haptics.selection() }}
       screenOptions={{
         headerShown: false,
-        tabBarShowLabel: true,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.gray[500],
-        tabBarStyle: {
-          backgroundColor: colors.card,
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-          height: 60 + bottomPadding,
-          paddingBottom: bottomPadding,
-          paddingTop: 8,
-        },
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: "500",
-        },
+        // Bar kendi yüksekliğini çizimden sonra bildirir; ilk karede de doğru boşluk için başlangıç değeri.
+        tabBarStyle: { position: "absolute", height: tabBarOccupiedHeight(insets.bottom) },
       }}
     >
-      <Tabs.Screen
-        name="nutrition"
-        options={{
-          title: t("navigation.nutrition"),
-          tabBarIcon: ({ color }) => (
-            <TourIcon id="tab.nutrition">
-              <Ionicons name="nutrition-outline" size={24} color={color} />
-            </TourIcon>
-          ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="guru"
-        options={{
-          title: t("navigation.guru", { defaultValue: "Guru" }),
-          tabBarIcon: ({ color }) => (
-            <TourIcon id="tab.guru">
-              <Ionicons name="chatbubbles-outline" size={24} color={color} />
-            </TourIcon>
-          ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "",
-          tabBarIcon: ({ focused }) => (
-            <TourIcon id="tab.scan" style={styles.centerSlot}>
-              <View style={[styles.centerButton, focused && styles.centerButtonActive]}>
-                <Ionicons name="scan" size={28} color={colors.white} />
-              </View>
-            </TourIcon>
-          ),
-          tabBarLabelStyle: {
-            fontSize: 11,
-            fontWeight: "600",
-            marginTop: 28,
-          },
-        }}
-      />
-
-      <Tabs.Screen
-        name="encyclopedia"
-        options={{
-          title: t("navigation.encyclopedia"),
-          tabBarIcon: ({ color }) => (
-            <TourIcon id="tab.encyclopedia">
-              <Ionicons name="book-outline" size={24} color={color} />
-            </TourIcon>
-          ),
-        }}
-      />
-
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: t("navigation.settings"),
-          tabBarIcon: ({ color }) => <Ionicons name="settings-outline" size={24} color={color} />,
-        }}
-      />
+      <Tabs.Screen name="nutrition" options={{ title: t("navigation.nutrition") }} />
+      <Tabs.Screen name="guru" options={{ title: t("navigation.guru", { defaultValue: "Guru" }) }} />
+      <Tabs.Screen name="index" options={{ title: "" }} />
+      <Tabs.Screen name="encyclopedia" options={{ title: t("navigation.encyclopedia") }} />
+      <Tabs.Screen name="settings" options={{ title: t("navigation.settings") }} />
     </Tabs>
   );
 }
-
-const createStyles = (colors: AppColors, isDark: boolean) =>
-  StyleSheet.create({
-    centerButton: {
-      backgroundColor: colors.primary,
-      width: 56,
-      height: 56,
-      borderRadius: 16,
-      alignItems: "center",
-      justifyContent: "center",
-      transform: [{ rotate: "8deg" }],
-      shadowColor: colors.primary,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: isDark ? 0.16 : 0.3,
-      shadowRadius: 8,
-      elevation: 8,
-    },
-    // Alt boşluk sarmalayıcıda: tur halkası düğmenin kendisine otursun.
-    centerSlot: {
-      marginBottom: 24,
-    },
-    centerButtonActive: {
-      shadowOpacity: isDark ? 0.26 : 0.5,
-    },
-  });

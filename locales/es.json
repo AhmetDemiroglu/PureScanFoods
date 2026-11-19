@@ -86,7 +86,8 @@
         },
         "disclaimer": {
             "off": "El escaneo de códigos usa la base de datos OpenFoodFacts."
-        }
+        },
+        "lastScan": "Último análisis"
     },
     "tabs": {
         "scan": "Escanear",
@@ -775,7 +776,11 @@
         "logout_label": "Cerrar Sesión",
         "logout_sublabel": "Cerrar sesión de tu cuenta",
         "login_label": "Iniciar Sesión",
-        "login_sublabel": "Inicia sesión para gestionar tus datos"
+        "login_sublabel": "Inicia sesión para gestionar tus datos",
+        "theme": "Tema",
+        "theme_light": "Claro",
+        "theme_dark": "Oscuro",
+        "language": "Idioma"
     },
     "premium": {
         "compare_title": "Beneficios Premium",

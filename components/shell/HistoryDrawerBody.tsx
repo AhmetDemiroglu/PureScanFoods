@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppColors } from '../../constants/colors';
 import { useAuth } from '../../context/AuthContext';
 import { getScanHistoryFromDB, ScanResult } from '../../lib/firestore';
+import { scanToResultData } from '../../lib/scanHistory';
 import { doc, deleteDoc as firestoreDelete, collection, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import { TempStore } from '../../lib/tempStore';
@@ -134,34 +135,7 @@ export default function HistoryDrawerBody() {
     isNavigatingRef.current = true;
 
     try {
-      const rawProduct = JSON.parse(item.miniData);
-      const isNewFormat = rawProduct.product !== undefined;
-
-      const resultData = isNewFormat ? {
-        product: rawProduct.product,
-        details: rawProduct.details,
-        scores: rawProduct.scores,
-        badges: item.badges,
-        nutrition_facts: rawProduct.nutrition_facts,
-        keto_analysis: rawProduct.keto_analysis,
-        // "Gerçekte ne tüketiyorsun?" verisi: reopen'da modelin oranları + AI cache'i korunsun.
-        composition: rawProduct.composition,
-        sugar_per_100g: rawProduct.sugar_per_100g,
-        generatedImageUrl: item.generatedImageUrl || null,
-        scanId: item.id
-      } : {
-        product: rawProduct,
-        details: null,
-        scores: {
-          safety: { value: item.score, level: "unknown" },
-          compatibility: { verdict: item.verdict, details: [] }
-        },
-        badges: item.badges,
-        nutrition_facts: null,
-        keto_analysis: null,
-        generatedImageUrl: item.generatedImageUrl || null,
-        scanId: item.id
-      };
+      const resultData = scanToResultData(item);
 
       TempStore.setResult(resultData, item.imageUrl || "");
 

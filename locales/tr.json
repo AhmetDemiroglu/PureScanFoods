@@ -86,7 +86,8 @@
         },
         "disclaimer": {
             "off": "Barkod taraması OpenFoodFacts veritabanını kullanır."
-        }
+        },
+        "lastScan": "Son tarama"
     },
     "tabs": {
         "scan": "Tara",
@@ -775,7 +776,11 @@
         "logout_label": "Çıkış Yap",
         "logout_sublabel": "Hesabınızdan çıkış yapın",
         "login_label": "Giriş Yap",
-        "login_sublabel": "Verilerinizi yönetmek için giriş yapın"
+        "login_sublabel": "Verilerinizi yönetmek için giriş yapın",
+        "theme": "Tema",
+        "theme_light": "Açık",
+        "theme_dark": "Koyu",
+        "language": "Dil"
     },
     "premium": {
         "compare_title": "Premium Avantajları",

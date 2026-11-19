@@ -43,6 +43,8 @@ import { NUTRITION_TOUR } from "../../components/tour/tours";
 import PaywallModal from "../../components/ui/PaywallModal";
 import { useTheme } from "../../context/ThemeContext";
 import { FONT_SCALE_CAP } from "../../constants/design";
+import PageHeader from "../../components/ui/PageHeader";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 
 const getSafeIcon = (iconName: string): any => iconName === "person" ? "account" : iconName;
 
@@ -58,6 +60,8 @@ export default function NutritionScreen() {
   const { userProfile, user, usageStats } = useAuth();
   const isPremium = userProfile?.subscriptionStatus === "premium" || false;
   const router = useRouter();
+  // Alt bar içeriğin üstünde yüzer: son kart barın altında kalmasın.
+  const tabBarHeight = useBottomTabBarHeight();
   const { t, i18n } = useTranslation();
   const { colors, isDark } = useTheme();
   const styles = React.useMemo(() => createStyles(colors, isDark), [colors, isDark]);
@@ -415,72 +419,55 @@ export default function NutritionScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-      {/* --- HEADER --- */}
-      <LinearGradient
-        colors={[colors.primary, colors.primaryDeep]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.header}
+      {/* --- HEADER (ortak PageHeader) --- */}
+      <PageHeader
+        title={t("navigation.nutrition")}
+        subtitle={t("nutrition.subtitle")}
+        onBack={() => router.replace("/")}
+        onInfo={replayTour}
+        onHistory={openSidebar}
       >
-        <SafeAreaView edges={["top"]}>
-          <View style={styles.headerContent}>
-            <TouchableOpacity style={styles.backButton} onPress={() => router.replace("/")}>
-              <Ionicons name="arrow-back" size={24} color="#FFF" />
-            </TouchableOpacity>
-            <View style={styles.headerTitleArea}>
-              <Text style={styles.headerTitle}>{t("navigation.nutrition")}</Text>
-              <Text style={styles.headerSubtitle}>{t("nutrition.subtitle")}</Text>
-            </View>
-            <TouchableOpacity style={styles.infoButton} onPress={replayTour}>
-              <Ionicons name="information-circle-outline" size={18} color="rgba(255,255,255,0.7)" />
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.backButton, { marginRight: 0 }]} onPress={() => { haptics.impactLight(); openSidebar(); }}>
-              <MaterialCommunityIcons name="history" size={22} color="#FFF" />
-            </TouchableOpacity>
-          </View>
+      {/* Profile Card */}
+      <View {...profileTarget} style={styles.profileContainer}>
+        {(() => {
+          const mainUser = familyMembers.find(m => m.id === "main_user") || familyMembers[0];
+          return (
+            <>
+              <TouchableOpacity
+                style={[styles.avatarBox, { backgroundColor: mainUser?.color }]}
+                onPress={() => openAvatarSelector(mainUser.id)}
+              >
+                <MaterialCommunityIcons name={(mainUser?.avatarIcon as AvatarIconName) || "account"} size={24} color="#FFF" />
 
-          {/* Profile Card */}
-          <View {...profileTarget} style={styles.profileContainer}>
-            {(() => {
-              const mainUser = familyMembers.find(m => m.id === "main_user") || familyMembers[0];
-              return (
-                <>
-                  <TouchableOpacity
-                    style={[styles.avatarBox, { backgroundColor: mainUser?.color }]}
-                    onPress={() => openAvatarSelector(mainUser.id)}
-                  >
-                    <MaterialCommunityIcons name={(mainUser?.avatarIcon as AvatarIconName) || "account"} size={24} color="#FFF" />
-
-                    {/* Show star badge only for Premium */}
-                    {isPremium && (
-                      <View style={styles.premiumBadge}>
-                        <Ionicons name="star" size={10} color="#FFF" />
-                      </View>
-                    )}
-                  </TouchableOpacity>
-
-                  <View style={{ flex: 1, justifyContent: 'center' }}>
-                    <TouchableOpacity onPress={() => openEditModal(mainUser)} style={styles.nameRow}>
-                      <Text style={styles.profileName}>{mainUser?.name}</Text>
-                      <Ionicons name="pencil" size={14} color="rgba(255,255,255,0.7)" />
-                    </TouchableOpacity>
-                    {/* Membership label */}
-                    <Text style={styles.profileRole}>
-                      {isPremium ? t("nutrition.premium_member") : t("nutrition.standard_member")}
-                    </Text>
+                {/* Show star badge only for Premium */}
+                {isPremium && (
+                  <View style={styles.premiumBadge}>
+                    <Ionicons name="star" size={10} color="#FFF" />
                   </View>
-                </>
-              );
-            })()}
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
+                )}
+              </TouchableOpacity>
+
+              <View style={{ flex: 1, justifyContent: 'center' }}>
+                <TouchableOpacity onPress={() => openEditModal(mainUser)} style={styles.nameRow}>
+                  <Text style={styles.profileName}>{mainUser?.name}</Text>
+                  <Ionicons name="pencil" size={14} color="rgba(255,255,255,0.7)" />
+                </TouchableOpacity>
+                {/* Membership label */}
+                <Text style={styles.profileRole}>
+                  {isPremium ? t("nutrition.premium_member") : t("nutrition.standard_member")}
+                </Text>
+              </View>
+            </>
+          );
+        })()}
+      </View>
+      </PageHeader>
 
       {/* --- CONTENT --- */}
       <ScrollView
         {...tourScroll}
         style={styles.scrollContainer}
-        contentContainerStyle={{ paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: tabBarHeight + 24 }}
         showsVerticalScrollIndicator={false}
       >
 
@@ -1071,7 +1058,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
   headerTitleArea: { flex: 1 },
   headerTitle: { fontSize: 22, fontWeight: "800", color: "#FFF" },
   headerSubtitle: { fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 2 },
-  profileContainer: { flexDirection: "row", alignItems: "center", marginHorizontal: 20, backgroundColor: "rgba(255,255,255,0.15)", padding: 12, borderRadius: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.2)" },
+  profileContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.16)", padding: 12, borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, borderColor: "rgba(255,255,255,0.32)" },
   avatarBox: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", marginRight: 12 },
   premiumBadge: { position: "absolute", bottom: -2, right: -2, backgroundColor: "#F59E0B", width: 16, height: 16, borderRadius: 8, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: colors.card },
   nameRow: { flexDirection: "row", alignItems: "center", gap: 6 },

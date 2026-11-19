@@ -1,5 +1,5 @@
 ﻿import React, { useState, useMemo } from "react";
-import { View, StyleSheet, ScrollView, Pressable, StatusBar, Linking, LayoutAnimation, Platform, UIManager, TextInput, ActivityIndicator, TouchableOpacity, Alert } from "react-native";
+import { View, StyleSheet, ScrollView, Pressable, StatusBar, Linking, LayoutAnimation, Platform, UIManager, TextInput, ActivityIndicator, TouchableOpacity, Alert, Image } from "react-native";
 import { Text } from "../../components/ui/AppText";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
@@ -26,6 +26,10 @@ import { useTheme } from "../../context/ThemeContext";
 import { SeptimusSignature } from "../../components/brand/SeptimusSignature";
 import { resetAllTours } from "../../components/tour/TourContext";
 import { FONT_SCALE_CAP } from "../../constants/design";
+import PageHeader from "../../components/ui/PageHeader";
+import ThemeToggle from "../../components/ui/ThemeToggle";
+import { APP_LANGUAGES, currentLanguage, setAppLanguage } from "../../lib/language";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 
 
 if (Platform.OS === "android" && !(global as any).nativeFabricUIManager && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -37,12 +41,15 @@ const PRIVACY_URL = "https://purescan-foods.septimuslab.com/privacy-policy/";
 const SUPPORT_EMAIL = "info@septimuslab.com";
 
 export default function SettingsScreen() {
-  const { t } = useTranslation();
-  const { colors, isDark } = useTheme();
+  const { t, i18n } = useTranslation();
+  const { colors, isDark, toggleTheme } = useTheme();
+  const activeLang = currentLanguage(i18n.language);
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const { user, userProfile, isPremium, usageStats, logout, deleteUserData, deleteAccount } = useAuth();
   const { familyMembers } = useUser();
   const router = useRouter();
+  // Alt bar içeriğin üstünde yüzer: son kart barın altında kalmasın.
+  const tabBarHeight = useBottomTabBarHeight();
 
   const [passwordSectionOpen, setPasswordSectionOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -158,35 +165,67 @@ export default function SettingsScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-      {/* Header */}
-      <LinearGradient
-        colors={[colors.primary, colors.primaryDeep]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.header}
-      >
-        <SafeAreaView edges={["top"]}>
-          <View style={styles.headerContent}>
-            <TouchableOpacity style={styles.backButton} onPress={() => router.replace("/")}>
-              <Ionicons name="arrow-back" size={24} color="#FFF" />
-            </TouchableOpacity>
-            <View style={styles.headerTitleArea}>
-              <Text style={styles.headerTitle}>{t("settings.title")}</Text>
-              <Text style={styles.headerSubtitle}>{t("settings.subtitle")}</Text>
-            </View>
-            <TouchableOpacity style={[styles.backButton, { marginRight: 0 }]} onPress={() => { haptics.impactLight(); openSidebar(); }}>
-              <MaterialCommunityIcons name="history" size={22} color="#FFF" />
-            </TouchableOpacity>
-          </View>
-        </SafeAreaView>
-      </LinearGradient>
+      {/* Header (ortak PageHeader) */}
+      <PageHeader
+        title={t("settings.title")}
+        subtitle={t("settings.subtitle")}
+        onBack={() => router.replace("/")}
+        onHistory={openSidebar}
+      />
 
       {/* Content */}
       <ScrollView
         style={styles.content}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarHeight + 24 }]}
         showsVerticalScrollIndicator={false}
       >
+        {/* === Görünüm ve dil: ana ekran başlığından taşındı (güneş/ay anahtarı ve bayraklar aynı) === */}
+        <View style={styles.prefCard}>
+          <View style={styles.prefRow}>
+            <View style={[styles.prefIcon, { backgroundColor: isDark ? "rgba(147,197,253,0.14)" : "#EFF6FF" }]}>
+              <Ionicons name={isDark ? "moon" : "sunny"} size={18} color={isDark ? "#93C5FD" : "#F59E0B"} />
+            </View>
+            <View style={styles.prefText}>
+              <Text style={styles.prefTitle}>{t("settings.theme")}</Text>
+              <Text style={styles.prefValue}>{isDark ? t("settings.theme_dark") : t("settings.theme_light")}</Text>
+            </View>
+            <ThemeToggle isDark={isDark} onToggle={toggleTheme} primaryColor={colors.primary} warningColor={colors.warning} />
+          </View>
+
+          <View style={styles.prefDivider} />
+
+          <View style={styles.prefLangHead}>
+            <View style={[styles.prefIcon, { backgroundColor: isDark ? "rgba(242,96,12,0.18)" : "#FFF3EA" }]}>
+              <Ionicons name="language" size={18} color={colors.primary} />
+            </View>
+            <Text style={styles.prefTitle}>{t("settings.language")}</Text>
+          </View>
+          <View style={styles.flagRow}>
+            {APP_LANGUAGES.map((lang) => {
+              const active = lang.code === activeLang;
+              return (
+                <Pressable
+                  key={lang.code}
+                  onPress={() => {
+                    if (active) return;
+                    haptics.selection();
+                    setAppLanguage(lang.code);
+                  }}
+                  style={({ pressed }) => [styles.flagPill, active && styles.flagPillActive, pressed && { transform: [{ scale: 0.96 }] }]}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={lang.label}
+                >
+                  <Image source={lang.flag} style={styles.flagImg} />
+                  <Text style={[styles.flagLabel, active && styles.flagLabelActive]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+                    {lang.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
         {/* === SECTION 1: Profile Card === */}
         <View style={styles.profileCard}>
           <View style={styles.profileHeader}>
@@ -701,6 +740,87 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
   backButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(255,255,255,0.2)", alignItems: "center", justifyContent: "center", marginRight: 12 },
 
   // Profile Card
+  prefCard: {
+    backgroundColor: colors.card,
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.gray[200],
+  },
+  prefRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  prefIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  prefText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  prefTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.text,
+  },
+  prefValue: {
+    fontSize: 12.5,
+    color: colors.textMuted,
+    marginTop: 1,
+  },
+  prefDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.gray[200],
+    marginVertical: 14,
+  },
+  prefLangHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 12,
+  },
+  flagRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  flagPill: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 9,
+    paddingHorizontal: 6,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: colors.gray[200],
+    backgroundColor: isDark ? colors.gray[100] : colors.gray[50],
+  },
+  flagPillActive: {
+    borderColor: colors.primary,
+    backgroundColor: isDark ? "rgba(255,139,61,0.12)" : "#FFF3EA",
+  },
+  flagImg: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+  },
+  flagLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: colors.textMuted,
+    flexShrink: 1,
+  },
+  flagLabelActive: {
+    color: colors.primary,
+  },
   profileCard: {
     backgroundColor: colors.card,
     borderRadius: 20,
