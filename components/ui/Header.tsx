@@ -1,6 +1,7 @@
-// Ana ekran üst barı: profil ve geçmiş tek cam kapsülde. Dil ve tema Ayarlar'a taşındı
-// ("Görünüm ve dil" kartı); güneş/ay anahtarı ve bayraklar orada aynen duruyor.
-import { View, Pressable, StyleSheet } from "react-native";
+// Ana ekran üst barı: solda üyelik rozeti (Premium / Ücretsiz), sağda profil ve geçmiş tek cam kapsülde.
+// Rozet camın DIŞINDA: camın içindeki animasyon cam katmanını yeniden çizdirip düğmeleri titretiyordu.
+// Dil ve tema Ayarlar'a taşındı ("Görünüm ve dil" kartı).
+import { View, Pressable, StyleSheet, useWindowDimensions } from "react-native";
 import { Text } from "./AppText";
 import { useMemo, useState } from "react";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -9,8 +10,8 @@ import { useAuth } from "../../context/AuthContext";
 import AuthModal from "../profile/AuthModal";
 import { useTourTarget } from "../tour/TourContext";
 import { useTheme } from "../../context/ThemeContext";
-import AnimatedDiamond from "../ui/AnimatedDiamond";
 import GlassSurface from "./GlassSurface";
+import PlanBadge from "./PlanBadge";
 
 interface HeaderProps {
   onHistoryPress?: () => void;
@@ -24,32 +25,30 @@ export default function Header({ onHistoryPress }: HeaderProps) {
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
   const isLoggedIn = user && !user.isAnonymous;
+  // Dar ekranda (ör. 320 pt) kapsülde yalnız avatar, rozette yalnız simge.
+  const { width } = useWindowDimensions();
+  const narrow = width < 360;
 
   return (
     <View style={styles.header}>
+      <PlanBadge premium={!!isPremium} compact={narrow && !!isLoggedIn} onPress={() => setShowAuth(true)} />
       <GlassSurface radius={26} elevation="sm" contentStyle={styles.capsule}>
-        {isPremium && (
-          <View style={styles.premiumBadge}>
-            <AnimatedDiamond size={18} />
-          </View>
-        )}
 
         <Pressable
-          style={({ pressed }) => [styles.profileButton, isLoggedIn && styles.profileButtonExpanded, pressed && styles.pressed]}
+          style={({ pressed }) => [styles.profileButton, isLoggedIn && !narrow && styles.profileButtonExpanded, pressed && styles.pressed]}
           onPress={() => setShowAuth(true)}
           accessibilityRole="button"
           accessibilityLabel={isLoggedIn ? userProfile?.displayName || user?.email || "Profile" : "Profile"}
         >
           {isLoggedIn ? (
             <>
-              <View style={styles.profileText}>
-                <Text style={styles.profileName} numberOfLines={1} maxFontSizeMultiplier={1.15}>
-                  {userProfile?.displayName || user.email?.split("@")[0]}
-                </Text>
-                <Text style={[styles.profileRole, isPremium && styles.profileRolePremium]} maxFontSizeMultiplier={1.15}>
-                  {isPremium ? "Premium" : "Free"}
-                </Text>
-              </View>
+              {!narrow ? (
+                <View style={styles.profileText}>
+                  <Text style={styles.profileName} numberOfLines={1} maxFontSizeMultiplier={1.15}>
+                    {userProfile?.displayName || user.email?.split("@")[0]}
+                  </Text>
+                </View>
+              ) : null}
               <View style={[styles.avatarMini, { backgroundColor: userProfile?.color || colors.primary }]}>
                 <MaterialCommunityIcons name={(userProfile?.avatarIcon || "account") as any} size={16} color="#FFF" />
               </View>
@@ -84,6 +83,7 @@ const createStyles = (colors: AppColors, isDark: boolean) =>
       flexDirection: "row",
       justifyContent: "flex-end",
       alignItems: "center",
+      gap: 10,
       paddingHorizontal: 20,
       marginTop: 10,
       zIndex: 10,

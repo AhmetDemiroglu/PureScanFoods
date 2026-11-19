@@ -1008,5 +1008,10 @@
         "footnote": "Al continuar aceptas los Términos de uso y la Política de privacidad.",
         "accept": "He leído, entiendo y acepto.",
         "cta": "Aceptar y empezar"
+    },
+    "header": {
+        "plan": {
+            "free": "Gratis"
+        }
     }
 }

@@ -19,8 +19,10 @@ import type { TourStep } from "./tours";
 
 export type TourRect = { x: number; y: number; w: number; h: number };
 
-const seenKey = (id: string) => `@tour_seen_${id}_v1`;
-const ALL_TOURS_KEY = "@tour_ids_v1";
+// v2 (3.6.0): arayüz yenilendi, ipuçları herkese bir kez daha gösterilir (eski "görüldü" kayıtları sayılmaz).
+// Sözleşme onayı ayrı anahtarda (APP_ONBOARDING_ACCEPTED_KEY), ona dokunulmaz.
+const seenKey = (id: string) => `@tour_seen_${id}_v2`;
+const ALL_TOURS_KEY = "@tour_ids_v2";
 // Bu oturumda bitirilen turlar: kayıt arkada yazılırken tur yeniden başlamasın.
 const seenThisSession = new Set<string>();
 

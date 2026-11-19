@@ -1008,5 +1008,10 @@
         "footnote": "Devam ederek Kullanım Koşulları'nı ve Gizlilik Politikası'nı kabul etmiş olursun.",
         "accept": "Okudum, anladım ve kabul ediyorum.",
         "cta": "Kabul Et ve Başla"
+    },
+    "header": {
+        "plan": {
+            "free": "Ücretsiz"
+        }
     }
 }

@@ -43,7 +43,7 @@ import * as haptics from '../../lib/haptics';
 import LimitWarningModal from "../../components/ui/LimitWarningModal";
 import { ScanFailGraphic } from "../../components/ui/ScanFailGraphic";
 import PaywallModal from "../../components/ui/PaywallModal";
-import ProcessingView, { ProcessingMode } from "../../components/ui/ProcessingView";
+import ProcessingView, { ProcessingMode, PROCESSING_DONE } from "../../components/ui/ProcessingView";
 import { useTheme } from "../../context/ThemeContext";
 import { DISPLAY_FONT_SCALE_CAP, FONT_SCALE_CAP, Radii, shadow } from "../../constants/design";
 
@@ -98,6 +98,28 @@ export default function ScanScreen() {
   // (aynı ürüne 2 farklı sonuç). Ref anında güncellenir → çift tetikleme imkânsız.
   const scanLockRef = useRef(false);
   const [processingMode, setProcessingMode] = useState<ProcessingMode>("camera");
+  // Analiz ekranındaki kademeler gerçek ilerlemeyi izler: sürmekte olan aşamanın sırası.
+  // PROCESSING_DONE: sonuç hazır; ekran kalan kademeleri hızla kapatır, sonra sonuç açılır.
+  const [processingStage, setProcessingStage] = useState(0);
+  const finishResolver = useRef<null | (() => void)>(null);
+  // Kademe tarama BİTİNCE sıfırlanır: başlarken sıfırlamak, akışın aynı anda verdiği ilk ilerlemeyi siliyordu.
+  useEffect(() => {
+    if (!isScanning) setProcessingStage(0);
+  }, [isScanning]);
+  // Sonuç hazırken kademelerin kapanmasını bekler (en fazla 1,4 sn), sonra döner.
+  const waitProcessingDone = () =>
+    new Promise<void>((resolve) => {
+      let settled = false;
+      const done = () => {
+        if (settled) return;
+        settled = true;
+        finishResolver.current = null;
+        resolve();
+      };
+      finishResolver.current = done;
+      setProcessingStage(PROCESSING_DONE);
+      setTimeout(done, 1400);
+    });
   const router = useRouter();
 
   const [showCamera, setShowCamera] = useState(false);
@@ -262,6 +284,7 @@ export default function ScanScreen() {
     setProcessingMode("barcode");
     setIsScanning(true);
     try {
+      setProcessingStage(1);
       const productData = await getIngredientsByBarcode(barcodeInput);
 
       if (!productData.found) {
@@ -280,6 +303,7 @@ export default function ScanScreen() {
 
       const systemPrompt = generateBarcodeDataPrompt(currentLang, promptProfile, productData);
 
+      setProcessingStage(2);
       const apiResult = await callGemini(endpointFor("analysis"), analysisRequest([{ text: systemPrompt }]));
 
       processGeminiResult(apiResult, productData.image || null, productData);
@@ -305,6 +329,7 @@ export default function ScanScreen() {
     setIsScanning(true);
 
     try {
+      setProcessingStage(1);
       const productData = await getIngredientsByBarcode(data);
 
       if (!productData.found) {
@@ -324,6 +349,7 @@ export default function ScanScreen() {
 
       const systemPrompt = generateBarcodeDataPrompt(currentLang, promptProfile, productData);
 
+      setProcessingStage(2);
       const apiResult = await callGemini(endpointFor("analysis"), analysisRequest([{ text: systemPrompt }]));
 
       processGeminiResult(apiResult, productData.image || null, productData);
@@ -364,6 +390,7 @@ export default function ScanScreen() {
       const basePrompt = generateAnalysisPrompt(currentLang, promptProfile);
       const combinedPrompt = `${basePrompt}\n\nAnalyze this ingredient list text:\n"${textInput}"`;
 
+      setProcessingStage(1);
       const apiResult = await callGemini(endpointFor("analysis"), analysisRequest([{ text: combinedPrompt }]));
 
       processGeminiResult(apiResult, null, undefined);
@@ -379,6 +406,7 @@ export default function ScanScreen() {
   };
 
   const processGeminiResult = (apiResult: any, imageUri?: string | null, offData?: any) => {
+    setProcessingStage(3);
     try {
       const parsedData = parseAnalysisJson(apiResult);
 
@@ -427,9 +455,11 @@ export default function ScanScreen() {
       TempStore.setResult(audited, imageUri || "", {
         source: offData ? "barcode" : (activeTab === "text" ? "text" : "camera")
       });
-      router.push("/product-result");
-
-      setTimeout(() => setIsScanning(false), 500);
+      // Kalan kademeler kapanınca (en fazla 1,4 sn) sonuç açılır: analiz hızlı bitse de akış tamamlanmış görünür.
+      waitProcessingDone().then(() => {
+        router.push("/product-result");
+        setTimeout(() => setIsScanning(false), 500);
+      });
 
     } catch (e) {
       console.error("Parsing Error:", e);
@@ -461,6 +491,7 @@ export default function ScanScreen() {
 
     const systemPrompt = generateAnalysisPrompt(currentLang, promptProfile);
 
+    setProcessingStage(1);
     let label = await readIngredientLabel(base64Image);
     let wide: Shot | null = null;
 
@@ -487,6 +518,7 @@ export default function ScanScreen() {
       return;
     }
 
+    setProcessingStage(2);
     if (label.status === "ok") {
       const apiResult = await callGemini(
         endpointFor("analysis"),
@@ -669,7 +701,13 @@ export default function ScanScreen() {
   }, [showCamera]);
 
   if (isScanning) {
-    return <ProcessingView mode={processingMode} />;
+    return (
+      <ProcessingView
+        mode={processingMode}
+        stage={processingStage}
+        onDone={() => finishResolver.current?.()}
+      />
+    );
   }
 
   return (

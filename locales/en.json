@@ -1008,5 +1008,10 @@
         "footnote": "By continuing you accept the Terms of Use and the Privacy Policy.",
         "accept": "I have read, understood and accept.",
         "cta": "Accept and Start"
+    },
+    "header": {
+        "plan": {
+            "free": "Free"
+        }
     }
 }

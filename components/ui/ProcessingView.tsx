@@ -1,60 +1,145 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { View, StyleSheet, Dimensions, Animated, Easing, ActivityIndicator } from "react-native";
-import { Text } from "./AppText";
-import LottieView from "lottie-react-native";
-import { AppColors } from "../../constants/colors";
+// Analiz bekleme ekranı: hikayeli sahne (components/scan/AnalysisScene), başlık, kademeler ve kısa bilgi.
+//
+// Kademeler gerçek ilerlemeyi izler (stage: index.tsx'te analiz aşamalarında güncellenir) ama ona kadar
+// tek tek, göz izleyebilsin diye kısa beklemelerle işaretlenir. Gerçek ilerlemeyi asla geçmez: analiz
+// uzarsa o kademe "sürüyor" kalır. Sonuç gelince (PROCESSING_DONE) kalan kademeler hızla kapanır, son
+// kademe de işaretlendikten sonra onDone çağrılır ve sonuç ekranı açılır. Böylece analiz hızlı bittiğinde
+// ekran kademeler yarımdayken kaybolmaz.
+//
+// Ekran kaymaz: sahne kalan yüksekliğe göre büyüyüp küçülür, kısa ekranda bilgi kartı gizlenir.
+
+import React, { useEffect, useMemo, useState } from "react";
+import { LayoutChangeEvent, StyleSheet, View, useWindowDimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
-import { LinearGradient } from "expo-linear-gradient";
-import { useTheme } from "../../context/ThemeContext";
-import BrandLogo from "../brand/BrandLogo";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-
-const { width, height } = Dimensions.get("window");
-const STEP_ADVANCE_MS = 1800;
-const STEP_ANIMATION_MS = 350;
+import Animated, {
+  Easing,
+  FadeIn,
+  FadeInDown,
+  FadeOut,
+  ZoomIn,
+  cancelAnimation,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
+import { Text } from "./AppText";
+import { AppColors } from "../../constants/colors";
+import { useTheme } from "../../context/ThemeContext";
+import AnalysisScene from "../scan/AnalysisScene";
 
 export type ProcessingMode = "camera" | "text" | "barcode" | "ad" | "image";
+/** Sonuç hazır: kalan kademeler kapanır, sonra onDone. */
+export const PROCESSING_DONE = 99;
 
 interface ProcessingViewProps {
   mode?: ProcessingMode;
+  /** Sürmekte olan aşamanın sırası (0'dan). Verilmezse kademeler süreye göre ilerler, sonuncusu kapanmaz. */
+  stage?: number;
+  /** Sonuç geldikten sonra tüm kademeler işaretlenince çağrılır. */
+  onDone?: () => void;
 }
 
-const LogoSpinner = ({ colors, styles }: { colors: AppColors; styles: ReturnType<typeof createStyles> }) => {
-  const spinValue = useRef(new Animated.Value(0)).current;
+const FIRST_STEP_MS = 650;
+const STEP_MS = 1050;
+const FINISH_STEP_MS = 190;
 
+const stripDots = (s: string) => s.replace(/[.…]+\s*$/, "");
+
+function Spinner({ color }: { color: string }) {
+  const r = useSharedValue(0);
   useEffect(() => {
-    Animated.loop(
-      Animated.timing(spinValue, {
-        toValue: 1,
-        duration: 2000,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      })
-    ).start();
-  }, [spinValue]);
+    r.value = withRepeat(withTiming(1, { duration: 900, easing: Easing.linear }), -1, false);
+    return () => cancelAnimation(r);
+  }, [r]);
+  const style = useAnimatedStyle(() => ({ transform: [{ rotate: `${r.value * 360}deg` }] }));
+  return (
+    <Animated.View
+      style={[
+        StyleSheet.absoluteFill,
+        { borderRadius: 999, borderWidth: 2, borderColor: "transparent", borderTopColor: color, borderRightColor: color },
+        style,
+      ]}
+    />
+  );
+}
 
-  const spin = spinValue.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] });
+function StepRow({
+  label,
+  done,
+  current,
+  last,
+  colors,
+  isDark,
+}: {
+  label: string;
+  done: boolean;
+  current: boolean;
+  last: boolean;
+  colors: AppColors;
+  isDark: boolean;
+}) {
+  const fill = useSharedValue(done ? 1 : 0);
+  useEffect(() => {
+    fill.value = withTiming(done ? 1 : 0, { duration: 420, easing: Easing.out(Easing.cubic) });
+  }, [done, fill]);
+  const lineStyle = useAnimatedStyle(() => ({ transform: [{ scaleY: fill.value }] }));
 
   return (
-    <View style={styles.spinnerContainer}>
-      <Animated.View style={[styles.spinningRingContainer, { transform: [{ rotate: spin }] }]}>
-        <LinearGradient colors={[colors.primary, colors.secondary, colors.primary]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.spinningRingGradient} />
-      </Animated.View>
-
-      <View style={styles.logoContainer}>
-        <BrandLogo variant="mark" size={34} />
+    <View style={styles.stepRow}>
+      {!last ? (
+        <View style={[styles.stepLine, { backgroundColor: isDark ? colors.gray[200] : colors.gray[200] }]}>
+          <Animated.View style={[styles.stepLineFill, { backgroundColor: colors.primary, transformOrigin: "top" }, lineStyle]} />
+        </View>
+      ) : null}
+      <View
+        style={[
+          styles.stepDot,
+          {
+            backgroundColor: done ? colors.primary : current ? (isDark ? "rgba(255,139,61,0.16)" : "#FFF1E6") : isDark ? colors.gray[200] : colors.gray[100],
+          },
+        ]}
+      >
+        {done ? (
+          <Animated.View entering={ZoomIn.springify().damping(12)}>
+            <Ionicons name="checkmark" size={15} color="#FFF" />
+          </Animated.View>
+        ) : current ? (
+          <>
+            <Spinner color={colors.primary} />
+            <View style={[styles.stepCore, { backgroundColor: colors.primary }]} />
+          </>
+        ) : (
+          <View style={[styles.stepIdle, { backgroundColor: colors.gray[400] }]} />
+        )}
       </View>
+      <Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.85}
+        maxFontSizeMultiplier={1.2}
+        style={[
+          styles.stepText,
+          { color: current ? colors.text : done ? colors.textMuted : colors.gray[400] },
+          current && styles.stepTextCurrent,
+        ]}
+      >
+        {label}
+      </Text>
     </View>
   );
-};
+}
 
-export default function ProcessingView({ mode = "camera" }: ProcessingViewProps) {
+export default function ProcessingView({ mode = "camera", stage, onDone }: ProcessingViewProps) {
   const { t } = useTranslation();
   const { colors, isDark } = useTheme();
-  const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
-  // Alt bar içeriğin üstünde yüzer: alttaki bilgi kartı barın altında kalmasın.
+  const insets = useSafeAreaInsets();
+  // Alt bar içeriğin üstünde yüzer: alttaki içerik barın altında kalmasın.
   const tabBarHeight = useBottomTabBarHeight();
+  const { width, height } = useWindowDimensions();
 
   const titleKeyByMode: Record<ProcessingMode, string> = {
     camera: "processing.titles.camera",
@@ -63,7 +148,6 @@ export default function ProcessingView({ mode = "camera" }: ProcessingViewProps)
     ad: "processing.titles.ad",
     image: "processing.titles.image",
   };
-
   const titleDefaultByMode: Record<ProcessingMode, string> = {
     camera: "Analyzing Image...",
     text: "Analyzing Text...",
@@ -73,353 +157,246 @@ export default function ProcessingView({ mode = "camera" }: ProcessingViewProps)
   };
 
   const steps = useMemo(() => {
-    if (mode === "text") {
-      return [
-        { id: 1, label: t("processing.textSteps.1", { defaultValue: "Text received..." }), icon: "document-text-outline" },
-        { id: 2, label: t("processing.textSteps.2", { defaultValue: "AI is analyzing..." }), icon: "hardware-chip-outline" },
-        { id: 3, label: t("processing.textSteps.3", { defaultValue: "Extracting nutrition..." }), icon: "server-outline" },
-        { id: 4, label: t("processing.textSteps.4", { defaultValue: "Preparing results..." }), icon: "checkmark-done-outline" },
-      ];
-    }
-
-    if (mode === "barcode") {
-      return [
-        { id: 1, label: t("processing.barcodeSteps.1", { defaultValue: "Barcode detected..." }), icon: "barcode-outline" },
-        { id: 2, label: t("processing.barcodeSteps.2", { defaultValue: "Fetching product data..." }), icon: "cloud-download-outline" },
-        { id: 3, label: t("processing.barcodeSteps.3", { defaultValue: "AI validation..." }), icon: "hardware-chip-outline" },
-        { id: 4, label: t("processing.barcodeSteps.4", { defaultValue: "Preparing results..." }), icon: "checkmark-done-outline" },
-      ];
-    }
-
-    if (mode === "ad") {
-      return [
-        { id: 1, label: t("processing.adSteps.1", { defaultValue: "Loading ad..." }), icon: "play-circle-outline" },
-        { id: 2, label: t("processing.adSteps.2", { defaultValue: "Finalizing result..." }), icon: "hourglass-outline" },
-      ];
-    }
-
-    if (mode === "image") {
-      return [
-        { id: 1, label: t("processing.imageSteps.1", { defaultValue: "Calculating ratios..." }), icon: "calculator-outline" },
-        { id: 2, label: t("processing.imageSteps.2", { defaultValue: "Building layers..." }), icon: "layers-outline" },
-        { id: 3, label: t("processing.imageSteps.3", { defaultValue: "Generating visual..." }), icon: "color-palette-outline" },
-        { id: 4, label: t("processing.imageSteps.4", { defaultValue: "Preparing..." }), icon: "checkmark-done-outline" },
-      ];
-    }
-
-    return [
-      { id: 1, label: t("processing.steps.1", { defaultValue: "Processing image..." }), icon: "scan-outline" },
-      { id: 2, label: t("processing.steps.2", { defaultValue: "Extracting text..." }), icon: "hardware-chip-outline" },
-      { id: 3, label: t("processing.steps.3", { defaultValue: "Analyzing nutrition..." }), icon: "server-outline" },
-      { id: 4, label: t("processing.steps.4", { defaultValue: "Preparing results..." }), icon: "document-text-outline" },
-    ];
+    const keys =
+      mode === "text"
+        ? ["processing.textSteps", ["Text received", "AI is analyzing", "Extracting nutrition", "Preparing results"]]
+        : mode === "barcode"
+          ? ["processing.barcodeSteps", ["Barcode detected", "Fetching product data", "AI validation", "Preparing results"]]
+          : mode === "ad"
+            ? ["processing.adSteps", ["Loading ad", "Finalizing result"]]
+            : mode === "image"
+              ? ["processing.imageSteps", ["Calculating ratios", "Building layers", "Generating visual", "Preparing"]]
+              : ["processing.steps", ["Processing image", "Extracting text", "Analyzing nutrition", "Preparing results"]];
+    const [prefix, defaults] = keys as [string, string[]];
+    return defaults.map((d, i) => stripDots(t(`${prefix}.${i + 1}`, { defaultValue: d })));
   }, [mode, t]);
 
   const facts = useMemo(() => {
     const raw = t("processing.facts", { returnObjects: true });
-    return Array.isArray(raw) && raw.length > 0 ? (raw as string[]) : ["Interesting fact loading..."];
+    return Array.isArray(raw) && raw.length > 0 ? (raw as string[]) : [];
   }, [t]);
-
-  const longWaitMessages = useMemo(() => {
+  const waitMessages = useMemo(() => {
     const raw = t("processing.waitMessages", { returnObjects: true });
-    return Array.isArray(raw) && raw.length > 0 ? (raw as string[]) : ["Please wait..."];
+    return Array.isArray(raw) && raw.length > 0 ? (raw as string[]) : [];
   }, [t]);
 
-  const [currentStep, setCurrentStep] = useState(0);
-  const [factIndex, setFactIndex] = useState(0);
-  const [showLongWait, setShowLongWait] = useState(false);
-  const [longWaitIndex, setLongWaitIndex] = useState(0);
-
-  const stepProgressAnim = useRef(new Animated.Value(0)).current;
-  const factFadeAnim = useRef(new Animated.Value(1)).current;
-  const waitFadeAnim = useRef(new Animated.Value(0)).current;
+  // --- Kademeler ---
+  const [shown, setShown] = useState(0);
+  const total = steps.length;
+  const tracked = typeof stage === "number";
+  // Gerçek ilerleme: verilmediyse süreye göre, ama son kademe hiç kapanmaz.
+  const [fallbackStage, setFallbackStage] = useState(0);
+  useEffect(() => {
+    if (tracked) return;
+    const id = setInterval(() => setFallbackStage((s) => Math.min(total - 1, s + 1)), 1800);
+    return () => clearInterval(id);
+  }, [tracked, total]);
+  const real = tracked ? (stage! >= PROCESSING_DONE ? total : Math.min(stage!, total - 1)) : fallbackStage;
+  const finishing = tracked && stage! >= PROCESSING_DONE;
 
   useEffect(() => {
-    setCurrentStep(0);
-    stepProgressAnim.setValue(0);
-    setShowLongWait(false);
-    setLongWaitIndex(0);
-  }, [mode, stepProgressAnim]);
+    if (shown >= total) {
+      const id = setTimeout(() => onDone?.(), 260);
+      return () => clearTimeout(id);
+    }
+    if (shown >= real) return;
+    const delay = finishing ? FINISH_STEP_MS : shown === 0 ? FIRST_STEP_MS : STEP_MS;
+    const id = setTimeout(() => setShown((s) => Math.min(real, s + 1)), delay);
+    return () => clearTimeout(id);
+  }, [shown, real, total, finishing, onDone]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentStep((prev) => {
-        const next = prev < steps.length - 1 ? prev + 1 : prev;
-        Animated.timing(stepProgressAnim, {
-          toValue: next / Math.max(1, steps.length - 1),
-          duration: STEP_ANIMATION_MS,
-          useNativeDriver: false,
-        }).start();
-        return next;
-      });
-    }, STEP_ADVANCE_MS);
-
-    return () => clearInterval(interval);
-  }, [steps.length, stepProgressAnim]);
-
+  // --- Bilgi kartı ve uzun bekleme ---
+  const [factIndex, setFactIndex] = useState(() => (facts.length ? Math.floor(Math.random() * facts.length) : 0));
   useEffect(() => {
     if (facts.length <= 1) return;
-
-    const timer = setInterval(() => {
-      Animated.timing(factFadeAnim, { toValue: 0, duration: 250, useNativeDriver: true }).start(() => {
-        setFactIndex((prev) => {
-          let next = prev;
-          while (next === prev && facts.length > 1) {
-            next = Math.floor(Math.random() * facts.length);
-          }
-          return next;
-        });
-        Animated.timing(factFadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }).start();
-      });
-    }, 6500);
-
-    return () => clearInterval(timer);
-  }, [factFadeAnim, facts.length]);
-
+    const id = setInterval(() => setFactIndex((i) => (i + 1) % facts.length), 6000);
+    return () => clearInterval(id);
+  }, [facts.length]);
+  const [waitIndex, setWaitIndex] = useState(-1);
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowLongWait(true);
-      Animated.timing(waitFadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
-    }, 10000);
-    return () => clearTimeout(timer);
-  }, [waitFadeAnim]);
-
+    if (!waitMessages.length) return;
+    const start = setTimeout(() => setWaitIndex(0), 10000);
+    return () => clearTimeout(start);
+  }, [waitMessages.length]);
   useEffect(() => {
-    if (!showLongWait || longWaitMessages.length <= 1) return;
+    if (waitIndex < 0 || waitMessages.length <= 1) return;
+    const id = setInterval(() => setWaitIndex((i) => (i + 1) % waitMessages.length), 3200);
+    return () => clearInterval(id);
+  }, [waitIndex, waitMessages.length]);
 
-    const waitTimer = setInterval(() => {
-      Animated.timing(waitFadeAnim, { toValue: 0, duration: 250, useNativeDriver: true }).start(() => {
-        setLongWaitIndex((prev) => (prev + 1) % longWaitMessages.length);
-        Animated.timing(waitFadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }).start();
-      });
-    }, 3200);
+  // --- Yerleşim: sahne kalan alana göre ---
+  const available = height - insets.top - tabBarHeight;
+  const showFact = available >= 640 && facts.length > 0;
+  const [sceneBox, setSceneBox] = useState({ w: 0, h: 0 });
+  const onSceneLayout = (e: LayoutChangeEvent) => {
+    const { width: w, height: h } = e.nativeEvent.layout;
+    setSceneBox((b) => (Math.abs(b.w - w) < 1 && Math.abs(b.h - h) < 1 ? b : { w, h }));
+  };
+  const sceneSize = Math.max(120, Math.min(sceneBox.w, sceneBox.h, 330, width - 40));
 
-    return () => clearInterval(waitTimer);
-  }, [longWaitMessages.length, showLongWait, waitFadeAnim]);
-
-  const progressWidth = stepProgressAnim.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] });
+  const styles2 = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
   return (
-    <View style={[styles.container, { paddingBottom: tabBarHeight + 12 }]}>
-      <LinearGradient colors={isDark ? [colors.surface, "#0B1220"] : [colors.surface, "#FFF8E1"]} style={StyleSheet.absoluteFill} />
-
-      <View style={styles.topSection}>
-        <LottieView source={require("../../assets/scanning-character.json")} autoPlay loop style={styles.mainAnimation} />
-        <Text style={styles.title}>{t(titleKeyByMode[mode], { defaultValue: titleDefaultByMode[mode] })}</Text>
+    <View style={[styles2.container, { paddingTop: insets.top + 8, paddingBottom: tabBarHeight + 14 }]}>
+      <View style={styles2.sceneArea} onLayout={onSceneLayout}>
+        {sceneBox.h > 0 ? <AnalysisScene size={sceneSize} /> : null}
       </View>
 
-      <View style={styles.middleSection}>
-        <View style={styles.progressBarBg}>
-          <Animated.View style={[styles.progressBarFill, { width: progressWidth }]} />
-        </View>
-
-        <View style={styles.stepsContainer}>
-          {steps.map((step, index) => {
-            const isActive = index === currentStep;
-            const isCompleted = index < currentStep;
-
-            return (
-              <View key={step.id} style={styles.stepItem}>
-                <View style={[styles.iconBox, (isActive || isCompleted) && styles.activeIconBox]}>
-                  <Ionicons name={(isCompleted ? "checkmark" : step.icon) as any} size={18} color={(isActive || isCompleted) ? colors.white : colors.gray[400]} />
-                </View>
-                <Text style={[styles.stepText, isActive ? styles.activeStepText : styles.hiddenStepText]}>{step.label}</Text>
-              </View>
-            );
-          })}
-        </View>
-      </View>
-
-      <View style={styles.bottomSection}>
-        <LogoSpinner colors={colors} styles={styles} />
-
-        <View style={styles.factContainer}>
-          <Text upper style={styles.factTitle}>{t("processing.didYouKnow", { defaultValue: "DID YOU KNOW?" })}</Text>
-          <Animated.View style={{ opacity: factFadeAnim }}>
-            <Text style={styles.factText}>{facts[factIndex]}</Text>
+      <Text variant="display" style={styles2.title} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+        {stripDots(t(titleKeyByMode[mode], { defaultValue: titleDefaultByMode[mode] }))}
+      </Text>
+      <View style={styles2.subtitleBox}>
+        {waitIndex >= 0 ? (
+          <Animated.View key={waitIndex} entering={FadeIn.duration(260)} exiting={FadeOut.duration(160)}>
+            <Text style={styles2.subtitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+              {waitMessages[waitIndex]}
+            </Text>
           </Animated.View>
-        </View>
-
-        {showLongWait && (
-          <Animated.View style={[styles.waitMessageContainer, { opacity: waitFadeAnim }]}>
-            <ActivityIndicator size="small" color={colors.primary} style={{ marginRight: 8 }} />
-            <Text style={styles.waitMessageText}>{longWaitMessages[longWaitIndex]}</Text>
-          </Animated.View>
-        )}
+        ) : null}
       </View>
+
+      <View style={styles2.steps}>
+        {steps.map((label, i) => (
+          <StepRow
+            key={`${mode}-${i}`}
+            label={label}
+            done={i < shown}
+            current={i === shown}
+            last={i === total - 1}
+            colors={colors}
+            isDark={isDark}
+          />
+        ))}
+      </View>
+
+      {showFact ? (
+        <Animated.View key={factIndex} entering={FadeInDown.duration(380)} style={styles2.fact}>
+          <View style={styles2.factHead}>
+            <Ionicons name="bulb-outline" size={15} color={isDark ? "#FBBF24" : "#D97706"} />
+            <Text upper style={styles2.factTitle} maxFontSizeMultiplier={1.15}>
+              {t("processing.didYouKnow", { defaultValue: "DID YOU KNOW?" })}
+            </Text>
+          </View>
+          <Text style={styles2.factText} numberOfLines={2} maxFontSizeMultiplier={1}>
+            {facts[factIndex]}
+          </Text>
+        </Animated.View>
+      ) : null}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  stepRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingBottom: 12,
+  },
+  stepLine: {
+    position: "absolute",
+    left: 13,
+    top: 28,
+    bottom: 0,
+    width: 2,
+    borderRadius: 1,
+    overflow: "hidden",
+  },
+  stepLineFill: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  stepDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stepCore: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  stepIdle: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    opacity: 0.5,
+  },
+  stepText: {
+    flex: 1,
+    fontSize: 15,
+  },
+  stepTextCurrent: {
+    fontWeight: "600",
+  },
+});
 
 const createStyles = (colors: AppColors, isDark: boolean) =>
   StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: colors.surface,
-      paddingTop: height * 0.06,
       paddingHorizontal: 24,
-      justifyContent: "space-between",
-      paddingBottom: height * 0.04,
-    },
-    topSection: {
       alignItems: "center",
-      flex: 2,
-      justifyContent: "flex-end",
-      marginBottom: 5,
-      marginTop: 30,
     },
-    mainAnimation: {
-      width: width * 0.7,
-      height: width * 0.7,
+    sceneArea: {
+      flex: 1,
+      minHeight: 120,
+      alignSelf: "stretch",
+      alignItems: "center",
+      justifyContent: "center",
     },
     title: {
-      fontSize: 22,
-      fontWeight: "800",
-      color: colors.secondary,
-      marginTop: 10,
-      letterSpacing: 0.5,
+      marginTop: 6,
+      fontSize: 26,
+      lineHeight: 32,
+      color: colors.text,
       textAlign: "center",
     },
-    middleSection: {
-      flex: 1,
+    subtitleBox: {
+      height: 22,
+      marginTop: 2,
+      alignSelf: "stretch",
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    subtitle: {
+      fontSize: 13.5,
+      color: colors.textMuted,
+      textAlign: "center",
+    },
+    steps: {
+      marginTop: 12,
       width: "100%",
-      justifyContent: "flex-start",
-      marginTop: 10,
+      maxWidth: 300,
     },
-    progressBarBg: {
-      height: 4,
-      backgroundColor: colors.gray[200],
-      borderRadius: 2,
-      marginBottom: 20,
-      overflow: "hidden",
+    fact: {
+      marginTop: 6,
+      alignSelf: "stretch",
+      backgroundColor: colors.card,
+      borderRadius: 20,
+      padding: 14,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: isDark ? colors.border : "rgba(42,31,24,0.08)",
     },
-    progressBarFill: {
-      height: "100%",
-      backgroundColor: colors.primary,
-      borderRadius: 2,
-    },
-    stepsContainer: {
+    factHead: {
       flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "flex-start",
-    },
-    stepItem: {
       alignItems: "center",
-      width: width / 4.5,
-    },
-    iconBox: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: colors.gray[100],
-      alignItems: "center",
-      justifyContent: "center",
-      marginBottom: 8,
-      borderWidth: 1.5,
-      borderColor: colors.gray[200],
-      elevation: 1,
-    },
-    activeIconBox: {
-      backgroundColor: colors.primary,
-      borderColor: colors.primary,
-      elevation: 4,
-      shadowColor: colors.primary,
-      shadowOpacity: 0.3,
-      shadowRadius: 4,
-    },
-    stepText: {
-      fontSize: 10,
-      color: colors.gray[500],
-      fontWeight: "600",
-      textAlign: "center",
-      position: "absolute",
-      top: 45,
-      width: 100,
-    },
-    activeStepText: {
-      color: colors.secondary,
-      fontWeight: "700",
-      opacity: 1,
-    },
-    hiddenStepText: {
-      opacity: 0,
-    },
-    bottomSection: {
-      flex: 1.8,
-      alignItems: "center",
-      justifyContent: "flex-end",
-      gap: 12,
-    },
-    spinnerContainer: {
-      width: 60,
-      height: 60,
-      alignItems: "center",
-      justifyContent: "center",
-      marginBottom: 4,
-    },
-    spinningRingContainer: {
-      position: "absolute",
-      width: "100%",
-      height: "100%",
-      borderRadius: 30,
-      overflow: "hidden",
-      padding: 3,
-    },
-    spinningRingGradient: {
-      flex: 1,
-      borderRadius: 30,
-    },
-    logoContainer: {
-      width: 50,
-      height: 50,
-      borderRadius: 25,
-      backgroundColor: colors.surface,
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 2,
-    },
-    logoGradient: {
-      width: 42,
-      height: 42,
-      borderRadius: 21,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    factContainer: {
-      width: "100%",
-      backgroundColor: isDark ? "rgba(17,24,39,0.86)" : "rgba(255,255,255,0.8)",
-      borderRadius: 16,
-      padding: 16,
-      minHeight: 100,
-      justifyContent: "center",
-      borderWidth: 1,
-      borderColor: colors.gray[200],
+      gap: 6,
     },
     factTitle: {
-      fontSize: 11,
-      fontWeight: "800",
-      color: colors.primary,
-      letterSpacing: 0.4,
-      marginBottom: 8,
+      fontSize: 11.5,
+      fontWeight: "700",
+      letterSpacing: 0.6,
+      color: isDark ? "#FBBF24" : "#B45309",
     },
+    // İki satırlık sabit yükseklik: bilgi değişince kart boyu oynamaz, başlık ve sahne kaymaz.
     factText: {
+      marginTop: 6,
       fontSize: 14,
-      color: colors.gray[700],
       lineHeight: 20,
-      fontWeight: "500",
-    },
-    waitMessageContainer: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginTop: 8,
-      backgroundColor: isDark ? "rgba(17,24,39,0.82)" : "rgba(255,255,255,0.75)",
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      borderRadius: 20,
-    },
-    waitMessageText: {
-      fontSize: 12,
-      color: colors.gray[600],
-      fontWeight: "600",
+      height: 40,
+      color: colors.textMuted,
     },
   });

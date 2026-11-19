@@ -115,10 +115,26 @@ function useHeight(): [number, (e: LayoutChangeEvent) => void] {
   return [h, onLayout];
 }
 
+// AuthModal da PaywallModal'ı içe aktarıyor: döngü olmasın diye dosya yalnız ilk açılışta yüklenir.
+function LazyAuthModal(props: { visible: boolean; onClose: () => void }) {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const AuthModal = require("../profile/AuthModal").default as React.ComponentType<{ visible: boolean; onClose: () => void }>;
+  return <AuthModal {...props} />;
+}
+
 export default function PaywallModal({ visible, onClose, onAuthRequired }: PaywallModalProps) {
   const { t } = useTranslation();
   const { colors, isDark } = useTheme();
   const { user, refreshPremiumStatus } = useAuth();
+  // Misafir için yerleşik giriş penceresi (onAuthRequired verilmeyen ekranlar).
+  const [showAuth, setShowAuth] = useState(false);
+  const loggedIn = !!user && !user.isAnonymous;
+  useEffect(() => {
+    if (showAuth && loggedIn) setShowAuth(false);
+  }, [showAuth, loggedIn]);
+  useEffect(() => {
+    if (!visible) setShowAuth(false);
+  }, [visible]);
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
   const insets = useSafeAreaInsets();
   const { height: winHeight, fontScale } = useWindowDimensions();
@@ -246,6 +262,11 @@ export default function PaywallModal({ visible, onClose, onAuthRequired }: Paywa
       console.log("[Paywall] Misafir kullanıcı, auth gerekli");
       if (onAuthRequired) {
         onAuthRequired();
+      } else {
+        // Çağıran ekran giriş akışı vermediyse giriş penceresi buradan açılır (önceden misafir
+        // "Abone ol"a basınca hiçbir şey olmuyordu). Giriş bitince kullanıcı paywall'a döner,
+        // tekrar basar: otomatik satın alma yok.
+        setShowAuth(true);
       }
       return;
     }
@@ -669,6 +690,7 @@ export default function PaywallModal({ visible, onClose, onAuthRequired }: Paywa
           </Pressable>
         </Animated.View>
       </View>
+      {showAuth ? <LazyAuthModal visible onClose={() => setShowAuth(false)} /> : null}
     </Modal>
   );
 }
