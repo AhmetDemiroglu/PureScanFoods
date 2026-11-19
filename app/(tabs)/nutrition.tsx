@@ -42,6 +42,7 @@ import { useTour, useTourReplay, useTourScroll, useTourTarget } from "../../comp
 import { NUTRITION_TOUR } from "../../components/tour/tours";
 import PaywallModal from "../../components/ui/PaywallModal";
 import { useTheme } from "../../context/ThemeContext";
+import { FONT_SCALE_CAP } from "../../constants/design";
 
 const getSafeIcon = (iconName: string): any => iconName === "person" ? "account" : iconName;
 
@@ -625,6 +626,7 @@ export default function NutritionScreen() {
                 <View style={styles.inputWrapper}>
                   <Ionicons name="person-outline" size={20} color={colors.gray[400]} style={{ marginLeft: 12 }} />
                   <TextInput
+                    maxFontSizeMultiplier={FONT_SCALE_CAP}
                     style={styles.textInputClean}
                     value={tempName}
                     onChangeText={setTempName}

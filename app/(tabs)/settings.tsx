@@ -25,6 +25,7 @@ import AuthModal from "../../components/profile/AuthModal";
 import { useTheme } from "../../context/ThemeContext";
 import { SeptimusSignature } from "../../components/brand/SeptimusSignature";
 import { resetAllTours } from "../../components/tour/TourContext";
+import { FONT_SCALE_CAP } from "../../constants/design";
 
 
 if (Platform.OS === "android" && !(global as any).nativeFabricUIManager && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -375,6 +376,7 @@ export default function SettingsScreen() {
                 <View style={styles.inputBox}>
                   <Ionicons name="key-outline" size={18} color={colors.gray[400]} />
                   <TextInput
+                    maxFontSizeMultiplier={FONT_SCALE_CAP}
                     style={styles.input}
                     placeholder={t("settings.current_password")}
                     placeholderTextColor={colors.gray[400]}
@@ -389,6 +391,7 @@ export default function SettingsScreen() {
                 <View style={styles.inputBox}>
                   <Ionicons name="lock-closed-outline" size={18} color={colors.gray[400]} />
                   <TextInput
+                    maxFontSizeMultiplier={FONT_SCALE_CAP}
                     style={styles.input}
                     placeholder={t("settings.new_password")}
                     placeholderTextColor={colors.gray[400]}
@@ -403,6 +406,7 @@ export default function SettingsScreen() {
                 <View style={styles.inputBox}>
                   <Ionicons name="checkmark-circle-outline" size={18} color={colors.gray[400]} />
                   <TextInput
+                    maxFontSizeMultiplier={FONT_SCALE_CAP}
                     style={styles.input}
                     placeholder={t("settings.confirm_password")}
                     placeholderTextColor={colors.gray[400]}

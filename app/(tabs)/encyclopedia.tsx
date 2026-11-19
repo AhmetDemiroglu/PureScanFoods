@@ -1,5 +1,5 @@
 ﻿import React, { useState, useMemo, useEffect, useRef } from "react";
-import { View, StyleSheet, ScrollView, TextInput, TouchableOpacity, FlatList, Dimensions, StatusBar, LayoutAnimation, Platform, UIManager } from "react-native";
+import { View, StyleSheet, ScrollView, TextInput, TouchableOpacity, FlatList, StatusBar, LayoutAnimation, Platform, UIManager } from "react-native";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
 import { Text } from "../../components/ui/AppText";
@@ -28,12 +28,12 @@ import {
 } from "../../constants/additives";
 import { NutriScoreGraphic } from "../../components/ui/NutriScoreAssets";
 import { useTheme } from "../../context/ThemeContext";
+import { FONT_SCALE_CAP } from "../../constants/design";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const { width } = Dimensions.get("window");
 
 type TabType = "additives" | "nova" | "nutriscore";
 const TAB_ORDER: TabType[] = ["additives", "nova", "nutriscore"];
@@ -466,6 +466,7 @@ export default function AdditivesLibraryScreen() {
                             <View {...searchTarget} style={styles.searchContainer}>
                                 <Ionicons name="search" size={20} color={colors.gray[400]} />
                                 <TextInput
+                                  maxFontSizeMultiplier={FONT_SCALE_CAP}
                                     style={styles.searchInput}
                                     placeholder={isTr ? "E kodu veya isim ara..." : isEs ? "Buscar código E o nombre..." : "Search E-code or name..."}
                                     placeholderTextColor={colors.gray[400]}

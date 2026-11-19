@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, Dimensions, Modal, ActivityIndicator, Pressable, Animated, PanResponder } from "react-native";
+import { View, StyleSheet, FlatList, TouchableOpacity, Modal, ActivityIndicator, Pressable, Animated, PanResponder } from "react-native";
 import { Image } from "expo-image";
 import { Text } from "../ui/AppText";
 import { Ionicons } from '@expo/vector-icons';
@@ -19,8 +19,6 @@ import * as haptics from '../../lib/haptics';
 import { getScoreColor, getScoreBg } from '../../lib/scoreLevel';
 
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const SIDEBAR_WIDTH = SCREEN_WIDTH * 0.80;
 
 // Drawer kapanıp tekrar açıldığında / component remount olduğunda liste ve görseller
 // anında görünsün diye son yüklenen geçmişi modül seviyesinde tutuyoruz. Arka planda

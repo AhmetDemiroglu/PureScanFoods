@@ -36,7 +36,6 @@ import { recordSuccessfulScan, shouldShowSoftPrompt, markSoftPromptShown, markRa
 import ConsumptionReveal from "../components/product/ConsumptionReveal";
 import PaywallModal from "../components/ui/PaywallModal";
 
-const { width } = Dimensions.get("window");
 const IMAGE_HEIGHT = 280;
 
 // Negatif review akışında geri bildirim için (settings.tsx ile aynı kanal)

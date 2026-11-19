@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { AppColors } from "../../constants/colors";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../context/ThemeContext";
+import { FONT_SCALE_CAP } from "../../constants/design";
 
 interface ConfirmDeleteModalProps {
   visible: boolean;
@@ -172,6 +173,7 @@ export default function ConfirmDeleteModal({
                 ]}
               >
                 <TextInput
+                  maxFontSizeMultiplier={FONT_SCALE_CAP}
                   style={styles.input}
                   value={inputValue}
                   onChangeText={setInputValue}

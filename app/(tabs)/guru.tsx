@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from "react";
-import { View, Pressable, StyleSheet, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Keyboard, Dimensions } from "react-native";
+import { View, Pressable, StyleSheet, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Keyboard } from "react-native";
 import { Text } from "../../components/ui/AppText";
 import Animated, { useAnimatedKeyboard, useAnimatedStyle } from "react-native-reanimated";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -29,7 +29,6 @@ import PaywallModal from "../../components/ui/PaywallModal";
 import { useTheme } from "../../context/ThemeContext";
 
 
-const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 
 export default function GuruScreen() {

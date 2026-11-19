@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { AppColors } from "../../constants/colors";
 import { useTheme } from "../../context/ThemeContext";
+import { FONT_SCALE_CAP } from "../../constants/design";
 
 interface ChatInputProps {
   value: string;
@@ -21,6 +22,7 @@ export const ChatInput = ({ value, onChangeText, onSend, isLoading }: ChatInputP
   return (
     <View style={[styles.container, focused && styles.focused]}>
       <TextInput
+        maxFontSizeMultiplier={FONT_SCALE_CAP}
         style={styles.input}
         value={value}
         onChangeText={onChangeText}

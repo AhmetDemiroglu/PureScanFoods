@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useMemo, useState } from 'react';
-import { Modal, View, Pressable, StyleSheet, Dimensions, ActivityIndicator, ScrollView, useWindowDimensions } from "react-native";
+import { Modal, View, Pressable, StyleSheet, ActivityIndicator, ScrollView, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "./AppText";
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -30,7 +30,6 @@ interface LimitWarningModalProps {
 }
 
 
-const { width } = Dimensions.get('window');
 
 const UsageRow = ({ icon, label, status, isLimitReached, isAdAvailable, delay, onWatchAd, isLoadingAd, styles, colors }: any) => {
     const { t } = useTranslation();
@@ -347,7 +346,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     statusBadgeError: { backgroundColor: isDark ? 'rgba(220,38,38,0.20)' : '#FEF2F2' },
     statusText: { fontSize: 12, fontWeight: '600', color: colors.gray[500] },
     statusTextError: { color: colors.error },
-    container: { width: width * 0.88, maxWidth: 380, backgroundColor: colors.card, borderRadius: 24, padding: 24, alignItems: 'center' },
+    container: { width: '88%', maxWidth: 380, backgroundColor: colors.card, borderRadius: 24, padding: 24, alignItems: 'center' },
     scrollArea: { width: '100%', flexShrink: 1 },
     scrollContent: { alignItems: 'center' },
     backdrop: { ...StyleSheet.absoluteFillObject },

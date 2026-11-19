@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback } from "react";
-import { Dimensions, Pressable, StyleSheet, View, BackHandler } from "react-native";
+import { Pressable, StyleSheet, View, BackHandler, useWindowDimensions } from "react-native";
 import { usePathname, useRouter } from "expo-router";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import Animated, {
@@ -14,12 +14,12 @@ import Animated, {
 import { useShell } from "../../context/ShellContext";
 import { useTheme } from "../../context/ThemeContext";
 import { Springs } from "../../constants/motion";
+import { EDGE_GESTURE_WIDTH } from "../../constants/design";
 import * as haptics from "../../lib/haptics";
 import HistoryDrawerBody from "./HistoryDrawerBody";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-const SIDEBAR_WIDTH = SCREEN_WIDTH * 0.8;
-const EDGE_STRIP_WIDTH = 24;
+// Kenar şeridi genişliği constants/design.ts'te: dokunulacak öğeler bu şeritlerin dışında durur.
+const EDGE_STRIP_WIDTH = EDGE_GESTURE_WIDTH;
 
 /**
  * X/Twitter tarzı global history slide-over.
@@ -43,6 +43,9 @@ export function AppShellSidebar({ children }: AppShellSidebarProps) {
   const { isSidebarOpen, openSidebar, closeSidebar } = useShell();
   const pathname = usePathname();
   const router = useRouter();
+  // Çekmece genişliği canlı pencere genişliğinden (katlanabilir ve bölünmüş ekranda güncel kalsın).
+  const { width: windowWidth } = useWindowDimensions();
+  const SIDEBAR_WIDTH = windowWidth * 0.8;
 
   // Sol-kenar geri: home ("/") ve product-result hariç tüm rotalarda eve dön.
   // product-result kendi native Stack swipe-back'ini kullanır; home'da geri yok.
@@ -90,7 +93,7 @@ export function AppShellSidebar({ children }: AppShellSidebarProps) {
             progress.value = withSpring(0, Springs.smooth);
           }
         }),
-    [isSidebarOpen, progress, openSidebar]
+    [isSidebarOpen, progress, openSidebar, SIDEBAR_WIDTH]
   );
 
   // KAPATMA — ana içerik (scrim) üzerinde sağa sürükle
@@ -115,7 +118,7 @@ export function AppShellSidebar({ children }: AppShellSidebarProps) {
             progress.value = withSpring(1, Springs.smooth);
           }
         }),
-    [isSidebarOpen, progress, closeSidebar]
+    [isSidebarOpen, progress, closeSidebar, SIDEBAR_WIDTH]
   );
 
   // Tap-to-close Pressable ile uyumlu olması için Native ile birleştir

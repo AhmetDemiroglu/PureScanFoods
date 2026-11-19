@@ -14,6 +14,7 @@ import PaywallModal from "../ui/PaywallModal";
 import LottieView from "lottie-react-native";
 import { useTheme } from "../../context/ThemeContext";
 import * as AppleAuthentication from "expo-apple-authentication";
+import { FONT_SCALE_CAP } from "../../constants/design";
 
 interface AuthModalProps {
     visible: boolean;
@@ -422,6 +423,7 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
             <View style={styles.inputBox}>
                 <Ionicons name="mail-outline" size={18} color={colors.gray[400]} />
                 <TextInput
+                  maxFontSizeMultiplier={FONT_SCALE_CAP}
                     style={styles.input}
                     placeholder={t("auth.email_placeholder")}
                     placeholderTextColor={colors.gray[400]}
@@ -435,6 +437,7 @@ export default function AuthModal({ visible, onClose }: AuthModalProps) {
             <View style={styles.inputBox}>
                 <Ionicons name="lock-closed-outline" size={18} color={colors.gray[400]} />
                 <TextInput
+                  maxFontSizeMultiplier={FONT_SCALE_CAP}
                     style={styles.input}
                     placeholder={t("auth.password_placeholder")}
                     placeholderTextColor={colors.gray[400]}

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import { View, Pressable, StyleSheet, Dimensions, TextInput, ActivityIndicator, Modal, TouchableOpacity, Animated, ScrollView, Keyboard, useWindowDimensions, PixelRatio } from "react-native";
+import { View, Pressable, StyleSheet, TextInput, ActivityIndicator, Modal, TouchableOpacity, Animated, ScrollView, Keyboard, useWindowDimensions, PixelRatio } from "react-native";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Text } from "../../components/ui/AppText";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -38,6 +38,7 @@ import { ScanFailGraphic } from "../../components/ui/ScanFailGraphic";
 import PaywallModal from "../../components/ui/PaywallModal";
 import ProcessingView, { ProcessingMode } from "../../components/ui/ProcessingView";
 import { useTheme } from "../../context/ThemeContext";
+import { FONT_SCALE_CAP } from "../../constants/design";
 
 type ScanTab = "camera" | "barcode" | "text";
 
@@ -49,7 +50,6 @@ const SHOT_QUALITY = 0.7;
 /** Analize giden kare: isteğe base64, sonuç ekranına dosya yolu. */
 type Shot = { base64: string; uri: string };
 
-const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 // Barkod / metin / fotoğraf analizi: 3.5 Flash-Lite, düşünme "low", şemalı JSON.
 // "minimal" uzun içerik listelerinde madde atlıyordu (2026-11-15, 12 ürün ölçümü).
@@ -781,6 +781,7 @@ export default function ScanScreen() {
                   <View style={styles.inputRow}>
                     <View style={styles.inputWrapper}>
                       <TextInput
+                        maxFontSizeMultiplier={FONT_SCALE_CAP}
                         style={styles.inputWithIcon}
                         placeholder={t("home.placeholders.barcode")}
                         placeholderTextColor={colors.gray[400]}
@@ -809,6 +810,7 @@ export default function ScanScreen() {
                 <View style={{ gap: 12 }}>
                   <View style={styles.textAreaWrapper}>
                     <TextInput
+                      maxFontSizeMultiplier={FONT_SCALE_CAP}
                       style={[styles.inputField, styles.textArea, { flex: 1, borderWidth: 0 }]}
                       placeholder={t("home.actions.enterText")}
                       placeholderTextColor={colors.gray[400]}

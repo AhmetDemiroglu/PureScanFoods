@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useMemo } from "react";
-import { Modal, View, Pressable, StyleSheet, Dimensions, ScrollView, useWindowDimensions } from "react-native";
+import { Modal, View, Pressable, StyleSheet, ScrollView, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Text } from "./AppText";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -21,7 +21,6 @@ interface PremiumCompareModalProps {
     onSubscribe?: () => void;
 }
 
-const { width } = Dimensions.get("window");
 
 interface FeatureRowProps {
     icon: string;
@@ -250,7 +249,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
         ...StyleSheet.absoluteFillObject,
     },
     container: {
-        width: width * 0.9,
+        width: "90%",
         maxWidth: 400,
         backgroundColor: colors.card,
         borderRadius: 24,

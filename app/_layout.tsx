@@ -92,6 +92,8 @@ function AppShell() {
     "Inter-Medium": require("../assets/fonts/Inter-Medium.ttf"),
     "Inter-SemiBold": require("../assets/fonts/Inter-SemiBold.ttf"),
     "Inter-Bold": require("../assets/fonts/Inter-Bold.ttf"),
+    // Logodaki "PureScan" yazısının yazı tipi (OFL). Başlık ve büyük rakamlar için.
+    "DMSerifDisplay-Regular": require("../assets/fonts/DMSerifDisplay-Regular.ttf"),
   });
 
   useEffect(() => {
