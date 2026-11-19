@@ -206,7 +206,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     },
     card: {
         backgroundColor: colors.card,
-        borderRadius: 16,
+        borderRadius: 20,
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: colors.gray[200],

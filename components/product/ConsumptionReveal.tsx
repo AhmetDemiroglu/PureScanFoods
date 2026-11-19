@@ -471,8 +471,8 @@ const createStyles = (colors: any, isDark: boolean) =>
             alignItems: "center",
             gap: 12,
             padding: 14,
-            marginBottom: 16,
-            borderRadius: 16,
+            // Alt boşluk sarmalayıcıda (product-result consumptionSlot): tur vurgusu karta otursun.
+            borderRadius: 20,
             backgroundColor: isDark ? "rgba(242,96,12,0.10)" : "#FFF7ED",
             borderWidth: 1,
             borderColor: isDark ? "rgba(255,139,61,0.30)" : "rgba(242,96,12,0.18)",

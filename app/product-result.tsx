@@ -1,5 +1,10 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, StatusBar, Modal, Pressable, PanResponder, Animated, GestureResponderEvent, Linking } from "react-native";
+import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Modal, Pressable, PanResponder, Animated, GestureResponderEvent, Linking, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
+import { StatusBar } from "expo-status-bar";
+import { LinearGradient } from "expo-linear-gradient";
+import GlassSurface from "../components/ui/GlassSurface";
+import BrandLogo from "../components/brand/BrandLogo";
+import { EDGE_SAFE_INSET } from "../constants/design";
 import { Image } from "expo-image";
 import { Text } from "../components/ui/AppText";
 import { useRouter } from "expo-router";
@@ -37,6 +42,8 @@ import ConsumptionReveal from "../components/product/ConsumptionReveal";
 import PaywallModal from "../components/ui/PaywallModal";
 
 const IMAGE_HEIGHT = 280;
+/** Alttaki sabit eylem çubuğunun yüksekliği (Guru'ya Sor, Karşılaştır, Tekrar Çek). */
+const ACTION_BAR_H = 64;
 
 // Negatif review akışında geri bildirim için (settings.tsx ile aynı kanal)
 const SUPPORT_EMAIL = "info@septimuslab.com";
@@ -132,9 +139,23 @@ export default function ProductResultScreen() {
     const summaryTarget = useTourTarget("result.summary");
     const consumptionTarget = useTourTarget("result.consumption");
     const detailsTarget = useTourTarget("result.details");
-    const guruTarget = useTourTarget("result.guru");
+    const familyTarget = useTourTarget("result.family");
+    const actionsTarget = useTourTarget("result.actions");
+    // Durum çubuğu: fotoğrafın üstünde açık renk; beyaz sayfa üste gelince (açık temada) koyu.
+    const [sheetAtTop, setSheetAtTop] = useState(false);
+    const onResultScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+        tourScroll.onScroll(e);
+        const atTop = e.nativeEvent.contentOffset.y > IMAGE_HEIGHT - 60;
+        if (atTop !== sheetAtTop) setSheetAtTop(atTop);
+    };
+    // Yorum isteme penceresi turun üstüne binmesin: karar verilene ve (gösterilecekse) pencere kapanana kadar tur bekler.
+    const [reviewSeen, setReviewSeen] = useState(false);
+    useEffect(() => {
+        if (showReviewPrompt) setReviewSeen(true);
+    }, [showReviewPrompt]);
+    const reviewBlocking = !reviewDecided || (reviewWantsRef.current && (!reviewSeen || showReviewPrompt));
     useTour("result", RESULT_TOUR, {
-        ready: isFocused && !(isAdLoading && !isPremium) && !showReviewPrompt && !showResultPaywall && !showComparePicker && !showDetailModal,
+        ready: isFocused && !(isAdLoading && !isPremium) && !reviewBlocking && !showResultPaywall && !showComparePicker && !showDetailModal && !showNutriInfo,
         delay: 900,
     });
 
@@ -546,21 +567,33 @@ export default function ProductResultScreen() {
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-            <ScrollView {...tourScroll} contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom + 20, 36) }]} showsVerticalScrollIndicator={false} bounces={false}>
+            <StatusBar style={sheetAtTop && !isDark ? "dark" : "light"} />
+            <ScrollView
+                {...tourScroll}
+                onScroll={onResultScroll}
+                contentContainerStyle={[styles.scrollContent, { paddingBottom: ACTION_BAR_H + Math.max(insets.bottom, 12) + 28 }]}
+                showsVerticalScrollIndicator={false}
+                bounces={false}
+            >
                 {/* Image Header */}
                 <View style={styles.imageContainer}>
-                    <Image source={imageUri ? { uri: imageUri } : require('../assets/placeholder.png')} style={styles.productImage} contentFit="cover" cachePolicy="memory-disk" transition={200} />
-                    <View style={styles.imageOverlay} />
-                    <TouchableOpacity style={[styles.headerBtn, styles.headerBtnLeft]} onPress={() => router.back()}>
-                        <Ionicons name="chevron-back" size={22} color="#FFF" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.headerBtn, styles.headerBtnRight]} onPress={handleRescan}>
-                        <Ionicons name="scan-outline" size={20} color="#FFF" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.headerBtn, styles.headerBtnRight2]} onPress={() => setShowComparePicker(true)}>
-                        <Ionicons name="git-compare-outline" size={20} color="#FFF" />
-                    </TouchableOpacity>
+                    {imageUri ? (
+                        <>
+                            <Image source={{ uri: imageUri }} style={styles.productImage} contentFit="cover" cachePolicy="memory-disk" transition={200} />
+                            <LinearGradient colors={["rgba(0,0,0,0.38)", "rgba(0,0,0,0)", "rgba(0,0,0,0.18)"]} locations={[0, 0.45, 1]} style={StyleSheet.absoluteFill} />
+                        </>
+                    ) : (
+                        // Fotoğraf yoksa (barkod, metin) gri desen yerine marka yüzeyi.
+                        <LinearGradient colors={["#FF8A3D", colors.primary, colors.primaryDeep]} locations={[0, 0.5, 1]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[StyleSheet.absoluteFill, styles.brandHeader]}>
+                            <BrandLogo variant="mark" tone="onBrand" size={96} />
+                        </LinearGradient>
+                    )}
+                    {/* Geri: sonraki eylemler (Guru, Karşılaştır, Tekrar Çek) alttaki sabit çubukta. */}
+                    <Pressable onPress={() => router.back()} style={[styles.headerBtn, { top: insets.top + 8 }]} accessibilityRole="button" accessibilityLabel="Back" hitSlop={6}>
+                        <GlassSurface radius={20} tone="dark" elevation="none" style={StyleSheet.absoluteFill} contentStyle={styles.headerBtnInner}>
+                            <Ionicons name="chevron-back" size={22} color="#FFF" />
+                        </GlassSurface>
+                    </Pressable>
                 </View>
 
                 {/* Pull-up Sheet Card */}
@@ -570,7 +603,7 @@ export default function ProductResultScreen() {
                     {/* Product Identity */}
                     <View style={styles.productIdentity}>
                         <Text upper style={styles.brandLabel}>{product.brand || t("results.unknownBrand")}</Text>
-                        <Text style={styles.productTitle}>{product.name || t("results.unknownProduct")}</Text>
+                        <Text variant="display" style={styles.productTitle}>{product.name || t("results.unknownProduct")}</Text>
                     </View>
 
                     {/* Badge Pills */}
@@ -603,7 +636,7 @@ export default function ProductResultScreen() {
                     <View {...scoreTarget} style={[styles.scoreZone, !mainHasProfile && styles.scoreZoneSingle]}>
                         <ScoreRing
                             score={scores.safety?.value || 0}
-                            label={isTr ? 'Güvenlik Skoru' : isEs ? 'Seguridad' : 'Safety Score'}
+                            label={t("results.ring.safety", { defaultValue: isTr ? 'Güvenlik Skoru' : isEs ? 'Seguridad' : 'Safety Score' })}
                             size={130}
                             strokeWidth={10}
                             type="safety"
@@ -613,7 +646,7 @@ export default function ProductResultScreen() {
                         {mainHasProfile && (
                             <ScoreRing
                                 score={displayScore}
-                                label={isTr ? 'Uyum Skoru' : isEs ? 'Compatibilidad' : 'Compatibility'}
+                                label={t("results.ring.compat", { defaultValue: isTr ? 'Uyum Skoru' : isEs ? 'Compatibilidad' : 'Compatibility' })}
                                 size={130}
                                 strokeWidth={10}
                                 type="compatibility"
@@ -627,7 +660,7 @@ export default function ProductResultScreen() {
                     )}
 
                     {/* Verdict + Summary */}
-                    <View {...summaryTarget} style={[styles.summaryCard, { borderLeftColor: scoreColor }]}>
+                    <View {...summaryTarget} style={[styles.summaryCard, { backgroundColor: scoreColor + (isDark ? '1F' : '12'), borderColor: scoreColor + (isDark ? '40' : '30') }]}>
                         <View style={styles.verdictRow}>
                             <View style={[styles.verdictDot, { backgroundColor: scoreColor }]} />
                             <Text style={[styles.verdictTitle, { color: scoreColor }]}>{displayVerdict}</Text>
@@ -646,7 +679,8 @@ export default function ProductResultScreen() {
                     ) : null}
 
                     {/* Gerçekte ne tüketiyorsun? — kompozisyon görseli */}
-                    <View {...consumptionTarget}>
+                    {/* Kartın alt boşluğu tur hedefinin dışında: vurgu karta otursun. */}
+                    <View {...consumptionTarget} style={styles.consumptionSlot}>
                         <ConsumptionReveal
                             data={data}
                             scanId={savedScanId || (data as any)?.scanId || null}
@@ -678,12 +712,8 @@ export default function ProductResultScreen() {
                 </View>
 
                 {/* Family Compatibility */}
-                <View style={styles.familyZone}>
-                    <View style={styles.sectionHeader}>
-                        <View style={styles.sectionLine} />
-                        <Text upper style={styles.sectionLabel}>{t("results.family.title")}</Text>
-                        <View style={styles.sectionLine} />
-                    </View>
+                <View {...familyTarget} style={styles.familyZone}>
+                    <Text variant="display" style={styles.sectionTitle} numberOfLines={1}>{t("results.family.heading", { defaultValue: "Aile uyumu" })}</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.familyList}>
                         {familyAnalysis.map((item) => {
                             const memberHasProfile = hasProfile(profilesData[item.member.id]);
@@ -711,20 +741,8 @@ export default function ProductResultScreen() {
 
                 {/* Detailed Analysis */}
                 <View {...detailsTarget} style={styles.detailZone}>
-                    <View style={styles.sectionHeader}>
-                        <View style={styles.sectionLine} />
-                        <Text upper style={styles.sectionLabel}>{t("results.detailedAnalysis")}</Text>
-                        <View style={styles.sectionLine} />
-                    </View>
+                    <Text variant="display" style={styles.sectionTitle} numberOfLines={1}>{t("results.detailedHeading", { defaultValue: "Detaylı analiz" })}</Text>
                     <DetailCards data={data} additives={enrichedAdditives} />
-                </View>
-
-                {/* Guru'ya Sor */}
-                <View {...guruTarget}>
-                    <TouchableOpacity style={styles.askGuruBtn} onPress={handleAskGuru} activeOpacity={0.85}>
-                        <Ionicons name="sparkles" size={18} color="#FFF" />
-                        <Text style={styles.askGuruText}>{t("results.ask_guru")}</Text>
-                    </TouchableOpacity>
                 </View>
 
                 {/* Disclaimer */}
@@ -752,6 +770,48 @@ export default function ProductResultScreen() {
                 )}
 
             </ScrollView>
+
+            {/* Sabit cam eylem çubuğu. Yanlardan EDGE_SAFE_INSET içeride: sağ kenardaki geçmiş şeridi
+                (24 pt, AppShellSidebar) "Tekrar Çek"in dış ucunu kapatmasın. */}
+            <View
+                {...actionsTarget}
+                pointerEvents="box-none"
+                style={[styles.actionBarWrap, { bottom: Math.max(insets.bottom, 12) + 4 }]}
+            >
+                <GlassSurface radius={ACTION_BAR_H / 2} dense elevation="lg" style={styles.actionBar} contentStyle={styles.actionBarInner}>
+                    <Pressable
+                        onPress={handleAskGuru}
+                        accessibilityRole="button"
+                        style={({ pressed }) => [styles.actionPrimary, pressed && { transform: [{ scale: 0.97 }] }]}
+                    >
+                        <LinearGradient colors={["#FF8A3D", colors.primary, colors.primaryDeep]} locations={[0, 0.5, 1]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+                        <Ionicons name="sparkles" size={17} color="#FFF" />
+                        <Text style={styles.actionPrimaryText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} maxFontSizeMultiplier={1.15}>
+                            {t("results.ask_guru")}
+                        </Text>
+                    </Pressable>
+                    <Pressable
+                        onPress={() => setShowComparePicker(true)}
+                        accessibilityRole="button"
+                        style={({ pressed }) => [styles.actionSecondary, pressed && { transform: [{ scale: 0.94 }] }]}
+                    >
+                        <Ionicons name="git-compare-outline" size={20} color={colors.text} />
+                        <Text style={[styles.actionSecondaryText, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} maxFontSizeMultiplier={1.1}>
+                            {t("results.actions.compare", { defaultValue: "Karşılaştır" })}
+                        </Text>
+                    </Pressable>
+                    <Pressable
+                        onPress={handleRescan}
+                        accessibilityRole="button"
+                        style={({ pressed }) => [styles.actionSecondary, pressed && { transform: [{ scale: 0.94 }] }]}
+                    >
+                        <Ionicons name="scan-outline" size={20} color={colors.text} />
+                        <Text style={[styles.actionSecondaryText, { color: colors.text }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} maxFontSizeMultiplier={1.1}>
+                            {t("results.actions.rescan", { defaultValue: "Tekrar Çek" })}
+                        </Text>
+                    </Pressable>
+                </GlassSurface>
+            </View>
 
             {/* Detail Modal */}
             <Modal visible={showDetailModal} transparent animationType="fade" onRequestClose={closeWithAnimation}>
@@ -915,12 +975,30 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     productImage: { width: '100%', height: '100%' },
     imageOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.25)' },
     headerBtn: {
-        position: 'absolute', top: 52, width: 38, height: 38, borderRadius: 19,
-        backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center',
+        position: 'absolute', left: EDGE_SAFE_INSET - 4, width: 40, height: 40, borderRadius: 20,
     },
-    headerBtnLeft: { left: 20 },
-    headerBtnRight: { right: 20 },
-    headerBtnRight2: { right: 66 },
+    headerBtnInner: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    brandHeader: { alignItems: 'center', justifyContent: 'center', paddingBottom: 24 },
+
+    consumptionSlot: { marginBottom: 16 },
+
+    // ── Sabit eylem çubuğu ──
+    actionBarWrap: {
+        position: 'absolute', left: EDGE_SAFE_INSET, right: EDGE_SAFE_INSET,
+        height: ACTION_BAR_H,
+    },
+    actionBar: { flex: 1 },
+    actionBarInner: { flex: 1, flexDirection: 'row', alignItems: 'center', padding: 6, gap: 4 },
+    actionPrimary: {
+        flex: 1.6, height: '100%', borderRadius: (ACTION_BAR_H - 12) / 2, overflow: 'hidden',
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 10,
+    },
+    actionPrimaryText: { color: '#FFF', fontSize: 15, fontWeight: '700' },
+    actionSecondary: {
+        flex: 1, height: '100%', borderRadius: (ACTION_BAR_H - 12) / 2,
+        alignItems: 'center', justifyContent: 'center', gap: 2, paddingHorizontal: 2,
+    },
+    actionSecondaryText: { fontSize: 10.5, fontWeight: '600' },
 
     // ── Pull-up Sheet ──
     sheetCard: {
@@ -945,8 +1023,8 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
         letterSpacing: 1.5, marginBottom: 6,
     },
     productTitle: {
-        fontSize: 24, fontWeight: '800', color: colors.text,
-        textAlign: 'center', lineHeight: 30, letterSpacing: -0.3,
+        fontSize: 28, color: colors.text,
+        textAlign: 'center', lineHeight: 34,
     },
 
     // ── Badge Pills ──
@@ -1001,26 +1079,25 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
 
     // ── Verdict + Summary Card ──
     summaryCard: {
-        borderLeftWidth: 3, borderRadius: 14, padding: 16, marginBottom: 16,
-        backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : colors.gray[50],
+        borderWidth: 1, borderRadius: 20, padding: 16, marginBottom: 16,
     },
     verdictRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 8, marginBottom: 8 },
     verdictDot: { width: 8, height: 8, borderRadius: 4 },
     verdictTitle: { fontSize: 15, fontWeight: '800' as const, letterSpacing: -0.2 },
-    summaryText: { fontSize: 14, lineHeight: 22, color: colors.gray[500], paddingLeft: 16 },
+    summaryText: { fontSize: 14, lineHeight: 22, color: isDark ? colors.gray[600] : colors.gray[600], paddingLeft: 16 },
 
     // ── Nutri-Score ──
     nutriBar: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         paddingVertical: 14, paddingHorizontal: 16, marginBottom: 16,
         backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : colors.gray[50],
-        borderRadius: 14,
+        borderRadius: 18,
     },
 
 
     // ── Alert Box ──
     alertBox: {
-        borderRadius: 14, padding: 16, marginBottom: 16,
+        borderRadius: 20, padding: 16, marginBottom: 16,
         backgroundColor: isDark ? 'rgba(239,68,68,0.08)' : '#FEF2F2',
     },
     alertHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
@@ -1041,7 +1118,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
 
     // ── Diet Card ──
     dietCard: {
-        flexDirection: 'row', borderRadius: 14, overflow: 'hidden', marginBottom: 16,
+        flexDirection: 'row', borderRadius: 20, overflow: 'hidden', marginBottom: 16,
         backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : colors.gray[50],
     },
     dietAccent: { width: 4 },
@@ -1067,6 +1144,10 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     dietReason: { fontSize: 13, lineHeight: 20, color: colors.gray[500] },
 
     // ── Section Headers ──
+    sectionTitle: {
+        fontSize: 22, lineHeight: 28, color: colors.text,
+        paddingHorizontal: 20, marginBottom: 12,
+    },
     sectionHeader: {
         flexDirection: 'row', alignItems: 'center', gap: 12,
         paddingHorizontal: 24, marginBottom: 16,
@@ -1078,10 +1159,10 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     },
 
     // ── Family ──
-    familyZone: { marginTop: 16 },
+    familyZone: { marginTop: 24 },
     familyList: { paddingHorizontal: 20, paddingVertical: 6, gap: 10 },
     familyChip: {
-        backgroundColor: colors.card, borderRadius: 16,
+        backgroundColor: colors.card, borderRadius: 20,
         paddingVertical: 12, paddingHorizontal: 14,
         flexDirection: 'row', alignItems: 'center', gap: 12,
         ...(isDark ? { borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' } : {
@@ -1095,7 +1176,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     familyLabel: { fontSize: 12, fontWeight: '500', color: colors.gray[500], marginTop: 1 },
 
     // ── Detail Section ──
-    detailZone: { marginTop: 16 },
+    detailZone: { marginTop: 24 },
 
     // ── Footer Notes ──
     footerNote: {

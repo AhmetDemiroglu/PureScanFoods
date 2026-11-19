@@ -16,6 +16,8 @@ export type TourStep = {
   padding?: number;
   /** deliği tek yönde büyütür (ör. sekme simgesinin altındaki yazıyı da almak için) */
   grow?: { top?: number; bottom?: number; left?: number; right?: number };
+  /** Kartta açıklamanın altında simgeli satırlar (locales: tour.<key>.items.<item>). */
+  items?: { key: string; icon: IconName }[];
 };
 
 // Alt sekme: hedef sekme hücresinin tamamı (simge + yazı, AppTabBar), delik hücreye oturur.
@@ -33,10 +35,20 @@ export const HOME_TOUR: TourStep[] = [
 
 export const RESULT_TOUR: TourStep[] = [
   { target: "result.score", key: "result.score", icon: "speedometer-outline", padding: 4 },
-  { target: "result.summary", key: "result.summary", icon: "chatbox-ellipses-outline", padding: 6 },
   { target: "result.consumption", key: "result.consumption", icon: "flask-outline", padding: 6 },
+  { target: "result.family", key: "result.family", icon: "people-outline", padding: 4 },
   { target: "result.details", key: "result.details", icon: "list-outline", padding: 6 },
-  { target: "result.guru", key: "result.guru", icon: "sparkles-outline", padding: 6 },
+  {
+    target: "result.actions",
+    key: "result.actions",
+    icon: "flash-outline",
+    padding: 4,
+    items: [
+      { key: "guru", icon: "sparkles-outline" },
+      { key: "compare", icon: "git-compare-outline" },
+      { key: "rescan", icon: "scan-outline" },
+    ],
+  },
 ];
 
 export const GURU_TOUR: TourStep[] = [

@@ -111,10 +111,24 @@ export function TourProvider({ children, gateOpen }: { children: React.ReactNode
     else scrollers.current.delete(tourId);
   }, []);
 
-  const start = useCallback((id: string, steps: TourStep[]) => {
-    setTour((cur) => cur ?? { id, steps });
-    setIndex(0);
-  }, []);
+  // Tur başlarken hedefler yoklanır: kayıtlı olmayan ya da boyutu sıfır olan adım (ör. tüketim görseli
+  // olmayan ürün) baştan çıkarılır. Böylece sayaç doğru olur ("4/5"te biten tur görünmez).
+  const starting = useRef(false);
+  const start = useCallback(
+    (id: string, steps: TourStep[]) => {
+      if (starting.current) return;
+      starting.current = true;
+      (async () => {
+        const present = await Promise.all(steps.map((st) => measure(targets.current.get(st.target) ?? null)));
+        const available = steps.filter((_, i) => !!present[i]);
+        starting.current = false;
+        if (!available.length) return;
+        setTour((cur) => cur ?? { id, steps: available });
+        setIndex(0);
+      })();
+    },
+    [measure],
+  );
 
   // Katman ANINDA kalkar, "görüldü" kaydı arkada yazılır. Önceden kayıt bitmeden katman
   // kalkmıyordu; depolama yavaşken görünmez katman saniyelerce dokunuşları yutuyordu.
@@ -153,7 +167,9 @@ export function TourProvider({ children, gateOpen }: { children: React.ReactNode
             const dy = r.y - H * 0.3;
             scroller.ref.current?.scrollTo({ y: Math.max(0, scroller.offset.current + dy), animated: true });
             await wait(420);
-            r = await measure(node);
+            // Kaydırmadan sonraki ölçüm boşa düşerse ilk ölçüm kullanılır (adım atlanmasın).
+            const after = await measure(node);
+            if (after) r = after;
           }
         }
         if (cancelled) return;

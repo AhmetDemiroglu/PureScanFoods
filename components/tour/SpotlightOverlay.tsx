@@ -2,7 +2,7 @@
 // Hareket dili açılış animasyonuyla ortak: tarama köşeleri hedefe oturur, tarama çizgisi hedefin
 // üstünden geçer, çevresinde nefes alan halka ve dışa yayılan dalga var. Delik adımdan adıma yayla akar.
 
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { LinearGradient } from "expo-linear-gradient";
@@ -30,6 +30,7 @@ import { useTheme } from "../../context/ThemeContext";
 import * as haptics from "../../lib/haptics";
 import type { TourRect } from "./TourContext";
 import type { TourStep } from "./tours";
+import { clampHoleX, placeCard } from "./tourGeometry";
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
@@ -57,9 +58,16 @@ export default function SpotlightOverlay({ step, index, total, rect, frame, onNe
   const reduce = useReducedMotion();
   const styles = useMemo(() => createStyles(colors, isDark), [colors, isDark]);
 
+  // Kartın gerçek yüksekliği (ölçülür; adım değişince yeniden ölçülür). Yerleşim buna göre yapılır,
+  // kart hedefi örtmez; sığmazsa delik kırpılır.
+  const [cardH, setCardH] = useState(0);
+  useEffect(() => {
+    setCardH(0);
+  }, [index]);
+
   // Delik ölçüsü (padding ve şekil uygulanmış)
   const pad = step.padding ?? 8;
-  const hole = useMemo(() => {
+  const baseHole = useMemo(() => {
     const g = step.grow ?? {};
     let x = rect.x - pad - (g.left ?? 0);
     let y = rect.y - pad - (g.top ?? 0);
@@ -72,9 +80,19 @@ export default function SpotlightOverlay({ step, index, total, rect, frame, onNe
       w = d;
       h = d;
     }
-    const r = step.shape === "circle" ? w / 2 : Math.min(20, h / 2);
-    return { x, y, w, h, r };
-  }, [rect, pad, step.shape, step.grow]);
+    const clamped = step.shape === "circle" ? { x, y, w, h } : clampHoleX({ x, y, w, h }, W);
+    return clamped;
+  }, [rect, pad, step.shape, step.grow, W]);
+
+  const placement = useMemo(
+    () => placeCard({ hole: baseHole, cardH, H, insetTop: insets.top, insetBottom: insets.bottom, gap: CARD_GAP }),
+    [baseHole, cardH, H, insets.top, insets.bottom],
+  );
+  const hole = useMemo(() => {
+    const ph = placement.hole;
+    const r = step.shape === "circle" ? ph.w / 2 : Math.min(20, ph.h / 2);
+    return { ...ph, r };
+  }, [placement.hole, step.shape]);
 
   // --- Paylaşılan değerler ---
   const hx = useSharedValue(hole.x);
@@ -185,12 +203,9 @@ export default function SpotlightOverlay({ step, index, total, rect, frame, onNe
 
   // --- Kart yerleşimi ---
   const cardW = Math.min(W - 32, 380);
-  const holeMidY = hole.y + hole.h / 2;
-  const placeBelow = holeMidY < H * 0.52;
+  const placeBelow = placement.below;
   const cardLeft = (W - cardW) / 2;
-  const cardPos = placeBelow
-    ? { top: Math.min(hole.y + hole.h + CARD_GAP, H - insets.bottom - 230) }
-    : { bottom: Math.max(H - hole.y + CARD_GAP, insets.bottom + 16) };
+  const cardPos = { top: placement.top };
   const arrowX = Math.max(22, Math.min(cardW - 22, hole.x + hole.w / 2 - cardLeft)) - 8;
 
   const last = index === total - 1;
@@ -205,8 +220,8 @@ export default function SpotlightOverlay({ step, index, total, rect, frame, onNe
 
   return (
     <View style={StyleSheet.absoluteFill} accessibilityViewIsModal>
-      {/* Karartma ve dokunma alanı: herhangi bir yere dokunmak sonraki adıma geçer */}
-      <Pressable style={StyleSheet.absoluteFill} onPress={handleNext} accessibilityLabel={t("tour.next")}>
+      {/* Karartma: dokunuşları tutar ama ilerletmez. Yalnız "İleri" ve "Geç" ilerletir (yanlışlıkla adım atlanmasın). */}
+      <Pressable style={StyleSheet.absoluteFill} onPress={() => {}} accessible={false}>
         <Animated.View style={[StyleSheet.absoluteFill, dimStyle]} pointerEvents="none">
           <Svg width={W} height={H}>
             <AnimatedPath animatedProps={dimProps} fill={DIM} fillRule="evenodd" />
@@ -242,7 +257,11 @@ export default function SpotlightOverlay({ step, index, total, rect, frame, onNe
           çocuğu yüzünden kaldırılan tur katmanını (tam ekran dokunma alanı dahil) görünmez halde ekranda
           tutuyordu; tur bitince dokunuşlar saniyelerce yutuluyordu. */}
       <Animated.View
-        key={`${index}-${placeBelow ? "b" : "a"}`}
+        key={`${index}`}
+        onLayout={(e) => {
+          const h = e.nativeEvent.layout.height;
+          if (Math.abs(h - cardH) > 1) setCardH(h);
+        }}
         entering={
           reduce
             ? FadeIn.duration(150)
@@ -271,6 +290,19 @@ export default function SpotlightOverlay({ step, index, total, rect, frame, onNe
           </View>
         </View>
         <Text style={styles.desc}>{desc}</Text>
+
+        {step.items?.length ? (
+          <View style={styles.items}>
+            {step.items.map((it) => (
+              <View key={it.key} style={styles.itemRow}>
+                <View style={styles.itemIcon}>
+                  <Ionicons name={it.icon} size={16} color={colors.primary} />
+                </View>
+                <Text style={styles.itemText}>{t(`tour.${step.key}.items.${it.key}`)}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
 
         <View style={styles.progressRow}>
           {Array.from({ length: total }).map((_, k) => (
@@ -308,14 +340,11 @@ const createStyles = (colors: any, isDark: boolean) =>
     frame: {
       position: "absolute",
     },
+    // Halka yalnız çizgi: iOS'ta gölge içeri de yayılıp hedefi soluk turuncuya boyuyordu.
     ring: {
       ...StyleSheet.absoluteFillObject,
       borderWidth: 2,
       borderColor: colors.primary,
-      shadowColor: colors.primary,
-      shadowOpacity: 0.9,
-      shadowRadius: 12,
-      shadowOffset: { width: 0, height: 0 },
     },
     ripple: {
       ...StyleSheet.absoluteFillObject,
@@ -406,6 +435,29 @@ const createStyles = (colors: any, isDark: boolean) =>
       fontSize: 12,
       fontWeight: "700",
       color: colors.primary,
+    },
+    items: {
+      marginTop: 12,
+      gap: 8,
+    },
+    itemRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    itemIcon: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: isDark ? "rgba(255,139,61,0.16)" : "#FFF1E6",
+    },
+    itemText: {
+      flex: 1,
+      fontSize: 13.5,
+      lineHeight: 18,
+      color: colors.text,
     },
     desc: {
       marginTop: 10,
