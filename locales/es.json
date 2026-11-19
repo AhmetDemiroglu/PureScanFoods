@@ -885,7 +885,7 @@
             },
             "scan": {
                 "title": "Fotografía los ingredientes",
-                "desc": "Encuadra la lista de ingredientes. Se lee cada uno, se marcan los aditivos y se calcula la puntuación de seguridad."
+                "desc": "Haz una foto de la lista de ingredientes del envase. Marcamos los aditivos y calculamos la puntuación."
             },
             "profile": {
                 "title": "Puntuación a tu medida",

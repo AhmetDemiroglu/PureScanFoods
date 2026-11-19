@@ -885,7 +885,7 @@
             },
             "scan": {
                 "title": "Snap the ingredients",
-                "desc": "Frame the ingredient list. Every item is read one by one, additives are flagged and a safety score is calculated."
+                "desc": "Take a photo of the ingredient list on the pack. Additives are flagged and a safety score is calculated."
             },
             "profile": {
                 "title": "Scores made for you",

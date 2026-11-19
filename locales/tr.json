@@ -885,7 +885,7 @@
             },
             "scan": {
                 "title": "İçindekileri çek",
-                "desc": "İçerik listesini kadraja al. Her maddeyi tek tek okur, katkıları işaretler ve güvenlik puanını hesaplar."
+                "desc": "Paketteki içindekiler listesinin fotoğrafını çek. Katkıları işaretler, güvenlik puanını hesaplar."
             },
             "profile": {
                 "title": "Sana göre puan",

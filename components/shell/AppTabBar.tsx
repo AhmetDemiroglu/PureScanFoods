@@ -155,7 +155,8 @@ export default function AppTabBar({ state, descriptors, navigation, insets }: Bo
   // Dar ekranda (ör. 320 pt) sekme hücresi ~45 pt kalıyor, "Beslenme" sığmıyordu: kapsül kenara biraz
   // yaklaşır (yine kenar şeridinin dışında), orta yuva daralır, etiketler hep aynı küçük boyda.
   const { width: winW } = useWindowDimensions();
-  const narrow = winW < 360;
+  // 380 altı: 360 pt telefonda da hücre ~55 pt, "Beslenme" 10,5 boyutta sığmıyordu.
+  const narrow = winW < 380;
   const occupied = tabBarOccupiedHeight(insets.bottom);
   const capsuleBottom = occupied - G.capsuleHeight;
 
