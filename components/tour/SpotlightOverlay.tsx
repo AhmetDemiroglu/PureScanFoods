@@ -203,6 +203,8 @@ export default function SpotlightOverlay({ step, index, total, rect, frame, onNe
 
   // --- Kart yerleşimi ---
   const cardW = Math.min(W - 32, 380);
+  // Kısa ekranda (ör. 360x640 Android) kart sıkılaşır: üstte ya da altta sığsın, delik kırpılmasın.
+  const tight = H < 720;
   const placeBelow = placement.below;
   const cardLeft = (W - cardW) / 2;
   const cardPos = { top: placement.top };
@@ -267,7 +269,7 @@ export default function SpotlightOverlay({ step, index, total, rect, frame, onNe
             ? FadeIn.duration(150)
             : (placeBelow ? FadeInDown : FadeInUp).springify().damping(16).stiffness(170).delay(120)
         }
-        style={[styles.card, { width: cardW, left: cardLeft }, cardPos]}
+        style={[styles.card, tight && styles.cardTight, { width: cardW, left: cardLeft }, cardPos]}
       >
         <View
           style={[
@@ -277,11 +279,11 @@ export default function SpotlightOverlay({ step, index, total, rect, frame, onNe
           ]}
         />
         <View style={styles.cardHead}>
-          <LinearGradient colors={[colors.primary, colors.primaryDeep]} style={styles.iconBubble}>
+          <LinearGradient colors={[colors.primary, colors.primaryDeep]} style={[styles.iconBubble, tight && styles.iconBubbleTight]}>
             <Ionicons name={step.icon} size={20} color="#FFF" />
           </LinearGradient>
           <View style={{ flex: 1 }}>
-            <Text style={styles.title}>{title}</Text>
+            <Text style={[styles.title, tight && styles.titleTight]} numberOfLines={2} maxFontSizeMultiplier={1.15}>{title}</Text>
           </View>
           <View style={styles.counter}>
             <Text style={styles.counterText}>
@@ -289,7 +291,7 @@ export default function SpotlightOverlay({ step, index, total, rect, frame, onNe
             </Text>
           </View>
         </View>
-        <Text style={styles.desc}>{desc}</Text>
+        <Text style={[styles.desc, tight && styles.descTight]} maxFontSizeMultiplier={1.15}>{desc}</Text>
 
         {step.items?.length ? (
           <View style={styles.items}>
@@ -304,13 +306,13 @@ export default function SpotlightOverlay({ step, index, total, rect, frame, onNe
           </View>
         ) : null}
 
-        <View style={styles.progressRow}>
+        <View style={[styles.progressRow, tight && styles.progressRowTight]}>
           {Array.from({ length: total }).map((_, k) => (
             <View key={k} style={[styles.seg, k <= index ? styles.segOn : null, k === index ? styles.segNow : null]} />
           ))}
         </View>
 
-        <View style={styles.actions}>
+        <View style={[styles.actions, tight && styles.actionsTight]}>
           {!last ? (
             <Pressable onPress={onSkip} hitSlop={10} style={styles.skipBtn} accessibilityRole="button">
               <Text style={styles.skipText}>{t("tour.skip")}</Text>
@@ -323,7 +325,7 @@ export default function SpotlightOverlay({ step, index, total, rect, frame, onNe
               colors={[colors.primary, colors.primaryDeep]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={styles.nextBtn}
+              style={[styles.nextBtn, tight && styles.nextBtnTight]}
             >
               <Text style={styles.nextText}>{last ? t("tour.done") : t("tour.next")}</Text>
               <Ionicons name={last ? "checkmark" : "arrow-forward"} size={16} color="#FFF" />
@@ -399,6 +401,26 @@ const createStyles = (colors: any, isDark: boolean) =>
       elevation: 14,
       borderWidth: isDark ? 1 : 0,
       borderColor: colors.border,
+    },
+    cardTight: {
+      padding: 14,
+      borderRadius: 20,
+    },
+    iconBubbleTight: {
+      width: 32,
+      height: 32,
+      borderRadius: 11,
+    },
+    titleTight: {
+      fontSize: 15.5,
+    },
+    descTight: {
+      marginTop: 8,
+      fontSize: 13.5,
+      lineHeight: 19,
+    },
+    progressRowTight: {
+      marginTop: 10,
     },
     arrow: {
       position: "absolute",
@@ -487,6 +509,13 @@ const createStyles = (colors: any, isDark: boolean) =>
       alignItems: "center",
       justifyContent: "space-between",
       marginTop: 14,
+    },
+    actionsTight: {
+      marginTop: 10,
+    },
+    nextBtnTight: {
+      height: 38,
+      paddingHorizontal: 16,
     },
     skipBtn: {
       paddingVertical: 8,

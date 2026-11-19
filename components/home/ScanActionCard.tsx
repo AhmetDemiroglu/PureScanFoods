@@ -148,11 +148,12 @@ export default function ScanActionCard({ height, title, hint, active, onPress }:
 
         <View style={styles.row}>
           <View style={styles.text}>
-            {/* iOS'ta satır yüksekliği olan yazıda otomatik küçültme yanlış hesaplıyor: iki satıra izin verilir. */}
-            <Text variant="display" style={styles.title} numberOfLines={2}>
+            {/* Başlık tek satır, sığmazsa küçülür. Otomatik küçültme satır yüksekliği verilmiş yazıda iOS'ta
+                yanlış hesaplıyordu: başlıkta lineHeight yok. */}
+            <Text variant="display" style={styles.title} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
               {title}
             </Text>
-            <Text style={styles.hint} numberOfLines={3} maxFontSizeMultiplier={1.15}>
+            <Text style={styles.hint} numberOfLines={3} adjustsFontSizeToFit minimumFontScale={0.82} maxFontSizeMultiplier={1.15}>
               {hint}
             </Text>
           </View>
@@ -186,13 +187,11 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 26,
-    lineHeight: 30,
     color: "#FFF",
   },
   hint: {
-    marginTop: 6,
+    marginTop: 4,
     fontSize: 13,
-    lineHeight: 18,
     color: "rgba(255,255,255,0.88)",
     fontWeight: "500",
   },

@@ -40,6 +40,7 @@ import ReviewPromptModal from "../components/ui/ReviewPromptModal";
 import { recordSuccessfulScan, shouldShowSoftPrompt, markSoftPromptShown, markRated, markSnoozed, markDismissedForever, requestNativeReview } from "../lib/reviewManager";
 import ConsumptionReveal from "../components/product/ConsumptionReveal";
 import PaywallModal from "../components/ui/PaywallModal";
+import * as haptics from "../lib/haptics";
 
 const IMAGE_HEIGHT = 280;
 /** Alttaki sabit eylem çubuğunun yüksekliği (Guru'ya Sor, Karşılaştır, Tekrar Çek). */
@@ -160,17 +161,18 @@ export default function ProductResultScreen() {
     });
 
     const screenHeight = Dimensions.get('window').height;
+    // Alt sayfaların kayma değerleri. Her sayfanın kendi değeri var ve JS sürücüsüyle canlanır:
+    // native sürücüde kapanış animasyonu değeri ekranın altında bırakıyordu; ikinci açılışta sıfırlama
+    // native tarafa geçmiyor, karartma gelip sayfa ekran dışında kalıyordu (ekran kilitleniyordu).
+    // Açılışta değer, sayfa çizilmeden ÖNCE sıfırlanır.
     const panY = useRef(new Animated.Value(0)).current;
-
-    useEffect(() => {
-        if (showDetailModal) panY.setValue(0);
-    }, [showDetailModal]);
+    const nutriY = useRef(new Animated.Value(0)).current;
 
     const closeWithAnimation = () => {
         Animated.timing(panY, {
             toValue: screenHeight,
-            duration: 250,
-            useNativeDriver: true,
+            duration: 240,
+            useNativeDriver: false,
         }).start(() => setShowDetailModal(false));
     };
 
@@ -188,22 +190,24 @@ export default function ProductResultScreen() {
                     Animated.spring(panY, {
                         toValue: 0,
                         bounciness: 4,
-                        useNativeDriver: true,
+                        useNativeDriver: false,
                     }).start();
                 }
             },
         })
     ).current;
 
-    useEffect(() => {
-        if (showNutriInfo) panY.setValue(0);
-    }, [showNutriInfo]);
+    const openNutriInfo = () => {
+        nutriY.stopAnimation();
+        nutriY.setValue(0);
+        setShowNutriInfo(true);
+    };
 
     const closeNutriWithAnimation = () => {
-        Animated.timing(panY, {
+        Animated.timing(nutriY, {
             toValue: screenHeight,
-            duration: 250,
-            useNativeDriver: true,
+            duration: 240,
+            useNativeDriver: false,
         }).start(() => setShowNutriInfo(false));
     };
 
@@ -212,16 +216,16 @@ export default function ProductResultScreen() {
             onStartShouldSetPanResponder: () => true,
             onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 5,
             onPanResponderMove: (_, gestureState) => {
-                if (gestureState.dy > 0) panY.setValue(gestureState.dy);
+                if (gestureState.dy > 0) nutriY.setValue(gestureState.dy);
             },
             onPanResponderRelease: (_, gestureState) => {
                 if (gestureState.dy > 100 || gestureState.vy > 0.6) {
                     closeNutriWithAnimation();
                 } else {
-                    Animated.spring(panY, {
+                    Animated.spring(nutriY, {
                         toValue: 0,
                         bounciness: 4,
-                        useNativeDriver: true,
+                        useNativeDriver: false,
                     }).start();
                 }
             },
@@ -531,8 +535,20 @@ export default function ProductResultScreen() {
     const scoreColor = getScoreColor(displayScore);
 
     const handleMemberPress = (item: { member: any, report: CompatibilityReport }) => {
+        panY.stopAnimation();
+        panY.setValue(0);
         setSelectedMemberReport(item);
         setShowDetailModal(true);
+    };
+    // Pencere açıkken üyeler arası geçiş (başlıktaki oklar): pencere kapanıp açılmaz, içerik değişir.
+    const selectedIndex = selectedMemberReport
+        ? familyAnalysis.findIndex((f) => f.member.id === selectedMemberReport.member.id && f.member.name === selectedMemberReport.member.name)
+        : -1;
+    const stepMember = (dir: -1 | 1) => {
+        if (familyAnalysis.length < 2 || selectedIndex < 0) return;
+        const next = (selectedIndex + dir + familyAnalysis.length) % familyAnalysis.length;
+        haptics.selection();
+        setSelectedMemberReport(familyAnalysis[next]);
     };
 
     const handleAskGuru = () => {
@@ -588,12 +604,6 @@ export default function ProductResultScreen() {
                             <BrandLogo variant="mark" tone="onBrand" size={96} />
                         </LinearGradient>
                     )}
-                    {/* Geri: sonraki eylemler (Guru, Karşılaştır, Tekrar Çek) alttaki sabit çubukta. */}
-                    <Pressable onPress={() => router.back()} style={[styles.headerBtn, { top: insets.top + 8 }]} accessibilityRole="button" accessibilityLabel="Back" hitSlop={6}>
-                        <GlassSurface radius={20} tone="dark" elevation="none" style={StyleSheet.absoluteFill} contentStyle={styles.headerBtnInner}>
-                            <Ionicons name="chevron-back" size={22} color="#FFF" />
-                        </GlassSurface>
-                    </Pressable>
                 </View>
 
                 {/* Pull-up Sheet Card */}
@@ -672,7 +682,7 @@ export default function ProductResultScreen() {
                     {data.product?.nutriscore_grade ? (
                         <View style={styles.nutriBar}>
                             <NutriScoreGraphic grade={data.product.nutriscore_grade} />
-                            <TouchableOpacity onPress={() => setShowNutriInfo(true)} hitSlop={8}>
+                            <TouchableOpacity onPress={openNutriInfo} hitSlop={8}>
                                 <Ionicons name="information-circle-outline" size={18} color={colors.gray[400]} />
                             </TouchableOpacity>
                         </View>
@@ -771,6 +781,20 @@ export default function ProductResultScreen() {
 
             </ScrollView>
 
+            {/* Geri düğmesi sayfayla kaymaz: sayfanın neresinde olunursa olsun ana ekrana tek dokunuş.
+                (Yandan kaydırma da çalışır ama bilmeyen kullanıcı en tepeye çıkmak zorunda kalıyordu.) */}
+            <Pressable
+                onPress={() => router.back()}
+                style={[styles.headerBtn, { top: insets.top + 8 }]}
+                accessibilityRole="button"
+                accessibilityLabel={t("common.back")}
+                hitSlop={8}
+            >
+                <GlassSurface radius={21} tone="dark" elevation="sm" style={StyleSheet.absoluteFill} contentStyle={styles.headerBtnInner}>
+                    <Ionicons name="chevron-back" size={22} color="#FFF" />
+                </GlassSurface>
+            </Pressable>
+
             {/* Sabit cam eylem çubuğu. Yanlardan EDGE_SAFE_INSET içeride: sağ kenardaki geçmiş şeridi
                 (24 pt, AppShellSidebar) "Tekrar Çek"in dış ucunu kapatmasın. */}
             <View
@@ -821,6 +845,33 @@ export default function ProductResultScreen() {
                         <View style={styles.bottomSheetHandleContainer} {...panResponder.panHandlers}>
                             <View style={styles.bottomSheetHandle} />
                         </View>
+                        {selectedMemberReport && familyAnalysis.length > 1 ? (
+                            <View style={styles.memberPager}>
+                                <Pressable
+                                    onPress={() => stepMember(-1)}
+                                    hitSlop={10}
+                                    accessibilityRole="button"
+                                    accessibilityLabel="Previous"
+                                    style={({ pressed }) => [styles.pagerBtn, pressed && { transform: [{ scale: 0.9 }] }]}
+                                >
+                                    <Ionicons name="chevron-back" size={18} color={colors.text} />
+                                </Pressable>
+                                <View style={styles.pagerDots}>
+                                    {familyAnalysis.map((f, i) => (
+                                        <View key={`${f.member.id}-${i}`} style={[styles.pagerDot, i === selectedIndex && styles.pagerDotActive]} />
+                                    ))}
+                                </View>
+                                <Pressable
+                                    onPress={() => stepMember(1)}
+                                    hitSlop={10}
+                                    accessibilityRole="button"
+                                    accessibilityLabel="Next"
+                                    style={({ pressed }) => [styles.pagerBtn, pressed && { transform: [{ scale: 0.9 }] }]}
+                                >
+                                    <Ionicons name="chevron-forward" size={18} color={colors.text} />
+                                </Pressable>
+                            </View>
+                        ) : null}
                         {selectedMemberReport && (
                             <View style={{ flex: 1 }}>
                                 <View style={styles.sheetHeader}>
@@ -924,7 +975,7 @@ export default function ProductResultScreen() {
             <Modal visible={showNutriInfo} transparent animationType="fade" onRequestClose={closeNutriWithAnimation}>
                 <View style={styles.modalOverlay}>
                     <Pressable style={styles.modalDismiss} onPress={closeNutriWithAnimation} />
-                    <Animated.View style={[styles.bottomSheet, { height: 'auto' }, { paddingBottom: insets.bottom > 0 ? insets.bottom + 20 : 30 }, { transform: [{ translateY: panY }] }]}>
+                    <Animated.View style={[styles.bottomSheet, { height: 'auto' }, { paddingBottom: insets.bottom > 0 ? insets.bottom + 20 : 30 }, { transform: [{ translateY: nutriY }] }]}>
                         <View style={styles.bottomSheetHandleContainer} {...nutriPanResponder.panHandlers}>
                             <View style={styles.bottomSheetHandle} />
                         </View>
@@ -975,7 +1026,7 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
     productImage: { width: '100%', height: '100%' },
     imageOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.25)' },
     headerBtn: {
-        position: 'absolute', left: EDGE_SAFE_INSET - 4, width: 40, height: 40, borderRadius: 20,
+        position: 'absolute', left: EDGE_SAFE_INSET - 4, width: 42, height: 42, borderRadius: 21, zIndex: 5,
     },
     headerBtnInner: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     brandHeader: { alignItems: 'center', justifyContent: 'center', paddingBottom: 24 },
@@ -1207,6 +1258,17 @@ const createStyles = (colors: AppColors, isDark: boolean) => StyleSheet.create({
         paddingHorizontal: 20, paddingTop: 12, height: '70%', maxHeight: '85%',
     },
     bottomSheetHandleContainer: { alignItems: 'center', paddingVertical: 8, marginBottom: 8 },
+    memberPager: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        marginTop: -4, marginBottom: 12,
+    },
+    pagerBtn: {
+        width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center',
+        backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : colors.gray[100],
+    },
+    pagerDots: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    pagerDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: isDark ? 'rgba(255,255,255,0.18)' : 'rgba(42,31,24,0.16)' },
+    pagerDotActive: { width: 18, backgroundColor: colors.primary },
     bottomSheetHandle: {
         width: 40, height: 4, borderRadius: 2,
         backgroundColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)',
